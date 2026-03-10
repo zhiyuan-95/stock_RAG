@@ -22,7 +22,6 @@ def get_financial_summary(ticker: str) -> str:
     """
     # You can add historical prices, ratios, etc.
     return summary
-
 def build_documents(ticker: str, data_dir = None):
     docs = []
     """
@@ -57,3 +56,4 @@ def create_or_update_index(ticker: str):
     index = VectorStoreIndex(nodes)
     index.storage_context.persist(persist_dir=f"./storage/{ticker}")
     return index
+create_or_update_index('NVDA')

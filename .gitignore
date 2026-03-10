@@ -1,2 +1,4 @@
 # ignore all .env files
 *.env
+*storage
+*__pycache__
