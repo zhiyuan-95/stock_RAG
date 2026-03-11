@@ -1,21 +1,21 @@
 # query.py
 from typing import Optional
 from llama_index.core import (
+    Settings,
     load_index_from_storage,
     StorageContext,
     PromptTemplate,
+    get_response_synthesizer
 )
-from llama_index.core import get_response_synthesizer
 from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.core.postprocessor import SimilarityPostprocessor
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv('config.env')
 
 # Reuse the same global settings as ingest.py (you can move to a config.py later)
-from llama_index.core import Settings
 from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
 
@@ -64,12 +64,11 @@ ANALYSIS_PROMPT = PromptTemplate(
 
 
 def get_analysis_engine(
-        ticker: str,
-        similarity_top_k: int = 8,
-        similarity_cutoff: float = 0.78,
-        storage_base_dir: str = "./storage",
-    ) -> RetrieverQueryEngine:
-    """Load persisted index and create query engine for analysis"""
+    ticker: str,
+    similarity_top_k: int = 8,
+    similarity_cutoff: float = 0.78,
+    storage_base_dir: str = "./storage",
+) -> RetrieverQueryEngine:
     persist_dir = os.path.join(storage_base_dir, ticker.upper())
 
     if not os.path.exists(persist_dir):
@@ -86,11 +85,17 @@ def get_analysis_engine(
         similarity_top_k=similarity_top_k,
     )
 
+    prompt = ANALYSIS_PROMPT.partial_format(ticker=ticker.upper())
+    response_synthesizer = get_response_synthesizer(text_qa_template=prompt)
+
     return RetrieverQueryEngine(
         retriever=retriever,
-        node_postprocessors=[SimilarityPostprocessor(similarity_cutoff=similarity_cutoff)],
-        text_qa_template=ANALYSIS_PROMPT,
+        node_postprocessors=[
+            SimilarityPostprocessor(similarity_cutoff=similarity_cutoff)
+        ],
+        response_synthesizer=response_synthesizer,
     )
+
 
 
 def analyze_company(ticker: str, custom_query: Optional[str] = None) -> str:
@@ -106,6 +111,3 @@ def analyze_company(ticker: str, custom_query: Optional[str] = None) -> str:
         )
 
     return str(response)
-
-print('???')
-print(dir(RetrieverQueryEngine))
