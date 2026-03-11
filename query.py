@@ -107,5 +107,5 @@ def analyze_company(ticker: str, custom_query: Optional[str] = None) -> str:
 
     return str(response)
 
-
+print('???')
 print(dir(RetrieverQueryEngine))
