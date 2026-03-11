@@ -56,4 +56,3 @@ def create_or_update_index(ticker: str):
     index = VectorStoreIndex(nodes)
     index.storage_context.persist(persist_dir=f"./storage/{ticker}")
     return index
-create_or_update_index('NVDA')

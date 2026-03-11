@@ -5,6 +5,7 @@ from llama_index.core import (
     StorageContext,
     PromptTemplate,
 )
+from llama_index.core import get_response_synthesizer
 from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.core.postprocessor import SimilarityPostprocessor
@@ -21,7 +22,7 @@ from llama_index.embeddings.openai import OpenAIEmbedding
 Settings.llm = OpenAI(model="gpt-4o-mini", temperature=0.1)
 Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
 
-
+# I am not adding this right now, since I don't have the function that analysis new
 ANALYSIS_PROMPT = PromptTemplate(
         """
             You are a senior equity research analyst. Provide a concise, factual, data-grounded analysis of {ticker}.
@@ -107,12 +108,4 @@ def analyze_company(ticker: str, custom_query: Optional[str] = None) -> str:
     return str(response)
 
 
-if __name__ == "__main__":
-    import sys
-
-    ticker = sys.argv[1].upper() if len(sys.argv) > 1 else "NVDA"
-    custom_q = " ".join(sys.argv[2:]) if len(sys.argv) > 2 else None
-
-    print(f"\nAnalyzing {ticker}...\n")
-    result = analyze_company(ticker, custom_q)
-    print(result)
+print(dir(RetrieverQueryEngine))
