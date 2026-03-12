@@ -20,7 +20,7 @@ from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
 
 Settings.llm = OpenAI(model="gpt-4o-mini", temperature=0.1)
-Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
+Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small", api_key = os.getenv('OPENAI_API_KEY'))
 
 # I am not adding this right now, since I don't have the function that analysis new
 ANALYSIS_PROMPT = PromptTemplate(
@@ -64,11 +64,11 @@ ANALYSIS_PROMPT = PromptTemplate(
 
 
 def get_analysis_engine(
-    ticker: str,
-    similarity_top_k: int = 8,
-    similarity_cutoff: float = 0.78,
-    storage_base_dir: str = "./storage",
-) -> RetrieverQueryEngine:
+        ticker: str,
+        similarity_top_k: int = 2,
+#        similarity_cutoff: float = 0.6,
+        storage_base_dir: str = "./storage",
+    ):
     persist_dir = os.path.join(storage_base_dir, ticker.upper())
 
     if not os.path.exists(persist_dir):
@@ -79,23 +79,18 @@ def get_analysis_engine(
 
     storage_context = StorageContext.from_defaults(persist_dir=persist_dir)
     index = load_index_from_storage(storage_context)
-
     retriever = VectorIndexRetriever(
         index=index,
         similarity_top_k=similarity_top_k,
     )
-
-    prompt = ANALYSIS_PROMPT.partial_format(ticker=ticker.upper())
-    response_synthesizer = get_response_synthesizer(text_qa_template=prompt)
+#    print(retriever.retrieve("NVDA financials"))
+#    prompt = ANALYSIS_PROMPT.partial_format(ticker=ticker.upper())
+    response_synthesizer = get_response_synthesizer()
 
     return RetrieverQueryEngine(
         retriever=retriever,
-        node_postprocessors=[
-            SimilarityPostprocessor(similarity_cutoff=similarity_cutoff)
-        ],
         response_synthesizer=response_synthesizer,
     )
-
 
 
 def analyze_company(ticker: str, custom_query: Optional[str] = None) -> str:

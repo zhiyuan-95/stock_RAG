@@ -9,7 +9,7 @@ from llama_index.core.node_parser import SentenceSplitter
 load_dotenv('config.env')
 
 Settings.llm = OpenAI(model="gpt-4o", temperature=0.1)
-Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small", api_key = os.getenv('OPENAI_APIKEY'))
+Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small", api_key = os.getenv('OPENAI_API_KEY'))
 
 def get_financial_summary(ticker: str) -> str:
     stock = yf.Ticker(ticker)
@@ -37,7 +37,7 @@ def build_documents(ticker: str, data_dir = None):
 
     if data_dir:
     # 2. SEC filings via LlamaParse (best for tables in 2026)
-        parser = LlamaParse(api_key=os.getenv("LLAMA_PARSE_APIKEY"), result_type="markdown")
+        parser = LlamaParse(api_key=os.getenv("LLAMA_PARSE_API_KEY"), result_type="markdown")
         filings = ["latest_10k.pdf", "latest_10q.pdf"]  # download them first or automate
         for file in filings:
             parsed_docs = parser.load_data(f"{data_dir}/{file}")
