@@ -1,149 +1,264 @@
 import sqlite3
-
-import os
 import yfinance as yf
 from llama_index.core import Settings, Document, VectorStoreIndex, StorageContext
 from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
-#from llama_index.readers.llama_parse import LlamaParse
+from datetime import datetime
 from llama_index.core.node_parser import SentenceSplitter
 import pandas as pd
+from dotenv import load_dotenv
+import os
+
+load_dotenv('config.env')
+
 Settings.llm = OpenAI(model="gpt-4o", temperature=0.1)
 Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small", api_key = os.getenv('OPENAI_API_KEY'))
 
-def get_financial_summary(ticker: str) -> str:
-    stock = yf.Ticker(ticker)
-    info = stock.info
-    summary = f"""
-    Company: {info.get('longName')}
-    Sector: {info.get('sector')} | Industry: {info.get('industry')}
-    Market Cap: ${info.get('marketCap'):,} | Trailing P/E: {info.get('trailingPE'):.1f}
-    Revenue TTM: ${info.get('totalRevenue'):,} | Net Income TTM: ${info.get('netIncomeToCommon'):,}
+
+# Modify your existing function to allow fetching all periods
+def get_historical_financial_indicators(ticker, frequency='quarterly', max_periods=None):
     """
-    # You can add historical prices, ratios, etc.
-    return summary
+    Fetch historical financial indicators from yfinance (quarterly or annual),
+    optionally limited to the most recent `max_periods` periods.
 
-def build_documents(ticker: str, data_dir = None):
-    docs = []
+    If max_periods=None, fetch all available.
     """
-    Build list of Document objects for the given ticker.
+    stock = yf.Ticker(ticker.upper())
 
-    - Always includes financial summary from yfinance
-    - If data_dir is provided and exists, also loads & parses files from that directory
-    - Later: can add news/transcripts/etc. independently of files
-    """
-    # 1. Financial snapshot as text document
-    fin_text = get_financial_summary(ticker)
-    docs.append(Document(text=fin_text, metadata={"ticker": ticker, "type": "financial_summary"}))
+    if frequency.lower() == 'quarterly':
+        income_src = stock.quarterly_income_stmt
+        balance_src = stock.quarterly_balance_sheet
+        cashflow_src = stock.quarterly_cashflow
+        freq_label = "Quarterly"
+    else:
+        income_src = stock.income_stmt
+        balance_src = stock.balance_sheet
+        cashflow_src = stock.cashflow
+        freq_label = "Annual"
 
-    if data_dir:
-    # 2. SEC filings via LlamaParse (best for tables in 2026)
-        parser = LlamaParse(api_key=os.getenv("LLAMA_PARSE_API_KEY"), result_type="markdown")
-        filings = ["latest_10k.pdf", "latest_10q.pdf"]  # download them first or automate
-        for file in filings:
-            parsed_docs = parser.load_data(f"{data_dir}/{file}")
-            for doc in parsed_docs:
-                doc.metadata.update({"ticker": ticker, "filing_type": "10-K" if "10k" in file else "10-Q"})
-            docs.extend(parsed_docs)
-    # 3. Add news / transcripts similarly (use Web readers or downloaded PDFs)
-    return docs
+    # Early exits for missing data
+    if income_src is None or income_src.empty:
+        print(f"{ticker}: No {freq_label} income statement available")
+        return pd.DataFrame()
+    if balance_src is None or balance_src.empty:
+        print(f"{ticker}: No {freq_label} balance sheet available")
+        return pd.DataFrame()
+    if cashflow_src is None or cashflow_src.empty:
+        print(f"{ticker}: No {freq_label} cash flow statement available")
+        return pd.DataFrame()
 
-# Build / update index
-def create_or_update_index(ticker: str):
-    docs = build_documents(ticker.upper())
-    node_parser = SentenceSplitter(chunk_size=1024, chunk_overlap=200)
-    nodes = node_parser.get_nodes_from_documents(docs)
-    # Simple in-memory for start -> later use Qdrant/Pinecone/Chroma
-    index = VectorStoreIndex(nodes)
-    index.storage_context.persist(persist_dir=f"./storage/{ticker}")
-    return index
+    # Transpose to have dates as index
+    income = income_src.T
+    balance = balance_src.T
+    cashflow = cashflow_src.T
 
-def get_historical_financial_indicators(ticker):
-    """
-    Fetches all available historical financial statements from yfinance,
-    computes key indicators/ratios for each period, and returns as a DataFrame (table).
-    """
-    stock = yf.Ticker(ticker)
+    # Limit to most recent if specified
+    if max_periods is not None:
+        income = income.iloc[:max_periods]
+        balance = balance.iloc[:max_periods]
+        cashflow = cashflow.iloc[:max_periods]
 
-    # Fetch annual statements (use .quarterly_income_stmt etc. for quarterly)
-    income = stock.income_stmt.T  # Transpose so rows are dates, columns are items
-    balance = stock.balance_sheet.T
-    cash_flow = stock.cashflow.T
+    # Find common dates
+    common_dates = income.index.intersection(balance.index).intersection(cashflow.index)
 
-    # Align on common dates (yfinance may have slight mismatches)
-    common_dates = income.index.intersection(balance.index).intersection(cash_flow.index)
+    if len(common_dates) == 0:
+        print(f"{ticker} ({freq_label}): No overlapping period dates")
+        return pd.DataFrame()
+
     income = income.loc[common_dates]
     balance = balance.loc[common_dates]
-    cash_flow = cash_flow.loc[common_dates]
+    cashflow = cashflow.loc[common_dates]
 
-    # Create DataFrame for indicators
-    indicators = pd.DataFrame(index=common_dates)
+    # Build the indicators DataFrame
+    df = pd.DataFrame(index=common_dates)
 
-    # Key items from income statement
-    indicators['Total Revenue'] = income.get('Total Revenue', pd.NA)
-    indicators['Gross Profit'] = income.get('Gross Profit', pd.NA)
-    indicators['Operating Income'] = income.get('Operating Income', pd.NA)
-    indicators['Net Income'] = income.get('Net Income', pd.NA)
-    indicators['Basic EPS'] = income.get('Basic EPS', pd.NA)
+    df['Total Revenue'] = income.get('Total Revenue', pd.NA)
+    df['Gross Profit'] = income.get('Gross Profit', pd.NA)
+    df['Operating Income'] = income.get('Operating Income', pd.NA)
+    df['Net Income'] = income.get('Net Income', pd.NA)
+    df['Basic EPS'] = income.get('Basic EPS', pd.NA)
 
-    # Key items from balance sheet
-    indicators['Total Assets'] = balance.get('Total Assets', pd.NA)
-    indicators['Total Liabilities'] = balance.get('Total Liabilities Net Minority Interest', pd.NA)
-    indicators['Shareholders Equity'] = balance.get('Common Stock Equity', pd.NA)
+    df['Total Assets'] = balance.get('Total Assets', pd.NA)
+    df['Total Liabilities'] = balance.get('Total Liabilities Net Minority Interest', pd.NA)
+    df['Shareholders Equity'] = balance.get('Common Stock Equity', pd.NA)
 
-    # Key items from cash flow
-    indicators['Operating Cash Flow'] = cash_flow.get('Operating Cash Flow', pd.NA)
-    indicators['Free Cash Flow'] = cash_flow.get('Free Cash Flow', pd.NA)
+    df['Operating Cash Flow'] = cashflow.get('Operating Cash Flow', pd.NA)
+    df['Free Cash Flow'] = cashflow.get('Free Cash Flow', pd.NA)
 
-    # Computed ratios (add more as needed for your analysis)
-    indicators['Gross Margin'] = indicators['Gross Profit'] / indicators['Total Revenue']
-    indicators['Operating Margin'] = indicators['Operating Income'] / indicators['Total Revenue']
-    indicators['Net Margin'] = indicators['Net Income'] / indicators['Total Revenue']
-    indicators['ROE'] = indicators['Net Income'] / indicators['Shareholders Equity']
-    indicators['ROA'] = indicators['Net Income'] / indicators['Total Assets']
-    indicators['Debt to Equity'] = indicators['Total Liabilities'] / indicators['Shareholders Equity']
+    # Computed ratios
+    df['Gross Margin'] = df['Gross Profit'] / df['Total Revenue']
+    df['Operating Margin'] = df['Operating Income'] / df['Total Revenue']
+    df['Net Margin'] = df['Net Income'] / df['Total Revenue']
+    df['ROE'] = df['Net Income'] / df['Shareholders Equity']
+    df['ROA'] = df['Net Income'] / df['Total Assets']
+    df['Debt to Equity'] = df['Total Liabilities'] / df['Shareholders Equity']
 
-    # Finalize table
-    indicators = indicators.reset_index().rename(columns={'index': 'Date'})
-    indicators['Ticker'] = ticker
+    # Finalize
+    df = df.sort_index(ascending=False)  # most recent first
+    df = df.reset_index().rename(columns={'index': 'Period End Date'})
+    df['Ticker'] = ticker.upper()
+    df['Frequency'] = freq_label
 
-    return indicators
+    # Format date as string for consistency
+    df['Period End Date'] = pd.to_datetime(df['Period End Date']).dt.strftime('%Y-%m-%d')
+
+    return df
+
 
 # Example integration into build_documents (modify as per your existing setup)
-def build_documents(tickers, data_dir=None):
+def build_financial_docs(tickers, max_quarters=12):
     documents = []
+
     for ticker in tickers:
-        # Fetch historical indicators table
-        indicators_df = get_historical_financial_indicators(ticker)
-        # Convert to Markdown to preserve table structure for RAG embedding
-        indicators_md = indicators_df.to_markdown(index=False)
-        # Create Document for ingestion into vector store
+        # Get last 12 quarters
+        df_q = get_historical_financial_indicators(ticker, frequency='quarterly', max_periods=max_quarters)
+
+        if df_q.empty:
+            continue
+
+        md_table = df_q.to_markdown(index=False)   # assuming tabulate is installed
+
+        text = (
+            f"**Last {len(df_q)} Quarterly Financial Indicators — {ticker}**\n\n"
+            f"Most recent quarter: {df_q['Period End'].iloc[0]}\n"
+            f"Oldest in this set: {df_q['Period End'].iloc[-1]}\n\n"
+            f"{md_table}"
+        )
+
         doc = Document(
-            text=f"Historical financial indicators for {ticker}:\n\n{indicators_md}",
-            metadata={"ticker": ticker, "type": "financial_indicators", "source": "yfinance"}
+            text=text,
+            metadata={
+                "ticker": ticker.upper(),
+                "type": "financial_indicators",
+                "frequency": "Quarterly",
+                "periods": len(df_q),
+                "most_recent": df_q['Period End'].iloc[0],
+                "source": "yfinance"
+            }
         )
         documents.append(doc)
-        # Optional: Persist raw table to SQLite for structured storage/queries
-        # (e.g., for hybrid RAG with SQL tools)
-        import sqlite3
-        conn = sqlite3.connect('stock_data.db')  # Your storage DB path
-        indicators_df.to_sql('financial_indicators', conn, if_exists='append', index=False)
-        conn.close()
 
-    # Add other sources (e.g., news, competitors) here as before
-
+    # You can also add annual version the same way if desired
     return documents
 
-print(get_historical_financial_indicators('aapl'))
-# Usage example (run this to ingest)
-if __name__ == "__main__":
-    from dotenv import load_dotenv
-    load_dotenv('config.env')
+def create_or_update_index(ticker: str):
+    docs = build_financial_docs(ticker.upper())  # your function
 
-    # Your tickers list, e.g., from prior Nasdaq/Dow fetch
-    tickers = ['AAPL', 'MSFT']  # Replace with your list
-    docs = build_documents(tickers)
-    # Then build/index your vector store as before, e.g.:
-    # from llama_index.core import VectorStoreIndex
-    # index = VectorStoreIndex.from_documents(docs)
-    # index.storage_context.persist(persist_dir="./storage")
+    node_parser = SentenceSplitter(chunk_size=1024, chunk_overlap=200)
+    nodes = node_parser.get_nodes_from_documents(docs)
+
+    persist_dir = f"./storage/{ticker}"
+
+    try:
+        # Try to load existing
+        storage_context = StorageContext.from_defaults(persist_dir=persist_dir)
+        index = load_index_from_storage(storage_context)
+        # If exists → insert new nodes
+        index.insert_nodes(nodes)
+    except:
+        # First time → create new
+        index = VectorStoreIndex(nodes)
+
+    index.storage_context.persist(persist_dir=persist_dir)
+    return index
+#print(get_historical_financial_indicators('NVDA'))
+#print(build_financial_docs(['NVDA']))
+#print(create_or_update_index(['NVDA']))
+# New function to update records in SQLite storage
+def update_financial_records(ticker, db_path='stock_data.db'):
+    """
+    Checks and updates financial records for a ticker in SQLite storage.
+
+    - Fetches latest from yfinance (all available periods).
+    - For annual: keep most recent 8 years.
+    - For quarterly: keep most recent 12 quarters.
+    - If up to date (latest period matches), do nothing.
+    - Else: add new periods, then trim to max keep (deque-like: remove oldest if excess).
+    """
+    conn = sqlite3.connect(db_path)
+    ticker = ticker.upper()
+
+    for freq, max_keep in [('annual', 8), ('quarterly', 12)]:
+        freq_label = freq.capitalize()
+
+        # Fetch all available latest data from yfinance
+        df_new = get_historical_financial_indicators(ticker, frequency=freq, max_periods=None)
+
+        if df_new.empty:
+            print(f"Skipping update for {ticker} {freq_label}: No new data available")
+            continue
+
+        # Read existing from DB
+        query = """
+        SELECT * FROM financial_indicators
+        WHERE Ticker = ? AND Frequency = ?
+        ORDER BY `Period End Date` DESC
+        """
+        df_existing = pd.read_sql_query(query, conn, params=(ticker, freq_label))
+
+        if not df_existing.empty:
+            latest_existing_date = df_existing['Period End Date'].iloc[0]
+            latest_new_date = df_new['Period End Date'].iloc[0]
+
+            if latest_existing_date >= latest_new_date:
+                print(f"{ticker} {freq_label} is up to date (latest: {latest_existing_date})")
+                continue  # No update needed
+
+        # Combine existing + new, drop duplicates based on date
+        df_combined = pd.concat([df_existing, df_new], ignore_index=True)
+        df_combined = df_combined.drop_duplicates(subset=['Period End Date'], keep='last')  # keep newest if conflict
+
+        # Sort by date DESC (most recent first)
+        df_combined['Period End Date'] = pd.to_datetime(df_combined['Period End Date'])
+        df_combined = df_combined.sort_values('Period End Date', ascending=False).reset_index(drop=True)
+
+        # Trim to max_keep (remove oldest if more)
+        df_trimmed = df_combined.head(max_keep)
+
+        # Overwrite in DB: delete old, insert new
+        delete_query = """
+        DELETE FROM financial_indicators
+        WHERE Ticker = ? AND Frequency = ?
+        """
+        conn.execute(delete_query, (ticker, freq_label))
+
+        df_trimmed.to_sql('financial_indicators', conn, if_exists='append', index=False)
+
+        print(f"Updated {ticker} {freq_label}: Kept {len(df_trimmed)} periods (latest: {df_trimmed['Period End Date'].iloc[0].strftime('%Y-%m-%d')})")
+
+    conn.commit()
+    conn.close()
+
+
+if __name__ == "__main__":
+    # Assume your DB is set up with the table (create if not)
+    conn = sqlite3.connect('stock_data.db')
+    # Create table if not exists (adjust columns to match your df)
+    create_table_query = """
+    CREATE TABLE IF NOT EXISTS financial_indicators (
+        Ticker TEXT,
+        Frequency TEXT,
+        `Period End Date` TEXT,
+        `Total Revenue` FLOAT,
+        `Gross Profit` FLOAT,
+        `Operating Income` FLOAT,
+        `Net Income` FLOAT,
+        `Basic EPS` FLOAT,
+        `Total Assets` FLOAT,
+        `Total Liabilities` FLOAT,
+        `Shareholders Equity` FLOAT,
+        `Operating Cash Flow` FLOAT,
+        `Free Cash Flow` FLOAT,
+        `Gross Margin` FLOAT,
+        `Operating Margin` FLOAT,
+        `Net Margin` FLOAT,
+        ROE FLOAT,
+        ROA FLOAT,
+        `Debt to Equity` FLOAT
+    )
+    """
+    conn.execute(create_table_query)
+    conn.close()
+
+    # Update for a ticker
+    update_financial_records('NVDA')

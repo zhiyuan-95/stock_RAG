@@ -1,7 +1,7 @@
 import ingest
 import query
 
-def get_index_tickers(index):
+def get_index_tickers(index):# get tickers for sp500, nasdaq100, and dow
     import pandas as pd
     import requests
     from io import StringIO
@@ -46,4 +46,5 @@ def get_index_tickers(index):
     # If we reach here → no suitable table found
     raise ValueError(f"No ticker column ('Symbol' or 'Ticker') found in any table for {index}")
 
-sp = get_index_tickers('sp')
+for t in ['meta','aapl','msft', 'tsla']:
+    ingest.create_or_update_index(t)
