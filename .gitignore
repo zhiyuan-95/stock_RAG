@@ -1,5 +1,5 @@
 *.env
 *storage
 *__pycache__
-*stock_data
-*.txt
+*.db
+*.md
