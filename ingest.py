@@ -104,67 +104,92 @@ def get_historical_financial_indicators(ticker, frequency='quarterly', max_perio
 
     return df
 
+def initiate_sql_table():
+    # it deletes old data...run with caution
+    check = input("it deletes old data in stock_data file...run with caution, are you sure you want to delete and init? Y/N")
+    if check.upper() == 'Y':
+        conn = sqlite3.connect('stock_data.db')
+        cursor = conn.cursor()
 
+        # Drop the old table (warning: deletes all existing data!)
+        cursor.execute("DROP TABLE IF EXISTS financial_indicators")
+
+        # Now recreate with the correct columns (your current CREATE statement)
+        create_table_query = """
+        CREATE TABLE financial_indicators (
+            Ticker TEXT,
+            Frequency TEXT,
+            `Period End Date` TEXT,
+            `Total Revenue` FLOAT,
+            `Gross Profit` FLOAT,
+            `Operating Income` FLOAT,
+            `Net Income` FLOAT,
+            `Basic EPS` FLOAT,
+            `Total Assets` FLOAT,
+            `Total Liabilities` FLOAT,
+            `Shareholders Equity` FLOAT,
+            `Operating Cash Flow` FLOAT,
+            `Free Cash Flow` FLOAT,
+            `Gross Margin` FLOAT,
+            `Operating Margin` FLOAT,
+            `Net Margin` FLOAT,
+            ROE FLOAT,
+            ROA FLOAT,
+            `Debt to Equity` FLOAT
+        )
+        """
+        cursor.execute(create_table_query)
+        conn.commit()
+        conn.close()
+        print("Table dropped and recreated successfully.")
+    else:
+        print('sql table not initialized...')
 # Example integration into build_documents (modify as per your existing setup)
-def build_financial_docs(tickers, max_quarters=12):
+def build_financial_docs(ticker, db_path='stock_data.db', max_quarters=12, max_annual=8):
     documents = []
+    conn = sqlite3.connect(db_path)
 
-    for ticker in tickers:
-        # Get last 12 quarters
-        df_q = get_historical_financial_indicators(ticker, frequency='quarterly', max_periods=max_quarters)
+    ticker = ticker.upper()
 
-        if df_q.empty:
+    for freq, max_keep in [('Quarterly', max_quarters), ('Annual', max_annual)]:
+        query = """
+        SELECT * FROM financial_indicators
+        WHERE Ticker = ? AND Frequency = ?
+        ORDER BY `Period End Date` DESC
+        LIMIT ?
+        """
+        df = pd.read_sql_query(query, conn, params=(ticker, freq, max_keep))
+
+        if df.empty:
             continue
 
-        md_table = df_q.to_markdown(index=False)   # assuming tabulate is installed
+        md_table = df.to_markdown(index=False)
 
         text = (
-            f"**Last {len(df_q)} Quarterly Financial Indicators — {ticker}**\n\n"
-            f"Most recent quarter: {df_q['Period End'].iloc[0]}\n"
-            f"Oldest in this set: {df_q['Period End'].iloc[-1]}\n\n"
-            f"{md_table}"
+            f"**Latest {len(df)} {freq} Financial Indicators — {ticker}**\n\n"
+            f"Most recent: {df['Period End Date'].iloc[0]}\n"
+            f"Oldest shown: {df['Period End Date'].iloc[-1]}\n\n"
+            f"{md_table}\n\n"
+            f"Last updated: {datetime.now().strftime('%Y-%m-%d')}"
         )
 
         doc = Document(
             text=text,
             metadata={
-                "ticker": ticker.upper(),
+                "ticker": ticker,
                 "type": "financial_indicators",
-                "frequency": "Quarterly",
-                "periods": len(df_q),
-                "most_recent": df_q['Period End'].iloc[0],
-                "source": "yfinance"
+                "frequency": freq,
+                "periods": len(df),
+                "most_recent": df['Period End Date'].iloc[0],
+                "source": "yfinance + SQLite",
+                "table_rows": len(df)
             }
         )
         documents.append(doc)
 
-    # You can also add annual version the same way if desired
+    conn.close()
     return documents
 
-def create_or_update_index(ticker: str):
-    docs = build_financial_docs(ticker.upper())  # your function
-
-    node_parser = SentenceSplitter(chunk_size=1024, chunk_overlap=200)
-    nodes = node_parser.get_nodes_from_documents(docs)
-
-    persist_dir = f"./storage/{ticker}"
-
-    try:
-        # Try to load existing
-        storage_context = StorageContext.from_defaults(persist_dir=persist_dir)
-        index = load_index_from_storage(storage_context)
-        # If exists → insert new nodes
-        index.insert_nodes(nodes)
-    except:
-        # First time → create new
-        index = VectorStoreIndex(nodes)
-
-    index.storage_context.persist(persist_dir=persist_dir)
-    return index
-#print(get_historical_financial_indicators('NVDA'))
-#print(build_financial_docs(['NVDA']))
-#print(create_or_update_index(['NVDA']))
-# New function to update records in SQLite storage
 def update_financial_records(ticker, db_path='stock_data.db'):
     """
     Checks and updates financial records for a ticker in SQLite storage.
@@ -205,8 +230,12 @@ def update_financial_records(ticker, db_path='stock_data.db'):
                 continue  # No update needed
 
         # Combine existing + new, drop duplicates based on date
-        df_combined = pd.concat([df_existing, df_new], ignore_index=True)
-        df_combined = df_combined.drop_duplicates(subset=['Period End Date'], keep='last')  # keep newest if conflict
+        if df_existing.empty:
+            df_combined = df_new.copy()
+        elif df_new.empty:
+            df_combined = df_existing.copy()
+        else:
+            df_combined = pd.concat([df_existing, df_new], ignore_index=True)        # keep newest if conflict
 
         # Sort by date DESC (most recent first)
         df_combined['Period End Date'] = pd.to_datetime(df_combined['Period End Date'])
@@ -229,36 +258,44 @@ def update_financial_records(ticker, db_path='stock_data.db'):
     conn.commit()
     conn.close()
 
-
-if __name__ == "__main__":
-    # Assume your DB is set up with the table (create if not)
-    conn = sqlite3.connect('stock_data.db')
-    # Create table if not exists (adjust columns to match your df)
-    create_table_query = """
-    CREATE TABLE IF NOT EXISTS financial_indicators (
-        Ticker TEXT,
-        Frequency TEXT,
-        `Period End Date` TEXT,
-        `Total Revenue` FLOAT,
-        `Gross Profit` FLOAT,
-        `Operating Income` FLOAT,
-        `Net Income` FLOAT,
-        `Basic EPS` FLOAT,
-        `Total Assets` FLOAT,
-        `Total Liabilities` FLOAT,
-        `Shareholders Equity` FLOAT,
-        `Operating Cash Flow` FLOAT,
-        `Free Cash Flow` FLOAT,
-        `Gross Margin` FLOAT,
-        `Operating Margin` FLOAT,
-        `Net Margin` FLOAT,
-        ROE FLOAT,
-        ROA FLOAT,
-        `Debt to Equity` FLOAT
-    )
+def refresh_ticker_data_and_index(ticker: str, db_path='stock_data.db', max_quarters=12, max_annual=8):
     """
-    conn.execute(create_table_query)
-    conn.close()
+    End-to-end refresh for one ticker:
+    1. Update structured data in SQLite
+    2. Build fresh LlamaIndex Documents from the DB
+    3. Upsert into the vector index
+    """
+    ticker = ticker.upper()
 
-    # Update for a ticker
-    update_financial_records('NVDA')
+    # Step 1: refresh numbers in SQL
+    update_financial_records(ticker, db_path=db_path)
+
+    # Step 2: build documents from the fresh DB
+    docs = build_financial_docs(ticker, db_path=db_path,
+                               max_quarters=max_quarters, max_annual=max_annual)
+
+    if not docs:
+        print(f"No documents generated for {ticker} — skipping index update")
+        return None
+
+    # Step 3: upsert into vector store
+    node_parser = SentenceSplitter(chunk_size=1024, chunk_overlap=200)
+    nodes = node_parser.get_nodes_from_documents(docs)
+
+    persist_dir = f"./storage/{ticker}"
+
+    try:
+        storage_context = StorageContext.from_defaults(persist_dir=persist_dir)
+        index = load_index_from_storage(storage_context)
+        index.insert_nodes(nodes)
+        print(f"Updated existing index for {ticker}")
+    except FileNotFoundError:
+        index = VectorStoreIndex(nodes)
+        print(f"Created new index for {ticker}")
+
+    index.storage_context.persist(persist_dir=persist_dir)
+    print(f"Index successfully refreshed for {ticker}")
+
+
+
+refresh_ticker_data_and_index('aapl')
