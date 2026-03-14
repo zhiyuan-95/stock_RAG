@@ -1,6 +1,6 @@
 import sqlite3
 import yfinance as yf
-from llama_index.core import Settings, Document, VectorStoreIndex, StorageContext
+from llama_index.core import (Settings, Document, VectorStoreIndex, StorageContext,load_index_from_storage)
 from datetime import datetime
 from llama_index.core.node_parser import SentenceSplitter
 import pandas as pd

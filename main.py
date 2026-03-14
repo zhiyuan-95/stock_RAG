@@ -46,7 +46,5 @@ def get_index_tickers(index):# get tickers for sp500, nasdaq100, and dow
     # If we reach here → no suitable table found
     raise ValueError(f"No ticker column ('Symbol' or 'Ticker') found in any table for {index}")
 
-for t in ['meta','aapl','msft', 'tsla']:
-    ingest.refresh_ticker_data_and_index(t)
-
-query.analyze_company('meta')
+customers = "what kind of company is dna?"
+print(query.analyze_company('dna'))
