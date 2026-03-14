@@ -18,19 +18,19 @@
 
 6\. get industrial/sector average of all different indicators
 
-7\. for each stock, get a place to store its major compatitors
+7\. for each stock, get a place to store its major competitors
 
 
 
 **stage 2 (news collection)**
 
-8\. get major headlines every week, US, international, and store it in vector storage(probabily I am gonna need a ranking system to rate the influence of on the stock market)
+8\. get major headlines every week, US, international, and store it in vector storage(probably I am gonna need a ranking system to rate the influence of on the stock market)
 
 9\. collect corresponding news for each stocks...
 
 how often should I update them?
 
-do I acutually need all the news for all the stocks in the market?
+do I actually need all the news for all the stocks in the market?
 
 
 

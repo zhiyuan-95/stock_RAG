@@ -1,10 +1,7 @@
 *.env
 *storage
 *__pycache__
-<<<<<<< HEAD
 *stock_data
 *.txt
-=======
 *.db
 *.md
->>>>>>> main
