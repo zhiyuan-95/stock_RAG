@@ -1,4 +1,4 @@
-# ignore all .env files
 *.env
 *storage
 *__pycache__
+*stock_data
