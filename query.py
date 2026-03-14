@@ -61,11 +61,12 @@ ANALYSIS_PROMPT = PromptTemplate(
             Answer in clear, professional language:
         """
     )
+
 INVESTMENT_ADVICE_PROMPT = PromptTemplate(
     """
     You are a senior equity research analyst. Provide balanced, factual, data-grounded short-term and long-term investment advice for {ticker}, focusing on potential opportunities, risks, and catalysts.
 
-    Use ONLY the provided context (financial indicators, reports, news, customers, competitors). Do NOT make up information or speculate beyond the data. This is not personalized financial advice—advise consulting professionals.
+    combine what you know about {ticker} and provided context (financial indicators, reports). Do NOT make up information or speculate beyond the data. This is personalized financial advice—advise consulting professionals.
 
     Structure your answer exactly like this:
 
@@ -99,11 +100,9 @@ INVESTMENT_ADVICE_PROMPT = PromptTemplate(
     ---------------------
     {context_str}
     ---------------------
-
-    Query: {query_str}
+    Query: {custom_query}
     Answer in clear, professional language:
-    """
-)
+    """)
 
 # In get_analysis_engine or analyze_company
 def get_analysis_engine(
@@ -134,13 +133,15 @@ def get_analysis_engine(
 
 
 def analyze_company(ticker: str, custom_query: Optional[str] = None) -> str:
-    """Main function: get full analysis or answer custom question"""
     engine = get_analysis_engine(ticker)
+
     if custom_query:
+        # Just pass the string → LlamaIndex handles context_str automatically
         response = engine.query(custom_query)
     else:
-        # Default full company analysis
+        # Default question → also automatic
         response = engine.query(
-            INVESTMENT_ADVICE_PROMPT.format(ticker=ticker.upper(), query_str=query_str, context_str=context_str)
-            )
+            f"Provide short-term and long-term investment advice for {ticker.upper()}"
+        )
+
     return str(response)

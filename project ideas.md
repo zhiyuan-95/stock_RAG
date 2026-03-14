@@ -36,5 +36,11 @@ do I acutually need all the news for all the stocks in the market?
 
 **stage 3 (smarter)**
 
-10\. fine tuning the base model with research papar
+10\. fine tuning the base model with research paper
+
+
+
+### **questions**
+
+1. 
 
