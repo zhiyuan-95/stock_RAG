@@ -47,6 +47,12 @@ def get_index_tickers(index):# get tickers for sp500, nasdaq100, and dow
     raise ValueError(f"No ticker column ('Symbol' or 'Ticker') found in any table for {index}")
 
 def ingest_companies(tickers):
-    for ticker in tickers: ingest.refresh_ticker_data_and_index(ticker)
+    for ticker in tickers:
+        ingest.refresh_ticker_data_and_index(ticker)
+        print()
+def ask_question(ticker,query_str):
+    query.analyze_company(ticker, query_str)
+
 companies = ['META', 'AAPL', 'TSLA','GOOG','NVDA']
-ingest_companies(companies)
+#ingest_companies(companies)
+print(ask_question('meta', 'what do you think about meta?'))
