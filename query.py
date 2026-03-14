@@ -106,16 +106,11 @@ INVESTMENT_ADVICE_PROMPT = PromptTemplate(
 )
 
 # In get_analysis_engine or analyze_company
-response = engine.query(
-    INVESTMENT_ADVICE_PROMPT.format(ticker=ticker.upper(), query_str=query_str, context_str=context_str)
-)
-
 def get_analysis_engine(
         ticker: str,
         similarity_top_k: int = 2,
-#        similarity_cutoff: float = 0.6,
-        storage_base_dir: str = "./storage",
-    ):
+        similarity_cutoff: float = 0.6,
+        storage_base_dir: str = "./storage"):
     persist_dir = os.path.join(storage_base_dir, ticker.upper())
 
     if not os.path.exists(persist_dir):
@@ -130,8 +125,6 @@ def get_analysis_engine(
         index=index,
         similarity_top_k=similarity_top_k,
     )
-#    print(retriever.retrieve("NVDA financials"))
-#    prompt = ANALYSIS_PROMPT.partial_format(ticker=ticker.upper())
     response_synthesizer = get_response_synthesizer()
 
     return RetrieverQueryEngine(
@@ -143,7 +136,6 @@ def get_analysis_engine(
 def analyze_company(ticker: str, custom_query: Optional[str] = None) -> str:
     """Main function: get full analysis or answer custom question"""
     engine = get_analysis_engine(ticker)
-
     if custom_query:
         response = engine.query(custom_query)
     else:

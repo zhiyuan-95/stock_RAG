@@ -24,6 +24,8 @@ def env():
     3. refresh_ticker_data_and_index(vector store)
         -> which includes previous two steps, and parse the doc file and save it into vector index
 
+    basically, I can just run refresh_ticker_data_and_index(), which does everything
+    I can also only run update_financial_records() which only updates sql_db.
 """
 
 

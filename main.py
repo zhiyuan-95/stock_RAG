@@ -47,4 +47,6 @@ def get_index_tickers(index):# get tickers for sp500, nasdaq100, and dow
     raise ValueError(f"No ticker column ('Symbol' or 'Ticker') found in any table for {index}")
 
 for t in ['meta','aapl','msft', 'tsla']:
-    ingest.create_or_update_index(t)
+    ingest.refresh_ticker_data_and_index(t)
+
+query.analyze_company('meta')
