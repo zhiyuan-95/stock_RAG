@@ -61,7 +61,54 @@ ANALYSIS_PROMPT = PromptTemplate(
             Answer in clear, professional language:
         """
     )
+INVESTMENT_ADVICE_PROMPT = PromptTemplate(
+    """
+    You are a senior equity research analyst. Provide balanced, factual, data-grounded short-term and long-term investment advice for {ticker}, focusing on potential opportunities, risks, and catalysts.
 
+    Use ONLY the provided context (financial indicators, reports, news, customers, competitors). Do NOT make up information or speculate beyond the data. This is not personalized financial advice—advise consulting professionals.
+
+    Structure your answer exactly like this:
+
+    1. Key Financial Trends
+       - Recent quarterly indicators (e.g., revenue growth, margins, ROE/ROA from last 4–12 quarters)
+       - Multi-year annual trends (e.g., 3–8 year patterns in debt, cash flow, EPS)
+
+    2. Market Positioning
+       - Major customers, suppliers, partners, and concentration risks
+       - Key competitors, strengths/weaknesses, and relative performance
+
+    3. Recent News & External Factors
+       - Highlights from latest reports/news and their implications
+
+    4. Short-Term Advice (1–6 months)
+       - Tactical outlook: Based on recent quarters, earnings momentum, news events (e.g., product launches, macro factors)
+       - Potential catalysts/risks: e.g., upcoming earnings, supply chain issues
+       - Advice: Hold/Buy/Sell rationale, with probability estimates if data supports
+
+    5. Long-Term Advice (3–10+ years)
+       - Strategic outlook: Based on multi-year trends, competitive moat, growth drivers (e.g., market expansion, innovation)
+       - Potential catalysts/risks: e.g., industry shifts, regulatory changes
+       - Advice: Hold/Buy/Sell rationale, with valuation considerations (e.g., compared to historical averages)
+
+    6. Overall Recommendation
+       - Balanced summary with key things to watch
+
+    Cite sources (e.g., quarter/year from indicators, report date, news date) inline.
+
+    Context information:
+    ---------------------
+    {context_str}
+    ---------------------
+
+    Query: {query_str}
+    Answer in clear, professional language:
+    """
+)
+
+# In get_analysis_engine or analyze_company
+response = engine.query(
+    INVESTMENT_ADVICE_PROMPT.format(ticker=ticker.upper(), query_str=query_str, context_str=context_str)
+)
 
 def get_analysis_engine(
         ticker: str,
@@ -102,7 +149,6 @@ def analyze_company(ticker: str, custom_query: Optional[str] = None) -> str:
     else:
         # Default full company analysis
         response = engine.query(
-            f"Provide a complete fundamental analysis of {ticker}"
-        )
-
+            INVESTMENT_ADVICE_PROMPT.format(ticker=ticker.upper(), query_str=query_str, context_str=context_str)
+            )
     return str(response)

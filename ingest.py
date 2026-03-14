@@ -1,18 +1,30 @@
 import sqlite3
 import yfinance as yf
 from llama_index.core import Settings, Document, VectorStoreIndex, StorageContext
-from llama_index.llms.openai import OpenAI
-from llama_index.embeddings.openai import OpenAIEmbedding
 from datetime import datetime
 from llama_index.core.node_parser import SentenceSplitter
 import pandas as pd
-from dotenv import load_dotenv
 import os
 
-load_dotenv('config.env')
+def env():
+    from dotenv import load_dotenv
+    from llama_index.embeddings.openai import OpenAIEmbedding
+    from llama_index.llms.openai import OpenAI
+    load_dotenv('config.env')
+    Settings.llm = OpenAI(model="gpt-4o", temperature=0.1)
+    Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small", api_key = os.getenv('OPENAI_API_KEY'))
 
-Settings.llm = OpenAI(model="gpt-4o", temperature=0.1)
-Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small", api_key = os.getenv('OPENAI_API_KEY'))
+"""
+    ingestion and updating process
+    1. update_financial_records(sql)
+        -> create or update the record of all quarterly and annuelly record of financial indicators in sql
+
+    2. build_financial_docs(doc file) -> create llamaindex doc file
+
+    3. refresh_ticker_data_and_index(vector store)
+        -> which includes previous two steps, and parse the doc file and save it into vector index
+
+"""
 
 
 # Modify your existing function to allow fetching all periods
@@ -297,5 +309,4 @@ def refresh_ticker_data_and_index(ticker: str, db_path='stock_data.db', max_quar
     print(f"Index successfully refreshed for {ticker}")
 
 
-
-refresh_ticker_data_and_index('aapl')
+#refresh_ticker_data_and_index('aapl')
