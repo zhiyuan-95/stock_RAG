@@ -53,6 +53,7 @@ def ingest_companies(tickers):
 def ask_question(ticker,query_str):
     query.analyze_company(ticker, query_str)
 
-companies = ['META', 'AAPL', 'TSLA','GOOG','NVDA']
-#ingest_companies(companies)
-print(ask_question('meta', 'what do you think about meta?'))
+#companies = ['META', 'AAPL', 'TSLA','GOOG','NVDA']
+ingest_companies(['nus'])
+#print(ask_question('meta', 'what do you think about meta?'))
+print(query.analyze_company('nus', 'tell about this company'))

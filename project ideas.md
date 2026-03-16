@@ -36,11 +36,13 @@ do I actually need all the news for all the stocks in the market?
 
 **stage 3 (smarter)**
 
-10\. fine tuning the base model with research paper
+10\. get better prompt to get better response
+
+11\. fine tuning the base model with research paper
 
 
 
 ### **questions**
 
-1. 
+1. does the language model can actually understand those time series data of those financial indicators in doc and give a meaningful response? 
 

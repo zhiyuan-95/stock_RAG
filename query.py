@@ -68,30 +68,28 @@ INVESTMENT_ADVICE_PROMPT = PromptTemplate(
 
     combine what you know about {ticker} and provided context (financial indicators, reports). Do NOT make up information or speculate beyond the data. This is personalized financial advice—advise consulting professionals.
 
+    tell the me what the number numer of each financial indicator represent, make those indicator easy to understand for me
+
     Structure your answer exactly like this:
 
-    1. Key Financial Trends
+    1. Introduction
+        - introduction of this company, what kind of business do they do.
+         
+    2. Key Financial Trends
        - Recent quarterly indicators (e.g., revenue growth, margins, ROE/ROA from last 4–12 quarters)
        - Multi-year annual trends (e.g., 3–8 year patterns in debt, cash flow, EPS)
 
-    2. Market Positioning
-       - Major customers, suppliers, partners, and concentration risks
-       - Key competitors, strengths/weaknesses, and relative performance
-
-    3. Recent News & External Factors
-       - Highlights from latest reports/news and their implications
-
-    4. Short-Term Advice (1–6 months)
+    3. Short-Term Advice (1–6 months)
        - Tactical outlook: Based on recent quarters, earnings momentum, news events (e.g., product launches, macro factors)
        - Potential catalysts/risks: e.g., upcoming earnings, supply chain issues
        - Advice: Hold/Buy/Sell rationale, with probability estimates if data supports
 
-    5. Long-Term Advice (3–10+ years)
+    4. Long-Term Advice (3–10+ years)
        - Strategic outlook: Based on multi-year trends, competitive moat, growth drivers (e.g., market expansion, innovation)
        - Potential catalysts/risks: e.g., industry shifts, regulatory changes
        - Advice: Hold/Buy/Sell rationale, with valuation considerations (e.g., compared to historical averages)
 
-    6. Overall Recommendation
+    5. Overall Recommendation
        - Balanced summary with key things to watch
 
     Cite sources (e.g., quarter/year from indicators, report date, news date) inline.
