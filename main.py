@@ -1,4 +1,4 @@
-import ingest
+import ingest_stock
 import query
 
 def get_index_tickers(index):# get tickers for sp500, nasdaq100, and dow
@@ -48,7 +48,7 @@ def get_index_tickers(index):# get tickers for sp500, nasdaq100, and dow
 
 def ingest_companies(tickers):
     for ticker in tickers:
-        ingest.refresh_ticker_data_and_index(ticker)
+        ingest_stock.refresh_ticker_data_and_index(ticker)
         print()
 def ask_question(ticker,query_str):
     query.analyze_company(ticker, query_str)
