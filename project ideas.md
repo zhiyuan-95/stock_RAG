@@ -8,7 +8,7 @@
 
 3\. get upto date market environment
 
-(fed interest rate, GDP, inflation rate(CPI), unemployment rate, ADP National Employment Report, US BLS Employment Situation Report, PMI(manuf, service), VIX, bond yeild)
+(fed interest rate, GDP, inflation rate(CPI), unemployment rate, ADP National Employment Report, US BLS Employment Situation Report, PMI(manuf, service))
 
 
 
@@ -16,7 +16,7 @@
 
 5\. get current price and track moving average of all major indicators
 
-6\. get industrial/sector average of all different indicators
+6\. get industrial/sector average of all different indicators, including  VIX, bond yeild
 
 7\. for each stock, get a place to store its major competitors
 
@@ -44,5 +44,6 @@ do I actually need all the news for all the stocks in the market?
 
 ### **questions**
 
-1. does the language model can actually understand those time series data of those financial indicators in doc and give a meaningful response? 
+1. does the language model can actually understand those time series data of those financial indicators in doc and give a meaningful response?
+2. verify if the answer from the llm actually match with actually data
 

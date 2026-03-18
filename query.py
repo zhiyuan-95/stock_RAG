@@ -1,145 +1,174 @@
-# query.py
-from typing import Optional
-from llama_index.core import (
-    Settings,
-    load_index_from_storage,
-    StorageContext,
-    PromptTemplate,
-    get_response_synthesizer
-)
-from llama_index.core.query_engine import RetrieverQueryEngine
-from llama_index.core.retrievers import VectorIndexRetriever
-from llama_index.core.postprocessor import SimilarityPostprocessor
-from dotenv import load_dotenv
 import os
 
-load_dotenv('config.env')
+from llama_index.core import Settings, StorageContext, PromptTemplate, load_index_from_storage
+from llama_index.core.retrievers import VectorIndexRetriever
 
-# Reuse the same global settings as ingest.py (you can move to a config.py later)
-from llama_index.llms.openai import OpenAI
-from llama_index.embeddings.openai import OpenAIEmbedding
+import ingest_macro
+import ingest_stock
 
-Settings.llm = OpenAI(model="gpt-4o-mini", temperature=0.1)
-Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small", api_key = os.getenv('OPENAI_API_KEY'))
 
-# I am not adding this right now, since I don't have the function that analysis new
+DEFAULT_STOCK_STORAGE_BASE_DIR = ingest_stock.DEFAULT_STOCK_STORAGE_BASE_DIR
+DEFAULT_MACRO_STORAGE_DIR = ingest_macro.DEFAULT_MACRO_STORAGE_DIR
+
+
 ANALYSIS_PROMPT = PromptTemplate(
-        """
-            You are a senior equity research analyst. Provide a concise, factual, data-grounded analysis of {ticker}.
-
-            Use ONLY the provided context. Do NOT make up information.
-
-            Structure your answer exactly like this:
-
-            1. Company Overview & Key Financials
-               - Current metrics (market cap, P/E, revenue TTM, etc.)
-               - Recent trends
-
-            2. Highlights from Latest Filings
-               - Revenue drivers, risks, strategy
-
-            3. Recent News & Sentiment
-               - Key events and potential impact
-
-            4. Customers / Suppliers / Partners
-               - Major mentioned ones + concentration risks
-
-            5. Competitors & Market Positioning
-               - Key rivals + strengths/weaknesses
-
-            6. Overall Considerations
-               - Strengths, weaknesses, things to watch
-
-            Cite sources (filing type/date, news date, etc.) when possible.
-
-            Context information:
-            ---------------------
-            {{context_str}}
-            ---------------------
-
-            Query: {{query_str}}
-            Answer in clear, professional language:
-        """
-    )
-
-INVESTMENT_ADVICE_PROMPT = PromptTemplate(
     """
-    You are a senior equity research analyst. Provide balanced, factual, data-grounded short-term and long-term investment advice for {ticker}, focusing on potential opportunities, risks, and catalysts.
+You are an equity research assistant.
+Use the retrieved stock-specific context and macro market context to answer the user's question.
+Ground the answer in the provided context, call out material risks, and mention when information is missing.
 
-    combine what you know about {ticker} and provided context (financial indicators, reports). Do NOT make up information or speculate beyond the data. This is personalized financial advice—advise consulting professionals.
+Ticker: {ticker}
+User question: {question}
 
-    tell the me what the number numer of each financial indicator represent, make those indicator easy to understand for me
+Stock-specific context:
+{stock_context}
 
-    Structure your answer exactly like this:
+Macro market context:
+{macro_context}
 
-    1. Introduction
-        - introduction of this company, what kind of business do they do.
-         
-    2. Key Financial Trends
-       - Recent quarterly indicators (e.g., revenue growth, margins, ROE/ROA from last 4–12 quarters)
-       - Multi-year annual trends (e.g., 3–8 year patterns in debt, cash flow, EPS)
+Provide a practical answer with:
+1. A direct conclusion
+2. Key stock-specific drivers
+3. Key macro drivers
+4. Risks or missing data that could change the view
+"""
+)
 
-    3. Short-Term Advice (1–6 months)
-       - Tactical outlook: Based on recent quarters, earnings momentum, news events (e.g., product launches, macro factors)
-       - Potential catalysts/risks: e.g., upcoming earnings, supply chain issues
-       - Advice: Hold/Buy/Sell rationale, with probability estimates if data supports
 
-    4. Long-Term Advice (3–10+ years)
-       - Strategic outlook: Based on multi-year trends, competitive moat, growth drivers (e.g., market expansion, innovation)
-       - Potential catalysts/risks: e.g., industry shifts, regulatory changes
-       - Advice: Hold/Buy/Sell rationale, with valuation considerations (e.g., compared to historical averages)
+def _configure_query_settings():
+    ingest_stock.env()
 
-    5. Overall Recommendation
-       - Balanced summary with key things to watch
 
-    Cite sources (e.g., quarter/year from indicators, report date, news date) inline.
-
-    Context information:
-    ---------------------
-    {context_str}
-    ---------------------
-    Query: {custom_query}
-    Answer in clear, professional language:
-    """)
-
-# In get_analysis_engine or analyze_company
-def get_analysis_engine(
-        ticker: str,
-        similarity_top_k: int = 2,
-        similarity_cutoff: float = 0.6,
-        storage_base_dir: str = "./storage"):
-    persist_dir = os.path.join(storage_base_dir, ticker.upper())
-
-    if not os.path.exists(persist_dir):
-        raise FileNotFoundError(
-            f"No stored index found for {ticker} at {persist_dir}\n"
-            "Run ingest.py first to build the index."
-        )
+def _load_retriever(persist_dir, similarity_top_k=4):
+    if not os.path.isdir(persist_dir):
+        raise FileNotFoundError(f"Index directory not found: {persist_dir}")
 
     storage_context = StorageContext.from_defaults(persist_dir=persist_dir)
     index = load_index_from_storage(storage_context)
-    retriever = VectorIndexRetriever(
-        index=index,
-        similarity_top_k=similarity_top_k,
+    return VectorIndexRetriever(index=index, similarity_top_k=similarity_top_k)
+
+
+def _node_text(node_with_score):
+    node = getattr(node_with_score, "node", node_with_score)
+    if hasattr(node, "get_content"):
+        return node.get_content().strip()
+    return str(getattr(node, "text", "")).strip()
+
+
+def _retrieve_context_from_dir(persist_dir, query_str, label, similarity_top_k=4):
+    try:
+        retriever = _load_retriever(persist_dir, similarity_top_k=similarity_top_k)
+    except (FileNotFoundError, ValueError):
+        return None
+
+    nodes = retriever.retrieve(query_str)
+    chunks = []
+    seen = set()
+
+    for node in nodes:
+        text = _node_text(node)
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        chunks.append(text)
+
+    if not chunks:
+        return None
+
+    return f"{label}:\n" + "\n\n".join(chunks)
+
+
+def _resolve_macro_storage_dir(macro_storage_dir):
+    candidates = [macro_storage_dir]
+    normalized_dir = os.path.normpath(macro_storage_dir)
+    fallback_dir = os.path.join(
+        os.path.dirname(normalized_dir),
+        f"{os.path.basename(normalized_dir)}_refresh",
     )
-    response_synthesizer = get_response_synthesizer()
+    candidates.append(fallback_dir)
 
-    return RetrieverQueryEngine(
-        retriever=retriever,
-        response_synthesizer=response_synthesizer,
+    for candidate in candidates:
+        docstore_path = os.path.join(candidate, "docstore.json")
+        if os.path.isdir(candidate) and os.path.isfile(docstore_path):
+            return candidate
+
+    return macro_storage_dir
+
+
+def get_analysis_context(
+    ticker,
+    query_str,
+    stock_storage_base_dir=DEFAULT_STOCK_STORAGE_BASE_DIR,
+    macro_storage_dir=DEFAULT_MACRO_STORAGE_DIR,
+    stock_top_k=4,
+    macro_top_k=4,
+):
+    _configure_query_settings()
+
+    ticker = ticker.upper()
+    stock_persist_dir = os.path.join(stock_storage_base_dir, ticker)
+    resolved_macro_storage_dir = _resolve_macro_storage_dir(macro_storage_dir)
+
+    stock_context = _retrieve_context_from_dir(
+        stock_persist_dir,
+        query_str,
+        label=f"{ticker} financial context",
+        similarity_top_k=stock_top_k,
+    )
+    macro_context = _retrieve_context_from_dir(
+        resolved_macro_storage_dir,
+        query_str,
+        label="Macro market context",
+        similarity_top_k=macro_top_k,
     )
 
+    return {
+        "stock_context": stock_context,
+        "macro_context": macro_context,
+        "stock_persist_dir": stock_persist_dir,
+        "macro_persist_dir": resolved_macro_storage_dir,
+    }
 
-def analyze_company(ticker: str, custom_query: Optional[str] = None) -> str:
-    engine = get_analysis_engine(ticker)
 
-    if custom_query:
-        # Just pass the string → LlamaIndex handles context_str automatically
-        response = engine.query(custom_query)
-    else:
-        # Default question → also automatic
-        response = engine.query(
-            f"Provide short-term and long-term investment advice for {ticker.upper()}"
+def analyze_company(
+    ticker,
+    custom_query=None,
+    stock_storage_base_dir=DEFAULT_STOCK_STORAGE_BASE_DIR,
+    macro_storage_dir=DEFAULT_MACRO_STORAGE_DIR,
+    stock_top_k=4,
+    macro_top_k=4,
+):
+    ticker = ticker.upper()
+    query_str = custom_query or (
+        f"Provide short-term and long-term analysis for {ticker} using both the "
+        "company financial information and the current macro market environment."
+    )
+
+    context = get_analysis_context(
+        ticker=ticker,
+        query_str=query_str,
+        stock_storage_base_dir=stock_storage_base_dir,
+        macro_storage_dir=macro_storage_dir,
+        stock_top_k=stock_top_k,
+        macro_top_k=macro_top_k,
+    )
+
+    if not context["stock_context"] and not context["macro_context"]:
+        raise FileNotFoundError(
+            "No retrievable stock or macro index was found. Refresh the stock index "
+            f"at {context['stock_persist_dir']} and the macro index at "
+            f"{context['macro_persist_dir']} first."
         )
 
+    stock_context = context["stock_context"] or "Stock-specific context was not available."
+    macro_context = context["macro_context"] or "Macro market context was not available."
+
+    prompt = ANALYSIS_PROMPT.format(
+        ticker=ticker,
+        question=query_str,
+        stock_context=stock_context,
+        macro_context=macro_context,
+    )
+
+    response = Settings.llm.complete(prompt)
     return str(response)

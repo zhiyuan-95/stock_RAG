@@ -6,6 +6,9 @@ from llama_index.core.node_parser import SentenceSplitter
 import pandas as pd
 import os
 
+
+DEFAULT_STOCK_STORAGE_BASE_DIR = "./storage/stock"
+
 def env():
     from dotenv import load_dotenv
     from llama_index.embeddings.openai import OpenAIEmbedding
@@ -272,7 +275,12 @@ def update_financial_records(ticker, db_path='stock_data.db'):
     conn.commit()
     conn.close()
 
-def refresh_ticker_data_and_index(ticker: str, db_path='stock_data.db', max_quarters=12, max_annual=8):
+def refresh_ticker_data_and_index(
+    ticker: str,
+    db_path='stock_data.db',
+    max_quarters=12,
+    max_annual=8,
+    storage_base_dir=DEFAULT_STOCK_STORAGE_BASE_DIR):
     """
     End-to-end refresh for one ticker:
     1. Update structured data in SQLite
@@ -296,7 +304,8 @@ def refresh_ticker_data_and_index(ticker: str, db_path='stock_data.db', max_quar
     node_parser = SentenceSplitter(chunk_size=1024, chunk_overlap=200)
     nodes = node_parser.get_nodes_from_documents(docs)
 
-    persist_dir = f"./storage/{ticker}"
+    os.makedirs(storage_base_dir, exist_ok=True)
+    persist_dir = os.path.join(storage_base_dir, ticker)
 
     try:
         storage_context = StorageContext.from_defaults(persist_dir=persist_dir)

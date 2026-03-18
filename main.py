@@ -1,4 +1,5 @@
 import ingest_stock
+import ingest_macro
 import query
 
 def get_index_tickers(index):# get tickers for sp500, nasdaq100, and dow
@@ -51,9 +52,16 @@ def ingest_companies(tickers):
         ingest_stock.refresh_ticker_data_and_index(ticker)
         print()
 def ask_question(ticker,query_str):
-    query.analyze_company(ticker, query_str)
+    return query.analyze_company(ticker, query_str)
 
-#companies = ['META', 'AAPL', 'TSLA','GOOG','NVDA']
-ingest_companies(['nus'])
-#print(ask_question('meta', 'what do you think about meta?'))
-print(query.analyze_company('nus', 'tell about this company'))
+ingest_macro.refresh_macro_index()
+"""if __name__ == "__main__":
+    ticker = "AAPL"
+    ingest_macro.refresh_macro_index()
+    print(
+        query.analyze_company(
+            ticker,
+            "Summarize the company's financial position and the current macro environment.",
+        )
+    )
+"""
