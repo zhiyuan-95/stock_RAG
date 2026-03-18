@@ -1,8 +1,8 @@
 import ingest_stock
 import ingest_macro
 import query
-
-def get_index_tickers(index):# get tickers for sp500, nasdaq100, and dow
+# get tickers for sp500, nasdaq100, and dow
+def get_index_tickers(index):
     import pandas as pd
     import requests
     from io import StringIO
@@ -51,11 +51,11 @@ def ingest_companies(tickers):
     for ticker in tickers:
         ingest_stock.refresh_ticker_data_and_index(ticker)
         print()
+
 def ask_question(ticker,query_str):
     return query.analyze_company(ticker, query_str)
 
-ingest_macro.refresh_macro_index()
-"""if __name__ == "__main__":
+if __name__ == "__main__":
     ticker = "AAPL"
     ingest_macro.refresh_macro_index()
     print(
@@ -64,4 +64,3 @@ ingest_macro.refresh_macro_index()
             "Summarize the company's financial position and the current macro environment.",
         )
     )
-"""

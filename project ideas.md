@@ -2,6 +2,12 @@
 
 ~~1. get record financial indicators 8 year annual, 12 quarter~~
 
+
+
+&#x09;1(a) for each stock, get a place to store its major competitors
+
+
+
 ~~2. saved in sql\_db, and vector store, data in sql\_db will be updated first, and vector store will be updated based on the change in sql\_db~~
 
 
@@ -17,8 +23,6 @@
 5\. get current price and track moving average of all major indicators
 
 6\. get industrial/sector average of all different indicators, including  VIX, bond yeild
-
-7\. for each stock, get a place to store its major competitors
 
 
 

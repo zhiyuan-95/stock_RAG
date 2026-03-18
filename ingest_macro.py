@@ -15,32 +15,7 @@ from dotenv import load_dotenv
 from llama_index.core import Document, StorageContext, VectorStoreIndex, load_index_from_storage
 from llama_index.core.node_parser import SentenceSplitter
 
-
-FINANCIAL_TABLE_SQL = """
-    CREATE TABLE IF NOT EXISTS financial_indicators (
-        Ticker TEXT,
-        Frequency TEXT,
-        `Period End Date` TEXT,
-        `Total Revenue` FLOAT,
-        `Gross Profit` FLOAT,
-        `Operating Income` FLOAT,
-        `Net Income` FLOAT,
-        `Basic EPS` FLOAT,
-        `Total Assets` FLOAT,
-        `Total Liabilities` FLOAT,
-        `Shareholders Equity` FLOAT,
-        `Operating Cash Flow` FLOAT,
-        `Free Cash Flow` FLOAT,
-        `Gross Margin` FLOAT,
-        `Operating Margin` FLOAT,
-        `Net Margin` FLOAT,
-        ROE FLOAT,
-        ROA FLOAT,
-        `Debt to Equity` FLOAT
-    )
-    """
-
-
+load_dotenv("config.env")
 MACRO_TABLE_SQL = """
     CREATE TABLE IF NOT EXISTS macro_indicators (
         indicator_key TEXT,
@@ -70,8 +45,8 @@ REQUEST_HEADERS = {
 
 FRED_OBSERVATIONS_URL = "https://api.stlouisfed.org/fred/series/observations"
 FRED_TABLE_DATA_URL_TEMPLATE = "https://fred.stlouisfed.org/data/{series_id}"
-DEFAULT_MACRO_DB_PATH = "macro_data.db"
-DEFAULT_MACRO_STORAGE_DIR = "./storage/macro"
+DEFAULT_MACRO_DB_PATH = os.getenv("MACRO_SQL_DB_PATH", "macro_data.db")
+DEFAULT_MACRO_STORAGE_DIR = os.getenv("MACRO_STORAGE_DIR", "./storage/macro")
 
 FRED_SERIES_CATALOG = [
         {
@@ -240,6 +215,7 @@ ISM_SERIES_CATALOG = [
             "notes": "Manufacturing PMI from the official ISM monthly report page.",
             "sector": "manufacturing",
             "history_limit": 12,
+            "ycharts_url": "https://ycharts.com/indicators/us_pmi",
         },
         {
             "indicator_key": "ism_services_pmi",
@@ -252,6 +228,7 @@ ISM_SERIES_CATALOG = [
             "notes": "Services PMI from the official ISM monthly report page.",
             "sector": "services",
             "history_limit": 12,
+            "ycharts_url": "https://ycharts.com/indicators/us_ism_non_manufacturing_index",
         },
     ]
 
@@ -527,6 +504,61 @@ def _extract_ism_history_from_text(html, sector, history_limit):
     return df
 
 
+def _extract_ism_pmi_history_table_legacy(html, sector, history_limit):
+    text = _html_to_text(html)
+
+    if sector == "manufacturing":
+        heading_patterns = [
+            r"THE LAST 12 MONTHS",
+            r"MANUFACTURING PMI HISTORY",
+        ]
+    else:
+        heading_patterns = [
+            r"SERVICES PMI HISTORY",
+            r"THE LAST 12 MONTHS",
+        ]
+
+    history_section = None
+    for heading_pattern in heading_patterns:
+        match = re.search(
+            rf"{heading_pattern}(.*?)(?:Average for 12 months|High\s*[—-]|Low\s*[—-]|About This Report|Business Activity|Manufacturing PMI|Services PMI)",
+            text,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        if match:
+            history_section = match.group(1)
+            break
+
+    if history_section is None:
+        return pd.DataFrame()
+
+    row_matches = re.findall(
+        r"\b("
+        r"Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec"
+        r")\s+(\d{4})\s*\|\s*(\d{2}\.\d)\b",
+        history_section,
+        flags=re.IGNORECASE,
+    )
+
+    if not row_matches:
+        return pd.DataFrame()
+
+    rows = [
+        {
+            "observation_date": pd.to_datetime(f"{month_text} {year_text}", errors="coerce"),
+            "value": float(value_text),
+        }
+        for month_text, year_text, value_text in row_matches
+    ]
+
+    df = pd.DataFrame(rows).dropna(subset=["observation_date", "value"])
+    df = df.drop_duplicates(subset=["observation_date"], keep="first")
+    df = df.sort_values("observation_date", ascending=False).reset_index(drop=True)
+    if history_limit is not None:
+        df = df.head(history_limit)
+    return df
+
+
 def _extract_ism_latest_reading_from_text(html, sector):
     text = _html_to_text(html)
 
@@ -627,7 +659,135 @@ def _extract_ism_history_from_html(html, history_limit):
     return best_df
 
 
+def _extract_ycharts_history_table(html, history_limit):
+    try:
+        tables = pd.read_html(StringIO(html))
+    except ValueError:
+        return pd.DataFrame()
+
+    for table in tables:
+        if table.empty:
+            continue
+
+        column_map = {str(column).strip().lower(): column for column in table.columns}
+        date_column = column_map.get("date")
+        value_column = column_map.get("value")
+
+        if not date_column or not value_column:
+            continue
+
+        history_df = table[[date_column, value_column]].copy()
+        history_df.columns = ["observation_date", "value"]
+        history_df["observation_date"] = pd.to_datetime(
+            history_df["observation_date"],
+            errors="coerce",
+        )
+        history_df["value"] = pd.to_numeric(history_df["value"], errors="coerce")
+        history_df = history_df.dropna(subset=["observation_date", "value"])
+
+        if history_df.empty:
+            continue
+
+        history_df = history_df.drop_duplicates(subset=["observation_date"], keep="first")
+        history_df = history_df.sort_values("observation_date", ascending=False).reset_index(drop=True)
+        if history_limit is not None:
+            history_df = history_df.head(history_limit)
+        return history_df
+
+    return pd.DataFrame()
+
+
+def _fetch_ycharts_pmi_history(series_def, timeout=20):
+    ycharts_url = series_def.get("ycharts_url")
+    if not ycharts_url:
+        raise ValueError("No YCharts URL configured.")
+
+    response = requests.get(ycharts_url, headers=REQUEST_HEADERS, timeout=timeout)
+    response.raise_for_status()
+
+    history_df = _extract_ycharts_history_table(
+        response.text,
+        history_limit=series_def.get("history_limit"),
+    )
+    if history_df.empty:
+        raise ValueError("Could not parse YCharts PMI history table.")
+
+    return history_df, ycharts_url
+
+
+def _extract_ism_pmi_history_table(html, sector, history_limit):
+    text = _html_to_text(html)
+
+    if sector == "manufacturing":
+        heading_patterns = [
+            r"THE LAST 12 MONTHS",
+            r"MANUFACTURING\s+PMI.*?HISTORY",
+        ]
+    else:
+        heading_patterns = [
+            r"SERVICES\s+PMI.*?HISTORY",
+            r"THE LAST 12 MONTHS",
+        ]
+
+    history_section = None
+    for heading_pattern in heading_patterns:
+        match = re.search(
+            heading_pattern,
+            text,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        if match:
+            section_start = match.end()
+            trailing_text = text[section_start:]
+            average_match = re.search(
+                r"Average for 12 months",
+                trailing_text,
+                flags=re.IGNORECASE,
+            )
+            if average_match:
+                history_section = trailing_text[:average_match.start()]
+            else:
+                history_section = trailing_text[:1500]
+            break
+
+    if history_section is None:
+        return pd.DataFrame()
+
+    row_matches = re.findall(
+        r"\b("
+        r"Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
+        r"Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|"
+        r"Nov(?:ember)?|Dec(?:ember)?"
+        r")\s+(\d{4})\s+(\d{2}\.\d)\b",
+        history_section,
+        flags=re.IGNORECASE,
+    )
+
+    if not row_matches:
+        return pd.DataFrame()
+
+    rows = [
+        {
+            "observation_date": pd.to_datetime(f"{month_text} {year_text}", errors="coerce"),
+            "value": float(value_text),
+        }
+        for month_text, year_text, value_text in row_matches
+    ]
+
+    df = pd.DataFrame(rows).dropna(subset=["observation_date", "value"])
+    df = df.drop_duplicates(subset=["observation_date"], keep="first")
+    df = df.sort_values("observation_date", ascending=False).reset_index(drop=True)
+    if history_limit is not None:
+        df = df.head(history_limit)
+    return df
+
+
 def _fetch_ism_pmi_history(series_def, now=None, timeout=20):
+    try:
+        return _fetch_ycharts_pmi_history(series_def, timeout=timeout)
+    except Exception:
+        pass
+
     best_df = pd.DataFrame()
     best_url = None
 
@@ -638,13 +798,19 @@ def _fetch_ism_pmi_history(series_def, now=None, timeout=20):
         except Exception:
             continue
 
-        try:
-            candidate_df = _extract_ism_history_from_html(
-                response.text,
-                history_limit=series_def.get("history_limit"),
-            )
-        except Exception:
-            candidate_df = pd.DataFrame()
+        candidate_df = _extract_ism_pmi_history_table(
+            response.text,
+            sector=series_def["sector"],
+            history_limit=series_def.get("history_limit"),
+        )
+        if candidate_df.empty:
+            try:
+                candidate_df = _extract_ism_history_from_html(
+                    response.text,
+                    history_limit=series_def.get("history_limit"),
+                )
+            except Exception:
+                candidate_df = pd.DataFrame()
         if candidate_df.empty:
             candidate_df = _extract_ism_history_from_text(
                 response.text,
@@ -1042,12 +1208,6 @@ def _handle_remove_readonly(func, path, exc_info):
         func(path)
     except OSError:
         raise exc_info[1]
-    except OSError:
-        if _is_windows_reparse_point(persist_dir):
-            os.chmod(persist_dir, stat.S_IWRITE | stat.S_IREAD)
-            os.rmdir(persist_dir)
-            return
-        raise
 
 
 def refresh_macro_index(

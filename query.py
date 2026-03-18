@@ -2,13 +2,14 @@ import os
 
 from llama_index.core import Settings, StorageContext, PromptTemplate, load_index_from_storage
 from llama_index.core.retrievers import VectorIndexRetriever
+from dotenv import load_dotenv
 
-import ingest_macro
 import ingest_stock
 
+load_dotenv("config.env")
 
-DEFAULT_STOCK_STORAGE_BASE_DIR = ingest_stock.DEFAULT_STOCK_STORAGE_BASE_DIR
-DEFAULT_MACRO_STORAGE_DIR = ingest_macro.DEFAULT_MACRO_STORAGE_DIR
+DEFAULT_STOCK_STORAGE_BASE_DIR = os.getenv("STOCK_STORAGE_BASE_DIR", "./storage/stock")
+DEFAULT_MACRO_STORAGE_DIR = os.getenv("MACRO_STORAGE_DIR", "./storage/macro")
 
 
 ANALYSIS_PROMPT = PromptTemplate(
@@ -33,11 +34,6 @@ Provide a practical answer with:
 4. Risks or missing data that could change the view
 """
 )
-
-
-def _configure_query_settings():
-    ingest_stock.env()
-
 
 def _load_retriever(persist_dir, similarity_top_k=4):
     if not os.path.isdir(persist_dir):
@@ -95,18 +91,34 @@ def _resolve_macro_storage_dir(macro_storage_dir):
     return macro_storage_dir
 
 
+def _ensure_stock_index_directory(ticker, stock_storage_base_dir):
+    ticker = ticker.upper()
+    persist_dir = os.path.join(stock_storage_base_dir, ticker)
+    if os.path.isdir(persist_dir):
+        return persist_dir
+
+    print(f"{ticker} is missing from storage/stock; ingesting it now.")
+    ingest_stock.refresh_ticker_data_and_index(
+        ticker,
+        storage_base_dir=stock_storage_base_dir,
+    )
+    return persist_dir
+
+
 def get_analysis_context(
     ticker,
     query_str,
     stock_storage_base_dir=DEFAULT_STOCK_STORAGE_BASE_DIR,
     macro_storage_dir=DEFAULT_MACRO_STORAGE_DIR,
     stock_top_k=4,
-    macro_top_k=4,
-):
-    _configure_query_settings()
+    macro_top_k=4):
+    ingest_stock.env()
 
     ticker = ticker.upper()
-    stock_persist_dir = os.path.join(stock_storage_base_dir, ticker)
+    stock_persist_dir = _ensure_stock_index_directory(
+        ticker,
+        stock_storage_base_dir=stock_storage_base_dir,
+    )
     resolved_macro_storage_dir = _resolve_macro_storage_dir(macro_storage_dir)
 
     stock_context = _retrieve_context_from_dir(
@@ -136,8 +148,7 @@ def analyze_company(
     stock_storage_base_dir=DEFAULT_STOCK_STORAGE_BASE_DIR,
     macro_storage_dir=DEFAULT_MACRO_STORAGE_DIR,
     stock_top_k=4,
-    macro_top_k=4,
-):
+    macro_top_k=4):
     ticker = ticker.upper()
     query_str = custom_query or (
         f"Provide short-term and long-term analysis for {ticker} using both the "

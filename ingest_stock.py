@@ -5,15 +5,18 @@ from datetime import datetime
 from llama_index.core.node_parser import SentenceSplitter
 import pandas as pd
 import os
+from dotenv import load_dotenv
 
 
-DEFAULT_STOCK_STORAGE_BASE_DIR = "./storage/stock"
+load_dotenv("config.env")
+
+DEFAULT_STOCK_DB_PATH = os.getenv("STOCK_SQL_DB_PATH", "stock_data.db")
+DEFAULT_STOCK_STORAGE_BASE_DIR = os.getenv("STOCK_STORAGE_BASE_DIR", "./storage/stock")
 
 def env():
-    from dotenv import load_dotenv
     from llama_index.embeddings.openai import OpenAIEmbedding
     from llama_index.llms.openai import OpenAI
-    load_dotenv('config.env')
+    load_dotenv("config.env")
     Settings.llm = OpenAI(model="gpt-4o", temperature=0.1)
     Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small", api_key = os.getenv('OPENAI_API_KEY'))
 
@@ -121,11 +124,11 @@ def get_historical_financial_indicators(ticker, frequency='quarterly', max_perio
 
     return df
 
-def initiate_sql_table():
+def initiate_sql_table(db_path=DEFAULT_STOCK_DB_PATH):
     # it deletes old data...run with caution
     check = input("it deletes old data in stock_data file...run with caution, are you sure you want to delete and init? Y/N")
     if check.upper() == 'Y':
-        conn = sqlite3.connect('stock_data.db')
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
         # Drop the old table (warning: deletes all existing data!)
@@ -162,7 +165,7 @@ def initiate_sql_table():
     else:
         print('sql table not initialized...')
 # Example integration into build_documents (modify as per your existing setup)
-def build_financial_docs(ticker, db_path='stock_data.db', max_quarters=12, max_annual=8):
+def build_financial_docs(ticker, db_path=DEFAULT_STOCK_DB_PATH, max_quarters=12, max_annual=8):
     documents = []
     conn = sqlite3.connect(db_path)
 
@@ -207,7 +210,7 @@ def build_financial_docs(ticker, db_path='stock_data.db', max_quarters=12, max_a
     conn.close()
     return documents
 
-def update_financial_records(ticker, db_path='stock_data.db'):
+def update_financial_records(ticker, db_path=DEFAULT_STOCK_DB_PATH):
     """
     Checks and updates financial records for a ticker in SQLite storage.
 
@@ -277,7 +280,7 @@ def update_financial_records(ticker, db_path='stock_data.db'):
 
 def refresh_ticker_data_and_index(
     ticker: str,
-    db_path='stock_data.db',
+    db_path=DEFAULT_STOCK_DB_PATH,
     max_quarters=12,
     max_annual=8,
     storage_base_dir=DEFAULT_STOCK_STORAGE_BASE_DIR):
