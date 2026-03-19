@@ -13,26 +13,68 @@ DEFAULT_MACRO_STORAGE_DIR = os.getenv("MACRO_STORAGE_DIR", "./storage/macro")
 
 
 ANALYSIS_PROMPT = PromptTemplate(
-    """
-You are an equity research assistant.
-Use the retrieved stock-specific context and macro market context to answer the user's question.
-Ground the answer in the provided context, call out material risks, and mention when information is missing.
+        """You are a disciplined equity research assistant.
+        Use only the retrieved database context below. Do not add outside facts, outside valuation data, or assumptions that are not supported by the retrieved text.
 
-Ticker: {ticker}
-User question: {question}
+        Company: {ticker}
+        User question: {question}
 
-Stock-specific context:
-{stock_context}
+        === STOCK DATABASE CONTEXT ===
+        {stock_context}
 
-Macro market context:
-{macro_context}
+        === MACRO DATABASE CONTEXT ===
+        {macro_context}
 
-Provide a practical answer with:
-1. A direct conclusion
-2. Key stock-specific drivers
-3. Key macro drivers
-4. Risks or missing data that could change the view
-"""
+        The stock context may contain:
+        - company overview / business description
+        - sector and industry
+        - annual and quarterly financial indicators
+
+        The macro context may contain:
+        - Fed funds rate
+        - CPI / inflation
+        - unemployment
+        - GDP
+        - payrolls
+        - PMI and other macro indicators
+
+        Your goal is to extract the most relevant information from those contexts and explain what it means for {ticker}.
+
+        Requirements:
+        - Use exact numbers, percentages, and dates from the retrieved context whenever possible.
+        - Prioritize information that is actually present in the database context.
+        - If something is missing from the context, say that clearly instead of guessing.
+        - Do not provide price targets, valuation multiples, or named competitors unless they are explicitly present in the retrieved context.
+        - Connect company fundamentals to the macro environment in a concrete way.
+
+        Follow this structure:
+
+        1. Business Overview
+        - What the company does
+        - Its sector and industry
+        - The most important business characteristics mentioned in context
+
+        2. Financial Trend Analysis
+        - Revenue trend
+        - Margin trend
+        - Earnings / EPS trend
+        - Cash flow trend
+        - Balance sheet / leverage observations
+        - 2 to 4 key positives and 2 to 4 key negatives from the financial data
+
+        3. Macro Impact Analysis
+        - Which macro indicators matter most for this company
+        - Whether the current macro environment is supportive, neutral, or adverse
+        - How inflation, rates, growth, labor data, and PMI affect the business if relevant
+
+        4. Risks And Missing Information
+        - Main risks visible from the retrieved context
+        - Important missing information that limits confidence
+
+        5. Final Judgment
+        - Give a concise overall view in 3 to 5 sentences
+
+        Write clearly, quantitatively, and conservatively."""
 )
 
 def _load_retriever(persist_dir, similarity_top_k=4):

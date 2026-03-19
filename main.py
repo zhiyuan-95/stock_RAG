@@ -55,9 +55,10 @@ def ingest_companies(tickers):
 def ask_question(ticker,query_str):
     return query.analyze_company(ticker, query_str)
 
+ticker = input('which company do you want to know about, give me the ticker: ')
+
+
 if __name__ == "__main__":
-    ticker = "AAPL"
-    ingest_macro.refresh_macro_index()
     print(
         query.analyze_company(
             ticker,
