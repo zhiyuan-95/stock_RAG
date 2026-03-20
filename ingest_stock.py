@@ -22,6 +22,7 @@ def env():
 
 """
     ingestion and updating process
+
     1. update_financial_records(sql)
         -> create or update the record of all quarterly and annuelly record of financial indicators in sql
 

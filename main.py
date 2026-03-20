@@ -59,6 +59,10 @@ ticker = input('which company do you want to know about, give me the ticker: ')
 
 
 if __name__ == "__main__":
+<<<<<<< HEAD
+=======
+    ticker = "AAPL"
+>>>>>>> addingfeatures
     print(
         query.analyze_company(
             ticker,
