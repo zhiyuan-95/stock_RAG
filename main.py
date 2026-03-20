@@ -57,7 +57,6 @@ def ask_question(ticker,query_str):
 
 if __name__ == "__main__":
     ticker = "AAPL"
-    ingest_macro.refresh_macro_index()
     print(
         query.analyze_company(
             ticker,
