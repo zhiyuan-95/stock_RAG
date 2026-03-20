@@ -22,6 +22,7 @@ def env():
 
 """
     ingestion and updating process
+
     1. update_financial_records(sql)
         -> create or update the record of all quarterly and annuelly record of financial indicators in sql
 
@@ -33,6 +34,48 @@ def env():
     basically, I can just run refresh_ticker_data_and_index(), which does everything
     I can also only run update_financial_records() which only updates sql_db.
 """
+
+
+def _clean_profile_field(value):
+    if value is None:
+        return None
+    if pd.isna(value):
+        return None
+
+    cleaned_value = str(value).strip()
+    return cleaned_value or None
+
+
+def get_company_profile(ticker):
+    ticker = ticker.upper()
+    stock = yf.Ticker(ticker)
+
+    try:
+        info = stock.get_info()
+    except Exception as exc:
+        print(f"Skipping company profile fetch for {ticker}: {exc}")
+        info = {}
+
+    company_name = (
+        _clean_profile_field(info.get("longName"))
+        or _clean_profile_field(info.get("shortName"))
+        or ticker
+    )
+    sector = _clean_profile_field(info.get("sector"))
+    industry = _clean_profile_field(info.get("industry"))
+    description = (
+        _clean_profile_field(info.get("longBusinessSummary"))
+        or _clean_profile_field(info.get("description"))
+    )
+
+    return {
+        "ticker": ticker,
+        "company_name": company_name,
+        "sector": sector,
+        "industry": industry,
+        "description": description,
+        "source": "Yahoo Finance via yfinance",
+    }
 
 
 # Modify your existing function to allow fetching all periods
@@ -170,6 +213,32 @@ def build_financial_docs(ticker, db_path=DEFAULT_STOCK_DB_PATH, max_quarters=12,
     conn = sqlite3.connect(db_path)
 
     ticker = ticker.upper()
+    company_profile = get_company_profile(ticker)
+
+    profile_lines = [
+        f"Company: {company_profile['company_name']}",
+        f"Ticker: {ticker}",
+        f"Sector: {company_profile['sector'] or 'Unknown'}",
+        f"Industry: {company_profile['industry'] or 'Unknown'}",
+    ]
+    if company_profile["description"]:
+        profile_lines.append("")
+        profile_lines.append("Business Description:")
+        profile_lines.append(company_profile["description"])
+
+    documents.append(
+        Document(
+            text="**Company Overview**\n\n" + "\n".join(profile_lines),
+            metadata={
+                "ticker": ticker,
+                "type": "company_profile",
+                "company_name": company_profile["company_name"],
+                "sector": company_profile["sector"] or "Unknown",
+                "industry": company_profile["industry"] or "Unknown",
+                "source": company_profile["source"],
+            }
+        )
+    )
 
     for freq, max_keep in [('Quarterly', max_quarters), ('Annual', max_annual)]:
         query = """
@@ -186,7 +255,10 @@ def build_financial_docs(ticker, db_path=DEFAULT_STOCK_DB_PATH, max_quarters=12,
         md_table = df.to_markdown(index=False)
 
         text = (
-            f"**Latest {len(df)} {freq} Financial Indicators — {ticker}**\n\n"
+            f"**Latest {len(df)} {freq} Financial Indicators - {ticker}**\n\n"
+            f"Company: {company_profile['company_name']}\n"
+            f"Sector: {company_profile['sector'] or 'Unknown'}\n"
+            f"Industry: {company_profile['industry'] or 'Unknown'}\n\n"
             f"Most recent: {df['Period End Date'].iloc[0]}\n"
             f"Oldest shown: {df['Period End Date'].iloc[-1]}\n\n"
             f"{md_table}\n\n"
@@ -198,6 +270,9 @@ def build_financial_docs(ticker, db_path=DEFAULT_STOCK_DB_PATH, max_quarters=12,
             metadata={
                 "ticker": ticker,
                 "type": "financial_indicators",
+                "company_name": company_profile["company_name"],
+                "sector": company_profile["sector"] or "Unknown",
+                "industry": company_profile["industry"] or "Unknown",
                 "frequency": freq,
                 "periods": len(df),
                 "most_recent": df['Period End Date'].iloc[0],
@@ -296,8 +371,7 @@ def refresh_ticker_data_and_index(
     update_financial_records(ticker, db_path=db_path)
 
     # Step 2: build documents from the fresh DB
-    docs = build_financial_docs(ticker, db_path=db_path,
-                               max_quarters=max_quarters, max_annual=max_annual)
+    docs = build_financial_docs(ticker, db_path=db_path,max_quarters=max_quarters, max_annual=max_annual)
 
     if not docs:
         print(f"No documents generated for {ticker} — skipping index update")
