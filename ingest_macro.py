@@ -17,7 +17,7 @@ from llama_index.core.node_parser import SentenceSplitter
 
 load_dotenv("config.env")
 MACRO_TABLE_SQL = """
-    CREATE TABLE IF NOT EXISTS macro_indicators (
+        CREATE TABLE IF NOT EXISTS macro_indicators (
         indicator_key TEXT,
         indicator_name TEXT,
         category TEXT,
@@ -30,8 +30,7 @@ MACRO_TABLE_SQL = """
         units TEXT,
         source_url TEXT,
         notes TEXT,
-        retrieved_at TEXT
-    )
+        retrieved_at TEXT)
     """
 
 
@@ -705,13 +704,10 @@ def _fetch_ycharts_pmi_history(series_def, timeout=20):
     response = requests.get(ycharts_url, headers=REQUEST_HEADERS, timeout=timeout)
     response.raise_for_status()
 
-    history_df = _extract_ycharts_history_table(
-        response.text,
-        history_limit=series_def.get("history_limit"),
-    )
+    history_df = _extract_ycharts_history_table(response.text,history_limit=series_def.get("history_limit"))
+
     if history_df.empty:
         raise ValueError("Could not parse YCharts PMI history table.")
-
     return history_df, ycharts_url
 
 
@@ -719,15 +715,10 @@ def _extract_ism_pmi_history_table(html, sector, history_limit):
     text = _html_to_text(html)
 
     if sector == "manufacturing":
-        heading_patterns = [
-            r"THE LAST 12 MONTHS",
-            r"MANUFACTURING\s+PMI.*?HISTORY",
-        ]
+        heading_patterns = [r"THE LAST 12 MONTHS",
+            r"MANUFACTURING\s+PMI.*?HISTORY"]
     else:
-        heading_patterns = [
-            r"SERVICES\s+PMI.*?HISTORY",
-            r"THE LAST 12 MONTHS",
-        ]
+        heading_patterns = [r"SERVICES\s+PMI.*?HISTORY", r"THE LAST 12 MONTHS"]
 
     history_section = None
     for heading_pattern in heading_patterns:
@@ -1119,6 +1110,7 @@ def build_market_environment_docs(db_path=DEFAULT_MACRO_DB_PATH, max_history_per
         )
 
     return documents
+
 
 def _persist_documents_as_index(documents, persist_dir):
     if not documents:

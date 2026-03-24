@@ -1,26 +1,33 @@
 import json
 import os
 import re
+import shutil
 import sqlite3
-import yfinance as yf
-import requests
-from llama_index.core import (Settings, Document, VectorStoreIndex, StorageContext,load_index_from_storage)
+import stat
+import subprocess
 from datetime import datetime
 from html import unescape
-from llama_index.core.node_parser import SentenceSplitter
+
 import pandas as pd
+import requests
+import yfinance as yf
+from llama_index.core import (Settings, Document, VectorStoreIndex)
+from llama_index.core.node_parser import SentenceSplitter
 from dotenv import load_dotenv
 
 
 load_dotenv("config.env")
 
-DEFAULT_STOCK_DB_PATH = os.getenv("STOCK_SQL_DB_PATH", "stock_data.db")
-DEFAULT_STOCK_STORAGE_BASE_DIR = os.getenv("STOCK_STORAGE_BASE_DIR", "./storage/stock")
+DEFAULT_STOCK_DB_PATH = os.getenv("STOCK_SQL_DB_PATH")
+DEFAULT_STOCK_STORAGE_BASE_DIR = os.getenv("STOCK_STORAGE_BASE_DIR")
+DEFAULT_STOCK_FILINGS_BASE_DIR = os.getenv("STOCK_FILINGS_BASE_DIR", "./data_store/filings")
 RELATIONSHIP_GRAPH_FILENAME = "relationship_graph.json"
 SEC_TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 SEC_SUBMISSIONS_URL_TEMPLATE = "https://data.sec.gov/submissions/CIK{cik}.json"
-SEC_ARCHIVES_DOCUMENT_URL_TEMPLATE = "https://www.sec.gov/Archives/edgar/data/{cik_no_zero}/{accession_no_dashes}/{primary_document}"
-DEFAULT_SEC_USER_AGENT = os.getenv("SEC_USER_AGENT", "RAGResearch contact@example.com")
+SEC_ARCHIVES_DOCUMENT_URL_TEMPLATE = (
+        "https://www.sec.gov/Archives/edgar/data/{cik_no_zero}/{accession_no_dashes}/{primary_document}"
+    )
+DEFAULT_SEC_USER_AGENT = os.getenv("SEC_USER_AGENT")
 _SEC_TICKER_MAP = None
 
 def env():
@@ -59,8 +66,9 @@ def _clean_profile_field(value):
 def _sec_headers(accept="text/html,application/json;q=0.9,*/*;q=0.8"):
     return {
         "User-Agent": DEFAULT_SEC_USER_AGENT,
-        "Accept": accept,
         "Accept-Encoding": "gzip, deflate",
+        "Accept": accept,
+        "Connection": "keep-alive",
     }
 
 
@@ -77,6 +85,7 @@ def _sec_get_json(url, timeout=30):
 def _sec_get_text(url, timeout=30):
     response = requests.get(url, headers=_sec_headers(), timeout=timeout)
     response.raise_for_status()
+    response.encoding = response.apparent_encoding or response.encoding
     return response.text
 
 
@@ -87,10 +96,11 @@ def _load_sec_ticker_map():
 
     ticker_map = {}
     for item in _sec_get_json(SEC_TICKERS_URL).values():
-        ticker = _clean_profile_field(item.get("ticker"))
-        if not ticker:
-            continue
-        ticker_map[ticker.upper()] = item
+        ticker = (item.get("ticker") or "").upper()
+        cik = str(item.get("cik_str") or "").strip()
+        title = _clean_profile_field(item.get("title"))
+        if ticker and cik:
+            ticker_map[ticker] = {"cik": cik.zfill(10), "title": title}
 
     _SEC_TICKER_MAP = ticker_map
     return _SEC_TICKER_MAP
@@ -98,233 +108,267 @@ def _load_sec_ticker_map():
 
 def _truncate_text(text, max_chars=2400):
     if not text:
-        return None
-    collapsed = re.sub(r"\s+", " ", text).strip()
-    if len(collapsed) <= max_chars:
-        return collapsed
-    return collapsed[:max_chars].rsplit(" ", 1)[0] + "..."
+        return ""
+    trimmed = re.sub(r"\s+", " ", text).strip()
+    if len(trimmed) <= max_chars:
+        return trimmed
+    return trimmed[: max_chars - 3].rstrip() + "..."
 
 
 def _derive_sector_from_sic(sic_code, sic_description):
-    sic_description = (sic_description or "").lower()
-    sic_code = int(sic_code or 0)
+    description = (sic_description or "").lower()
+    code_text = str(sic_code or "").strip()
 
-    keyword_map = [
-        ("Consumer Defensive", ["beverage", "food", "tobacco", "household", "personal care", "consumer goods"]),
-        ("Consumer Cyclical", ["auto", "retail", "restaurant", "apparel", "footwear", "hotel", "leisure", "consumer products"]),
-        ("Technology", ["software", "semiconductor", "computer", "communications equipment", "electronic", "internet", "technology"]),
-        ("Healthcare", ["pharmaceutical", "biotechnology", "medical", "health", "diagnostic"]),
-        ("Financial Services", ["bank", "insurance", "capital", "asset management", "financial"]),
-        ("Real Estate", ["real estate", "reit"]),
-        ("Communication Services", ["media", "telecom", "broadcasting", "entertainment"]),
-        ("Utilities", ["utility", "electric services", "gas services", "water supply"]),
-        ("Energy", ["oil", "gas", "petroleum", "pipeline", "drilling"]),
-        ("Basic Materials", ["chemical", "steel", "metal", "mining", "paper", "forest"]),
-        ("Industrials", ["machinery", "transportation", "aerospace", "defense", "industrial", "manufacturing"]),
-    ]
-    for sector_name, keywords in keyword_map:
-        if any(keyword in sic_description for keyword in keywords):
-            return sector_name
-
-    if 100 <= sic_code <= 999:
-        return "Basic Materials"
-    if 1000 <= sic_code <= 1499:
-        return "Energy"
-    if 1500 <= sic_code <= 1799:
-        return "Industrials"
-    if 2000 <= sic_code <= 3999:
-        return "Industrials"
-    if 4000 <= sic_code <= 4999:
-        return "Industrials"
-    if 5000 <= sic_code <= 5999:
-        return "Consumer Cyclical"
-    if 6000 <= sic_code <= 6799:
+    if any(keyword in description for keyword in [
+        "beverage", "food", "retail", "consumer", "restaurant", "apparel", "household", "cosmetic"
+    ]):
+        return "Consumer Defensive"
+    if any(keyword in description for keyword in [
+        "software", "semiconductor", "computer", "communications", "internet", "data processing"
+    ]):
+        return "Technology"
+    if any(keyword in description for keyword in [
+        "pharmaceutical", "biotech", "medical", "health", "hospital"
+    ]):
+        return "Healthcare"
+    if any(keyword in description for keyword in [
+        "bank", "insurance", "financial", "asset", "investment", "capital"
+    ]):
         return "Financial Services"
-    if 7000 <= sic_code <= 8999:
-        return "Services"
-    if 9100 <= sic_code <= 9999:
-        return "Government"
-
+    if any(keyword in description for keyword in [
+        "oil", "gas", "energy", "pipeline", "coal", "electric"
+    ]):
+        return "Energy"
+    if any(keyword in description for keyword in [
+        "industrial", "machinery", "transportation", "aerospace", "manufacturing", "construction"
+    ]):
+        return "Industrials"
+    if any(keyword in description for keyword in [
+        "telecom", "media", "entertainment", "broadcasting"
+    ]):
+        return "Communication Services"
+    if any(keyword in description for keyword in ["real estate", "reit", "property"]):
+        return "Real Estate"
+    if code_text.startswith(("48", "49")):
+        return "Utilities"
     return None
 
 
 def _html_to_text_preserve_lines(html):
+    if not html:
+        return ""
+
     text = re.sub(r"(?is)<script.*?>.*?</script>", " ", html)
     text = re.sub(r"(?is)<style.*?>.*?</style>", " ", text)
-    text = re.sub(r"(?i)</(?:p|div|tr|li|table|section|article|h1|h2|h3|h4|h5|h6)>", "\n", text)
     text = re.sub(r"(?i)<br\s*/?>", "\n", text)
-    text = re.sub(r"(?s)<[^>]+>", " ", text)
+    text = re.sub(r"(?i)</p\s*>", "\n\n", text)
+    text = re.sub(r"(?i)</div\s*>", "\n", text)
+    text = re.sub(r"(?i)</tr\s*>", "\n", text)
+    text = re.sub(r"(?i)</li\s*>", "\n", text)
+    text = re.sub(r"(?is)<[^>]+>", " ", text)
     text = unescape(text)
     text = text.replace("\xa0", " ")
+    text = re.sub(r"\r\n?", "\n", text)
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
-    text = re.sub(r" *\n *", "\n", text)
     return text.strip()
 
 
 def _clean_section_text(text):
     if not text:
-        return None
-    text = re.sub(r"\n{3,}", "\n\n", text)
+        return ""
     text = re.sub(r"[ \t]+", " ", text)
-    text = re.sub(r" *\n *", "\n", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r"(?m)^[ \t]+", "", text)
     return text.strip()
 
 
-def _find_best_section(text, start_patterns, end_patterns, min_length=2000):
-    upper_text = text.upper()
-    start_positions = []
-    end_positions = []
+def _find_best_section(text, start_patterns, end_patterns, min_length=1200):
+    if not text:
+        return ""
 
-    for pattern in start_patterns:
-        start_positions.extend(match.start() for match in re.finditer(pattern, upper_text))
-    for pattern in end_patterns:
-        end_positions.extend(match.start() for match in re.finditer(pattern, upper_text))
+    matches = []
+    for start_pattern in start_patterns:
+        for match in re.finditer(start_pattern, text, flags=re.IGNORECASE):
+            start_index = match.start()
+            end_index = len(text)
+            for end_pattern in end_patterns:
+                end_match = re.search(end_pattern, text[match.end():], flags=re.IGNORECASE)
+                if end_match:
+                    candidate_end = match.end() + end_match.start()
+                    if candidate_end > start_index:
+                        end_index = min(end_index, candidate_end)
+            section = _clean_section_text(text[start_index:end_index])
+            if len(section) >= min_length:
+                matches.append((start_index, section))
 
-    start_positions = sorted(set(start_positions))
-    end_positions = sorted(set(end_positions))
-    if not start_positions or not end_positions:
-        return None
-
-    fallback_section = None
-    fallback_length = -1
-
-    for start_position in start_positions:
-        end_position = next((value for value in end_positions if value > start_position + 50), None)
-        if end_position is None:
-            continue
-
-        section_text = _clean_section_text(text[start_position:end_position])
-        if not section_text:
-            continue
-
-        preview = section_text[:350].upper()
-        if any(re.search(pattern, preview[20:]) for pattern in end_patterns) and len(section_text) < min_length:
-            continue
-
-        if len(section_text) > fallback_length:
-            fallback_section = section_text
-            fallback_length = len(section_text)
-
-        if len(section_text) >= min_length:
-            return section_text
-
-    return fallback_section
+    if not matches:
+        return ""
+    matches.sort(key=lambda item: item[0])
+    return matches[0][1]
 
 
 def _split_paragraphs(text):
     if not text:
         return []
-    paragraphs = []
-    for chunk in re.split(r"\n{2,}", text):
-        cleaned_chunk = re.sub(r"\s+", " ", chunk).strip()
-        if len(cleaned_chunk) >= 80:
-            paragraphs.append(cleaned_chunk)
-    return paragraphs
+    blocks = re.split(r"\n\s*\n", text)
+    return [re.sub(r"\s+", " ", block).strip() for block in blocks if re.sub(r"\s+", " ", block).strip()]
 
 
 def _build_keyword_paragraph_snippet(text, keywords, max_paragraphs=6):
-    paragraphs = _split_paragraphs(text)
-    matches = []
+    if not text:
+        return ""
 
-    for paragraph in paragraphs:
-        lowered_paragraph = paragraph.lower()
-        score = sum(keyword in lowered_paragraph for keyword in keywords)
-        if score:
-            matches.append((score, paragraph))
-
-    matches.sort(key=lambda item: (item[0], len(item[1])), reverse=True)
-
-    selected = []
-    seen = set()
-    for _, paragraph in matches:
-        if paragraph in seen:
-            continue
-        seen.add(paragraph)
-        selected.append(paragraph)
-        if len(selected) >= max_paragraphs:
+    normalized_keywords = [keyword.lower() for keyword in keywords]
+    matching_blocks = []
+    for block in _split_paragraphs(text):
+        lowered_block = block.lower()
+        if any(keyword in lowered_block for keyword in normalized_keywords):
+            matching_blocks.append(block)
+        if len(matching_blocks) >= max_paragraphs:
             break
 
-    return "\n\n".join(selected)
+    return "\n\n".join(matching_blocks)
+
+
+def _clear_windows_readonly(path):
+    if os.name != "nt" or not os.path.lexists(path):
+        return
+    subprocess.run(
+        ["cmd", "/c", "attrib", "-R", path],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    try:
+        os.chmod(path, stat.S_IWRITE | stat.S_IREAD)
+    except OSError:
+        pass
+
+
+def _handle_remove_readonly(func, path, exc_info):
+    _clear_windows_readonly(path)
+    func(path)
+
+
+def _is_windows_reparse_point(path):
+    if os.name != "nt" or not os.path.lexists(path):
+        return False
+    try:
+        return bool(os.lstat(path).st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT)
+    except (AttributeError, OSError):
+        return False
+
+
+def _reset_persist_dir(persist_dir):
+    if os.path.lexists(persist_dir):
+        _clear_windows_readonly(persist_dir)
+        if _is_windows_reparse_point(persist_dir):
+            os.rmdir(persist_dir)
+        else:
+            shutil.rmtree(persist_dir, onerror=_handle_remove_readonly)
+    os.makedirs(persist_dir, exist_ok=True)
 
 
 def _build_recent_10k_sections(ticker, max_filings=2):
     ticker = ticker.upper()
     ticker_map = _load_sec_ticker_map()
-    ticker_info = ticker_map.get(ticker)
-    if not ticker_info:
-        raise ValueError(f"Ticker {ticker} was not found in SEC company_tickers.json")
+    sec_identity = ticker_map.get(ticker)
+    if not sec_identity:
+        raise ValueError(f"Ticker {ticker} was not found in the SEC ticker map.")
 
-    cik = str(ticker_info["cik_str"]).zfill(10)
+    cik = sec_identity["cik"]
     submissions = _sec_get_json(SEC_SUBMISSIONS_URL_TEMPLATE.format(cik=cik))
-    recent_filings = submissions.get("filings", {}).get("recent", {})
-    forms = recent_filings.get("form", [])
+    recent = ((submissions.get("filings") or {}).get("recent") or {})
+    forms = recent.get("form") or []
+    accession_numbers = recent.get("accessionNumber") or []
+    filing_dates = recent.get("filingDate") or []
+    primary_documents = recent.get("primaryDocument") or []
 
-    filing_sections = []
-    for index, form in enumerate(forms):
+    filings = []
+    for form, accession_number, filing_date, primary_document in zip(
+        forms,
+        accession_numbers,
+        filing_dates,
+        primary_documents,
+    ):
         if form != "10-K":
             continue
-
-        accession_number = recent_filings["accessionNumber"][index]
-        primary_document = recent_filings["primaryDocument"][index]
-        filing_date = recent_filings["filingDate"][index]
-        accession_no_dashes = accession_number.replace("-", "")
-        filing_url = SEC_ARCHIVES_DOCUMENT_URL_TEMPLATE.format(
-            cik_no_zero=int(cik),
-            accession_no_dashes=accession_no_dashes,
-            primary_document=primary_document,
+        filings.append(
+            {
+                "accession_number": accession_number,
+                "filing_date": filing_date,
+                "primary_document": primary_document,
+            }
         )
+        if len(filings) >= max_filings:
+            break
 
+    recent_sections = []
+    cik_no_zero = str(int(cik))
+    sic_code = _clean_profile_field(submissions.get("sic"))
+    sic_description = _clean_profile_field(submissions.get("sicDescription"))
+    company_name = _clean_profile_field(submissions.get("name")) or sec_identity.get("title") or ticker
+
+    for filing in filings:
+        accession_no_dashes = filing["accession_number"].replace("-", "")
+        filing_url = SEC_ARCHIVES_DOCUMENT_URL_TEMPLATE.format(
+            cik_no_zero=cik_no_zero,
+            accession_no_dashes=accession_no_dashes,
+            primary_document=filing["primary_document"],
+        )
         filing_html = _sec_get_text(filing_url)
         filing_text = _html_to_text_preserve_lines(filing_html)
+
         item_1_text = _find_best_section(
             filing_text,
-            start_patterns=[r"ITEM\s+1\.?\s+BUSINESS"],
-            end_patterns=[r"ITEM\s+1A\.?\s+RISK\s+FACTORS", r"ITEM\s+2\.?\s+PROPERTIES"],
-            min_length=2500,
+            start_patterns=[
+                r"\bitem\s+1[\.\s:;-]*business\b",
+                r"\bitem\s+1[\.\s:;-]*overview\b",
+            ],
+            end_patterns=[
+                r"\bitem\s+1a[\.\s:;-]*risk factors\b",
+                r"\bitem\s+2[\.\s:;-]*properties\b",
+                r"\bitem\s+2[\.\s:;-]*facilities\b",
+            ],
+            min_length=1200,
         )
         item_1a_text = _find_best_section(
             filing_text,
-            start_patterns=[r"ITEM\s+1A\.?\s+RISK\s+FACTORS"],
-            end_patterns=[r"ITEM\s+1B\.?\s+UNRESOLVED\s+STAFF\s+COMMENTS", r"ITEM\s+1C\.?\s+CYBERSECURITY", r"ITEM\s+2\.?\s+PROPERTIES"],
-            min_length=1800,
+            start_patterns=[r"\bitem\s+1a[\.\s:;-]*risk factors\b"],
+            end_patterns=[
+                r"\bitem\s+1b[\.\s:;-]*unresolved staff comments\b",
+                r"\bitem\s+2[\.\s:;-]*properties\b",
+                r"\bitem\s+2[\.\s:;-]*facilities\b",
+            ],
+            min_length=1200,
         )
 
-        filing_sections.append(
+        recent_sections.append(
             {
                 "ticker": ticker,
-                "company_name": _clean_profile_field(submissions.get("name")) or ticker_info.get("title") or ticker,
+                "company_name": company_name,
                 "cik": cik,
-                "sic": _clean_profile_field(submissions.get("sic")),
-                "sic_description": _clean_profile_field(submissions.get("sicDescription")),
-                "filing_date": filing_date,
-                "form": form,
-                "accession_number": accession_number,
+                "sic": sic_code,
+                "sic_description": sic_description,
+                "filing_date": filing["filing_date"],
                 "filing_url": filing_url,
                 "item_1_text": item_1_text,
                 "item_1_excerpt": _truncate_text(item_1_text, max_chars=3200),
                 "item_1a_text": item_1a_text,
-                "item_1a_excerpt": _truncate_text(item_1a_text, max_chars=2500),
+                "item_1a_excerpt": _truncate_text(item_1a_text, max_chars=2200),
             }
         )
 
-        if len(filing_sections) >= max_filings:
-            break
-
-    if not filing_sections:
-        raise ValueError(f"No recent 10-K filings were found for {ticker}")
-
-    return filing_sections
+    return recent_sections
 
 
 def _get_yahoo_taxonomy_fallback(ticker):
-    ticker = ticker.upper()
-    stock = yf.Ticker(ticker)
+    stock = yf.Ticker(ticker.upper())
     try:
         info = stock.get_info()
     except Exception:
-        return {}
-
+        info = {}
     return {
         "company_name": (
             _clean_profile_field(info.get("longName"))
@@ -344,28 +388,21 @@ def get_company_profile(ticker):
         print(f"Skipping SEC company profile fetch for {ticker}: {exc}")
         recent_10k_sections = []
 
-    yahoo_fallback = _get_yahoo_taxonomy_fallback(ticker)
     latest_filing = recent_10k_sections[0] if recent_10k_sections else {}
+    yahoo_fallback = _get_yahoo_taxonomy_fallback(ticker)
 
     company_name = (
         latest_filing.get("company_name")
         or yahoo_fallback.get("company_name")
         or ticker
     )
-    industry = (
-        latest_filing.get("sic_description")
-        or yahoo_fallback.get("industry")
-    )
-    sector = (
-        _derive_sector_from_sic(latest_filing.get("sic"), latest_filing.get("sic_description"))
-        or yahoo_fallback.get("sector")
-    )
-    description = latest_filing.get("item_1_excerpt")
-
-    if latest_filing:
-        source = "SEC EDGAR 10-K Item 1 Business"
-    else:
-        source = "Yahoo Finance via yfinance"
+    industry = latest_filing.get("sic_description") or yahoo_fallback.get("industry")
+    sector = _derive_sector_from_sic(
+        latest_filing.get("sic"),
+        latest_filing.get("sic_description"),
+    ) or yahoo_fallback.get("sector")
+    description = latest_filing.get("item_1_excerpt") or ""
+    source = "SEC EDGAR 10-K Item 1 Business" if recent_10k_sections else "Yahoo Finance via yfinance"
 
     return {
         "ticker": ticker,
@@ -381,6 +418,302 @@ def get_company_profile(ticker):
         "latest_filing_url": latest_filing.get("filing_url"),
         "recent_10k_sections": recent_10k_sections,
     }
+
+
+def _filing_form_dir(ticker, form_type, filings_base_dir=DEFAULT_STOCK_FILINGS_BASE_DIR):
+    return os.path.join(
+        filings_base_dir,
+        ticker.upper(),
+        form_type.lower().replace("-", ""),
+    )
+
+
+def _filing_json_name(filing_date, accession_number):
+    return f"{filing_date}_{accession_number.replace('-', '')}.json"
+
+
+def _extract_10k_sections(filing_text):
+    return {
+        "item_1_business": _find_best_section(
+            filing_text,
+            start_patterns=[
+                r"\bitem\s+1[\.\s:;-]*business\b",
+                r"\bitem\s+1[\.\s:;-]*overview\b",
+            ],
+            end_patterns=[
+                r"\bitem\s+1a[\.\s:;-]*risk factors\b",
+                r"\bitem\s+2[\.\s:;-]*properties\b",
+                r"\bitem\s+2[\.\s:;-]*facilities\b",
+            ],
+            min_length=1200,
+        ),
+        "item_1a_risk_factors": _find_best_section(
+            filing_text,
+            start_patterns=[r"\bitem\s+1a[\.\s:;-]*risk factors\b"],
+            end_patterns=[
+                r"\bitem\s+1b[\.\s:;-]*unresolved staff comments\b",
+                r"\bitem\s+2[\.\s:;-]*properties\b",
+                r"\bitem\s+2[\.\s:;-]*facilities\b",
+            ],
+            min_length=1200,
+        ),
+        "item_7_mda": _find_best_section(
+            filing_text,
+            start_patterns=[
+                r"\bitem\s+7[\.\s:;-]*management'?s discussion and analysis of financial condition and results of operations\b",
+                r"\bitem\s+7[\.\s:;-]*management'?s discussion and analysis\b",
+            ],
+            end_patterns=[
+                r"\bitem\s+7a[\.\s:;-]*quantitative and qualitative disclosures about market risk\b",
+                r"\bitem\s+8[\.\s:;-]*financial statements",
+            ],
+            min_length=1600,
+        ),
+        "item_8_financial_statements": _find_best_section(
+            filing_text,
+            start_patterns=[r"\bitem\s+8[\.\s:;-]*financial statements(?: and supplementary data)?\b"],
+            end_patterns=[
+                r"\bitem\s+9[\.\s:;-]*changes in and disagreements with accountants\b",
+                r"\bitem\s+9a[\.\s:;-]*controls and procedures\b",
+            ],
+            min_length=1800,
+        ),
+    }
+
+
+def _extract_10q_sections(filing_text):
+    return {
+        "item_1_financial_statements": _find_best_section(
+            filing_text,
+            start_patterns=[r"\bitem\s+1[\.\s:;-]*financial statements\b"],
+            end_patterns=[r"\bitem\s+2[\.\s:;-]*management'?s discussion and analysis\b"],
+            min_length=1200,
+        ),
+        "item_2_mda": _find_best_section(
+            filing_text,
+            start_patterns=[
+                r"\bitem\s+2[\.\s:;-]*management'?s discussion and analysis of financial condition and results of operations\b",
+                r"\bitem\s+2[\.\s:;-]*management'?s discussion and analysis\b",
+            ],
+            end_patterns=[
+                r"\bitem\s+3[\.\s:;-]*quantitative and qualitative disclosures about market risk\b",
+                r"\bitem\s+4[\.\s:;-]*controls and procedures\b",
+                r"\bitem\s+1a[\.\s:;-]*risk factors\b",
+            ],
+            min_length=1400,
+        ),
+        "item_1a_risk_factors": _find_best_section(
+            filing_text,
+            start_patterns=[r"\bitem\s+1a[\.\s:;-]*risk factors\b"],
+            end_patterns=[
+                r"\bitem\s+2[\.\s:;-]*unregistered sales of equity securities\b",
+                r"\bitem\s+5[\.\s:;-]*other information\b",
+                r"\bitem\s+6[\.\s:;-]*exhibits\b",
+            ],
+            min_length=1000,
+        ),
+    }
+
+
+def _document_payloads_from_section_map(ticker, company_profile, filing_record):
+    form_type = filing_record["form_type"]
+    section_map = filing_record["sections"]
+    payloads = []
+
+    if form_type == "10-K":
+        ordered_sections = [
+            ("item_1_business", "SEC 10-K Item 1 Business"),
+            ("item_1a_risk_factors", "SEC 10-K Item 1A Risk Factors"),
+            ("item_7_mda", "SEC 10-K Item 7 MD&A"),
+            ("item_8_financial_statements", "SEC 10-K Item 8 Financial Statements"),
+        ]
+    else:
+        ordered_sections = [
+            ("item_1_financial_statements", "SEC 10-Q Item 1 Financial Statements"),
+            ("item_2_mda", "SEC 10-Q Item 2 MD&A"),
+            ("item_1a_risk_factors", "SEC 10-Q Item 1A Risk Factors"),
+        ]
+
+    for section_key, section_title in ordered_sections:
+        section_text = section_map.get(section_key) or ""
+        if not section_text:
+            continue
+
+        payloads.append(
+            {
+                "text": (
+                    f"**{section_title}**\n\n"
+                    f"Company: {company_profile['company_name']}\n"
+                    f"Ticker: {ticker}\n"
+                    f"Form Type: {form_type}\n"
+                    f"Filing Date: {filing_record['filing_date']}\n"
+                    f"Filing URL: {filing_record['filing_url']}\n"
+                    f"Sector: {company_profile['sector'] or 'Unknown'}\n"
+                    f"Industry: {company_profile['industry'] or 'Unknown'}\n\n"
+                    f"{section_text}"
+                ),
+                "metadata": {
+                    "ticker": ticker,
+                    "type": "sec_filing_section",
+                    "form_type": form_type,
+                    "section_key": section_key,
+                    "section_title": section_title,
+                    "company_name": company_profile["company_name"],
+                    "sector": company_profile["sector"] or "Unknown",
+                    "industry": company_profile["industry"] or "Unknown",
+                    "filing_date": filing_record["filing_date"],
+                    "filing_url": filing_record["filing_url"],
+                    "accession_number": filing_record["accession_number"],
+                    "source": section_title,
+                },
+            }
+        )
+
+    return payloads
+
+
+def _persist_filing_payloads(ticker, form_type, filing_records, filings_base_dir=DEFAULT_STOCK_FILINGS_BASE_DIR):
+    form_dir = _filing_form_dir(ticker, form_type, filings_base_dir=filings_base_dir)
+    os.makedirs(form_dir, exist_ok=True)
+
+    retained_files = set()
+    for filing_record in filing_records:
+        file_name = _filing_json_name(
+            filing_record["filing_date"],
+            filing_record["accession_number"],
+        )
+        retained_files.add(file_name)
+        file_path = os.path.join(form_dir, file_name)
+        with open(file_path, "w", encoding="utf-8") as filing_file:
+            json.dump(filing_record, filing_file, ensure_ascii=False, indent=2)
+
+    for existing_name in os.listdir(form_dir):
+        existing_path = os.path.join(form_dir, existing_name)
+        if existing_name.endswith(".json") and existing_name not in retained_files:
+            os.remove(existing_path)
+
+
+def _documents_from_payloads(document_payloads):
+    return [
+        Document(text=payload["text"], metadata=payload["metadata"])
+        for payload in document_payloads
+    ]
+
+
+def _build_company_profile_from_sec_archive(ticker, archive_payload):
+    latest_10k = (archive_payload.get("10k_filings") or [{}])[0]
+    yahoo_fallback = _get_yahoo_taxonomy_fallback(ticker)
+
+    company_name = (
+        latest_10k.get("company_name")
+        or archive_payload.get("company_name")
+        or yahoo_fallback.get("company_name")
+        or ticker
+    )
+    industry = latest_10k.get("sic_description") or archive_payload.get("sic_description") or yahoo_fallback.get("industry")
+    sector = _derive_sector_from_sic(
+        latest_10k.get("sic"),
+        latest_10k.get("sic_description"),
+    ) or yahoo_fallback.get("sector")
+
+    item_1_text = (latest_10k.get("sections") or {}).get("item_1_business") or ""
+    description = _truncate_text(item_1_text, max_chars=3200)
+
+    return {
+        "ticker": ticker,
+        "company_name": company_name,
+        "sector": sector,
+        "industry": industry,
+        "description": description,
+        "source": "SEC EDGAR filings archive" if latest_10k else "Yahoo Finance via yfinance",
+        "cik": archive_payload.get("cik"),
+        "sic": latest_10k.get("sic") or archive_payload.get("sic"),
+        "sic_description": latest_10k.get("sic_description") or archive_payload.get("sic_description"),
+        "latest_filing_date": latest_10k.get("filing_date"),
+        "latest_filing_url": latest_10k.get("filing_url"),
+        "ten_k_filings": archive_payload.get("10k_filings", []),
+        "ten_q_filings": archive_payload.get("10q_filings", []),
+    }
+
+
+def _sync_sec_filing_archive(
+    ticker,
+    filings_base_dir=DEFAULT_STOCK_FILINGS_BASE_DIR,
+    max_10k_filings=10,
+    max_10q_filings=12):
+    ticker = ticker.upper()
+    ticker_map = _load_sec_ticker_map()
+    sec_identity = ticker_map.get(ticker)
+    if not sec_identity:
+        raise ValueError(f"Ticker {ticker} was not found in the SEC ticker map.")
+
+    cik = sec_identity["cik"]
+    submissions = _sec_get_json(SEC_SUBMISSIONS_URL_TEMPLATE.format(cik=cik))
+    recent = ((submissions.get("filings") or {}).get("recent") or {})
+    company_name = _clean_profile_field(submissions.get("name")) or sec_identity.get("title") or ticker
+    sic = _clean_profile_field(submissions.get("sic"))
+    sic_description = _clean_profile_field(submissions.get("sicDescription"))
+
+    base_profile = {
+        "company_name": company_name,
+        "sector": _derive_sector_from_sic(sic, sic_description),
+        "industry": sic_description,
+    }
+
+    filing_groups = {"10-K": [], "10-Q": []}
+    max_by_form = {"10-K": max_10k_filings, "10-Q": max_10q_filings}
+    cik_no_zero = str(int(cik))
+
+    for form, accession_number, filing_date, primary_document in zip(
+        recent.get("form") or [],
+        recent.get("accessionNumber") or [],
+        recent.get("filingDate") or [],
+        recent.get("primaryDocument") or [],
+    ):
+        if form not in filing_groups or len(filing_groups[form]) >= max_by_form[form]:
+            continue
+
+        accession_no_dashes = accession_number.replace("-", "")
+        filing_url = SEC_ARCHIVES_DOCUMENT_URL_TEMPLATE.format(
+            cik_no_zero=cik_no_zero,
+            accession_no_dashes=accession_no_dashes,
+            primary_document=primary_document,
+        )
+        filing_html = _sec_get_text(filing_url)
+        filing_text = _html_to_text_preserve_lines(filing_html)
+        sections = _extract_10k_sections(filing_text) if form == "10-K" else _extract_10q_sections(filing_text)
+
+        filing_record = {
+            "ticker": ticker,
+            "company_name": company_name,
+            "cik": cik,
+            "sic": sic,
+            "sic_description": sic_description,
+            "form_type": form,
+            "filing_date": filing_date,
+            "filing_url": filing_url,
+            "accession_number": accession_number,
+            "primary_document": primary_document,
+            "sections": sections,
+        }
+        filing_record["documents"] = _document_payloads_from_section_map(
+            ticker,
+            base_profile | {"company_name": company_name},
+            filing_record,
+        )
+        filing_groups[form].append(filing_record)
+
+    _persist_filing_payloads(ticker, "10-K", filing_groups["10-K"], filings_base_dir=filings_base_dir)
+    _persist_filing_payloads(ticker, "10-Q", filing_groups["10-Q"], filings_base_dir=filings_base_dir)
+
+    return {
+        "ticker": ticker,
+        "company_name": company_name,
+        "cik": cik,
+        "sic": sic,
+        "sic_description": sic_description,
+        "10k_filings": filing_groups["10-K"],
+        "10q_filings": filing_groups["10-Q"],}
 
 
 def _empty_relationship_graph(ticker, company_profile):
@@ -436,7 +769,6 @@ def _extract_json_payload(raw_text):
 
 
 def _build_relationship_source_snippets(ticker, company_profile):
-    ticker = ticker.upper()
     sources = []
 
     profile_lines = [
@@ -491,38 +823,34 @@ def _build_relationship_source_snippets(ticker, company_profile):
                 }
             )
 
-        item_1_evidence = _build_keyword_paragraph_snippet(
+        item_1_relationship_text = _build_keyword_paragraph_snippet(
             filing.get("item_1_text"),
-            relationship_keywords,
-            max_paragraphs=8,
+            keywords=relationship_keywords,
         )
-        if item_1_evidence:
+        if item_1_relationship_text:
             sources.append(
                 {
                     "label": f"sec_10k_{index}_item_1_relationships",
                     "source_type": "sec_10k_item_1",
                     "text": (
                         f"Filing Date: {filing['filing_date']}\n"
-                        "Item 1 Business Relationship Evidence:\n"
-                        f"{item_1_evidence}"
+                        f"Item 1 Business Relationship Evidence:\n{item_1_relationship_text}"
                     ),
                 }
             )
 
-        item_1a_evidence = _build_keyword_paragraph_snippet(
+        item_1a_relationship_text = _build_keyword_paragraph_snippet(
             filing.get("item_1a_text"),
-            relationship_keywords,
-            max_paragraphs=8,
+            keywords=relationship_keywords,
         )
-        if item_1a_evidence:
+        if item_1a_relationship_text:
             sources.append(
                 {
                     "label": f"sec_10k_{index}_item_1a_risks",
                     "source_type": "sec_10k_item_1a",
                     "text": (
                         f"Filing Date: {filing['filing_date']}\n"
-                        "Item 1A Risk Factors Relationship Evidence:\n"
-                        f"{item_1a_evidence}"
+                        f"Item 1A Risk Factors Relationship Evidence:\n{item_1a_relationship_text}"
                     ),
                 }
             )
@@ -537,54 +865,56 @@ def _extract_relationship_graph_with_llm(ticker, company_profile, source_snippet
     env()
     combined_sources = []
     for snippet in source_snippets:
-        snippet_text = snippet["text"][:1600]
+        snippet_text = snippet["text"][:2400]
         combined_sources.append(
             f"[{snippet['label']}]\n{snippet_text}"
         )
 
     extraction_prompt = f"""
-You are extracting a compact relationship graph for {company_profile['company_name']} ({ticker}).
+        You are extracting a compact relationship graph for {company_profile['company_name']} ({ticker}).
 
-Use only the source snippets below.
-Only extract relationships that are explicit or strongly supported in the text.
-Do not use outside knowledge.
+        Use only the SEC-derived source snippets below.
+        Only extract relationships that are explicit or strongly supported in the filing text.
+        Do not use outside knowledge.
 
-Allowed relationship types:
-- competitor
-- customer
-- supplier
+        Allowed relationship types:
+        - competitor
+        - customer
+        - supplier
 
-Return JSON only with this exact shape:
-{{
-  "nodes": [
-    {{
-      "name": "entity name or clearly defined counterparty group",
-      "entity_type": "organization_or_group",
-      "roles": ["competitor"],
-      "profile": "short profile",
-      "aliases": ["optional alias"],
-      "source_labels": ["company_profile"]
-    }}
-  ],
-  "edges": [
-    {{
-      "target_name": "entity name",
-      "relationship_type": "competitor",
-      "summary": "short relation summary",
-      "quantitative_detail": "revenue share or other numeric detail if present",
-      "evidence": "short supporting snippet",
-      "source_labels": ["news_1"],
-      "confidence": 0.0
-    }}
-  ]
-}}
+        If the filing names a clear counterparty group rather than a specific company, you may still create a node.
+        Examples: bottling partners, distributors, wholesalers, retailers, contract manufacturers.
 
-If no competitors, customers, or suppliers are explicitly supported, return empty arrays.
-If the filing names a counterparty group like bottling partners, distributors, retailers, wholesalers, or suppliers without naming a specific company, you may still create a node for that group.
+        Return JSON only with this exact shape:
+        {{
+          "nodes": [
+            {{
+              "name": "entity name",
+              "entity_type": "organization_or_group",
+              "roles": ["customer"],
+              "profile": "short profile",
+              "aliases": ["optional alias"],
+              "source_labels": ["company_profile"]
+            }}
+          ],
+          "edges": [
+            {{
+              "target_name": "entity name",
+              "relationship_type": "customer",
+              "summary": "short relation summary",
+              "quantitative_detail": "revenue share or other numeric detail if present",
+              "evidence": "short supporting snippet",
+              "source_labels": ["sec_10k_1_item_1_relationships"],
+              "confidence": 0.0
+            }}
+          ]
+        }}
 
-Source snippets:
-{chr(10).join(combined_sources)}
-"""
+        If no competitors, customers, or suppliers are explicitly supported, return empty arrays.
+
+        Source snippets:
+        {chr(10).join(combined_sources)}
+    """
 
     response = Settings.llm.complete(extraction_prompt)
     extracted_payload = _extract_json_payload(str(response))
@@ -663,7 +993,7 @@ Source snippets:
             merged_node = {
                 "id": target_node_id,
                 "name": target_name,
-                "entity_type": "organization_or_group",
+                "entity_type": "organization",
                 "roles": [relationship_type],
                 "profile": "",
                 "aliases": [],
@@ -712,12 +1042,13 @@ Source snippets:
             if not merged_edge.get("evidence"):
                 merged_edge["evidence"] = _clean_profile_field(raw_edge.get("evidence")) or ""
 
+    root_node_id = graph["nodes"][0]["id"]
     for node in graph["nodes"]:
         if node["id"] == root_node_id:
             continue
 
-        for relationship_type in node.get("roles", []):
-            if relationship_type not in {"competitor", "customer", "supplier"}:
+        for relationship_type in {"competitor", "customer", "supplier"}:
+            if relationship_type not in set(node.get("roles", [])):
                 continue
 
             edge_key = (root_node_id, node["id"], relationship_type)
@@ -747,12 +1078,13 @@ def build_company_relationship_graph(ticker, company_profile=None):
             ticker,
             company_profile,
         )
-        return _extract_relationship_graph_with_llm(ticker, company_profile, source_snippets)
+        graph = _extract_relationship_graph_with_llm(ticker, company_profile, source_snippets)
+        return _apply_sec_relationship_heuristics(graph, company_profile)
     except Exception as exc:
         print(f"Skipping relationship graph extraction for {ticker}: {exc}")
         graph = _empty_relationship_graph(ticker, company_profile)
         graph["sources"] = [{"label": "company_profile", "source_type": "sec_company_profile"}]
-        return graph
+        return _apply_sec_relationship_heuristics(graph, company_profile)
 
 
 def _relationship_metadata_summary(relationship_graph):
@@ -798,10 +1130,19 @@ def _relationship_metadata_summary(relationship_graph):
             if detail not in concentration_details[relationship_type]:
                 concentration_details[relationship_type].append(detail)
 
+    def _prune_relation_names(values):
+        cleaned_values = []
+        for value in sorted(set(values), key=lambda item: (-len(item), item.lower())):
+            lowered_value = value.lower()
+            if any(lowered_value in existing.lower() for existing in cleaned_values):
+                continue
+            cleaned_values.append(value)
+        return cleaned_values
+
     return {
-        "competitors": relation_names["competitor"],
-        "major_customers": relation_names["customer"],
-        "key_suppliers": relation_names["supplier"],
+        "competitors": _prune_relation_names(relation_names["competitor"]),
+        "major_customers": _prune_relation_names(relation_names["customer"]),
+        "key_suppliers": _prune_relation_names(relation_names["supplier"]),
         "customer_concentration": concentration_details["customer"],
         "supplier_concentration": concentration_details["supplier"],
         "competitor_share_signals": concentration_details["competitor"],
@@ -810,6 +1151,148 @@ def _relationship_metadata_summary(relationship_graph):
 
 def _relationship_list_text(values):
     return ", ".join(values) if values else "None explicitly extracted"
+
+
+def _upsert_relationship(graph, relationship_type, counterparty_name, summary, evidence, source_label, confidence=0.4):
+    counterparty_name = _clean_profile_field(counterparty_name)
+    if not counterparty_name or relationship_type not in {"competitor", "customer", "supplier"}:
+        return
+
+    root_node = graph["nodes"][0]
+    root_node_id = root_node["id"]
+    normalized_key = _normalize_entity_key(counterparty_name)
+    node_lookup = {node["id"]: node for node in graph.get("nodes", [])}
+    lookup_by_name = {
+        _normalize_entity_key(node.get("name")): node["id"]
+        for node in graph.get("nodes", [])
+        if node.get("name")
+    }
+
+    target_node_id = lookup_by_name.get(normalized_key)
+    if not target_node_id:
+        target_node_id = f"entity::{normalized_key or len(graph['nodes'])}"
+        graph["nodes"].append(
+            {
+                "id": target_node_id,
+                "name": counterparty_name,
+                "entity_type": "organization_or_group",
+                "roles": [relationship_type],
+                "profile": summary or "",
+                "aliases": [],
+                "source_labels": [source_label],
+            }
+        )
+        node_lookup[target_node_id] = graph["nodes"][-1]
+    else:
+        node_lookup[target_node_id]["roles"] = sorted(
+            set(node_lookup[target_node_id].get("roles", [])) | {relationship_type}
+        )
+        node_lookup[target_node_id]["source_labels"] = sorted(
+            set(node_lookup[target_node_id].get("source_labels", [])) | {source_label}
+        )
+        if not node_lookup[target_node_id].get("profile"):
+            node_lookup[target_node_id]["profile"] = summary or ""
+
+    for edge in graph.get("edges", []):
+        if (
+            edge.get("source_node_id") == root_node_id
+            and edge.get("target_node_id") == target_node_id
+            and edge.get("relationship_type") == relationship_type
+        ):
+            if not edge.get("summary"):
+                edge["summary"] = summary or ""
+            if not edge.get("evidence"):
+                edge["evidence"] = evidence or ""
+            edge["source_labels"] = sorted(set(edge.get("source_labels", [])) | {source_label})
+            edge["confidence"] = max(edge.get("confidence", 0.0), confidence)
+            return
+
+    graph["edges"].append(
+        {
+            "source_node_id": root_node_id,
+            "target_node_id": target_node_id,
+            "relationship_type": relationship_type,
+            "summary": summary or "",
+            "quantitative_detail": "",
+            "evidence": evidence or "",
+            "source_labels": [source_label],
+            "confidence": confidence,
+        }
+    )
+
+
+def _extract_sentence_with_pattern(text, pattern):
+    if not text:
+        return ""
+    match = re.search(rf"([^.]*{pattern}[^.]*)\.", text, flags=re.IGNORECASE)
+    if match:
+        return _clean_section_text(match.group(1))
+    return ""
+
+
+def _apply_sec_relationship_heuristics(graph, company_profile):
+    texts = []
+    if company_profile.get("description"):
+        texts.append(("company_profile", company_profile["description"]))
+    for index, filing in enumerate(company_profile.get("recent_10k_sections", []), start=1):
+        if filing.get("item_1_text"):
+            texts.append((f"sec_10k_{index}_item_1", filing["item_1_text"]))
+        if filing.get("item_1a_text"):
+            texts.append((f"sec_10k_{index}_item_1a", filing["item_1a_text"]))
+
+    heuristic_patterns = [
+        (
+            r"independent bottling partners(?:,\s*distributors,\s*wholesalers\s*and\s*retailers)?",
+            "customer",
+            "Distribution and customer-facing network referenced in SEC filing.",
+        ),
+        (
+            r"key retail or foodservice customers",
+            "customer",
+            "Key retail or foodservice customers referenced in SEC filing.",
+        ),
+        (
+            r"distributors,\s*wholesalers\s*and\s*retailers",
+            "customer",
+            "Distribution channel partners referenced in SEC filing.",
+        ),
+        (
+            r"third[- ]party suppliers?",
+            "supplier",
+            "Third-party suppliers referenced in SEC filing.",
+        ),
+        (
+            r"raw material suppliers?",
+            "supplier",
+            "Raw material suppliers referenced in SEC filing.",
+        ),
+        (
+            r"contract manufacturers?",
+            "supplier",
+            "Contract manufacturing partners referenced in SEC filing.",
+        ),
+    ]
+
+    for source_label, text in texts:
+        lowered_text = text.lower()
+        for pattern, relationship_type, summary in heuristic_patterns:
+            match = re.search(pattern, lowered_text, flags=re.IGNORECASE)
+            if not match:
+                continue
+
+            matched_value = text[match.start():match.end()]
+            evidence = _extract_sentence_with_pattern(text, pattern) or matched_value
+            _upsert_relationship(
+                graph,
+                relationship_type=relationship_type,
+                counterparty_name=matched_value,
+                summary=summary,
+                evidence=evidence,
+                source_label=source_label,
+                confidence=0.45,
+            )
+
+    return graph
 
 
 def build_relationship_graph_docs(relationship_graph):
@@ -1049,30 +1532,19 @@ def build_financial_docs(
     ticker,
     db_path=DEFAULT_STOCK_DB_PATH,
     max_quarters=12,
-    max_annual=8,
-    include_relationship_graph=True,
-    return_relationship_graph=False):
+    max_annual=10,
+    filings_base_dir=DEFAULT_STOCK_FILINGS_BASE_DIR):
     documents = []
     conn = sqlite3.connect(db_path)
 
     ticker = ticker.upper()
-    company_profile = get_company_profile(ticker)
-    relationship_graph = None
-    relationship_metadata = {
-        "competitors": [],
-        "major_customers": [],
-        "key_suppliers": [],
-        "customer_concentration": [],
-        "supplier_concentration": [],
-        "competitor_share_signals": [],
-    }
-
-    if include_relationship_graph:
-        relationship_graph = build_company_relationship_graph(
-            ticker,
-            company_profile=company_profile,
-        )
-        relationship_metadata = _relationship_metadata_summary(relationship_graph)
+    sec_archive = _sync_sec_filing_archive(
+        ticker,
+        filings_base_dir=filings_base_dir,
+        max_10k_filings=10,
+        max_10q_filings=12,
+    )
+    company_profile = _build_company_profile_from_sec_archive(ticker, sec_archive)
 
     profile_lines = [
         f"Company: {company_profile['company_name']}",
@@ -1080,18 +1552,9 @@ def build_financial_docs(
         f"Sector: {company_profile['sector'] or 'Unknown'}",
         f"Industry: {company_profile['industry'] or 'Unknown'}",
         f"Source: {company_profile['source']}",
-        f"Competitors: {_relationship_list_text(relationship_metadata['competitors'])}",
-        f"Major Customers: {_relationship_list_text(relationship_metadata['major_customers'])}",
-        f"Key Suppliers: {_relationship_list_text(relationship_metadata['key_suppliers'])}",
+        f"Stored 10-K filings: {len(company_profile.get('ten_k_filings', []))}",
+        f"Stored 10-Q filings: {len(company_profile.get('ten_q_filings', []))}",
     ]
-    if relationship_metadata["customer_concentration"]:
-        profile_lines.append(
-            f"Customer Concentration Detail: {_relationship_list_text(relationship_metadata['customer_concentration'])}"
-        )
-    if relationship_metadata["supplier_concentration"]:
-        profile_lines.append(
-            f"Supplier Concentration Detail: {_relationship_list_text(relationship_metadata['supplier_concentration'])}"
-        )
     if company_profile.get("latest_filing_date"):
         profile_lines.append(f"Latest 10-K Filing Date: {company_profile['latest_filing_date']}")
     if company_profile.get("latest_filing_url"):
@@ -1113,80 +1576,17 @@ def build_financial_docs(
                 "source": company_profile["source"],
                 "filing_date": company_profile.get("latest_filing_date"),
                 "filing_url": company_profile.get("latest_filing_url"),
-                "competitors": relationship_metadata["competitors"],
-                "major_customers": relationship_metadata["major_customers"],
-                "key_suppliers": relationship_metadata["key_suppliers"],
-                "customer_concentration": relationship_metadata["customer_concentration"],
-                "supplier_concentration": relationship_metadata["supplier_concentration"],
+                "ten_k_count": len(company_profile.get("ten_k_filings", [])),
+                "ten_q_count": len(company_profile.get("ten_q_filings", [])),
             }
         )
     )
 
-    for filing in company_profile.get("recent_10k_sections", []):
-        if filing.get("item_1_text"):
-            documents.append(
-                Document(
-                    text=(
-                        "**SEC 10-K Item 1 Business**\n\n"
-                        f"Company: {company_profile['company_name']}\n"
-                        f"Ticker: {ticker}\n"
-                        f"Filing Date: {filing['filing_date']}\n"
-                        f"Filing URL: {filing['filing_url']}\n"
-                        f"Sector: {company_profile['sector'] or 'Unknown'}\n"
-                        f"Industry: {company_profile['industry'] or 'Unknown'}\n\n"
-                        f"{filing['item_1_text']}"
-                    ),
-                    metadata={
-                        "ticker": ticker,
-                        "type": "sec_10k_item_1",
-                        "company_name": company_profile["company_name"],
-                        "sector": company_profile["sector"] or "Unknown",
-                        "industry": company_profile["industry"] or "Unknown",
-                        "filing_date": filing["filing_date"],
-                        "filing_url": filing["filing_url"],
-                        "source": "SEC 10-K Item 1 Business",
-                        "competitors": relationship_metadata["competitors"],
-                        "major_customers": relationship_metadata["major_customers"],
-                        "key_suppliers": relationship_metadata["key_suppliers"],
-                        "customer_concentration": relationship_metadata["customer_concentration"],
-                        "supplier_concentration": relationship_metadata["supplier_concentration"],
-                    }
-                )
-            )
+    for filing_record in company_profile.get("ten_k_filings", []):
+        documents.extend(_documents_from_payloads(filing_record.get("documents", [])))
 
-        if filing.get("item_1a_text"):
-            documents.append(
-                Document(
-                    text=(
-                        "**SEC 10-K Item 1A Risk Factors**\n\n"
-                        f"Company: {company_profile['company_name']}\n"
-                        f"Ticker: {ticker}\n"
-                        f"Filing Date: {filing['filing_date']}\n"
-                        f"Filing URL: {filing['filing_url']}\n"
-                        f"Sector: {company_profile['sector'] or 'Unknown'}\n"
-                        f"Industry: {company_profile['industry'] or 'Unknown'}\n\n"
-                        f"{filing['item_1a_text']}"
-                    ),
-                    metadata={
-                        "ticker": ticker,
-                        "type": "sec_10k_item_1a",
-                        "company_name": company_profile["company_name"],
-                        "sector": company_profile["sector"] or "Unknown",
-                        "industry": company_profile["industry"] or "Unknown",
-                        "filing_date": filing["filing_date"],
-                        "filing_url": filing["filing_url"],
-                        "source": "SEC 10-K Item 1A Risk Factors",
-                        "competitors": relationship_metadata["competitors"],
-                        "major_customers": relationship_metadata["major_customers"],
-                        "key_suppliers": relationship_metadata["key_suppliers"],
-                        "customer_concentration": relationship_metadata["customer_concentration"],
-                        "supplier_concentration": relationship_metadata["supplier_concentration"],
-                    }
-                )
-            )
-
-    if include_relationship_graph:
-        documents.extend(build_relationship_graph_docs(relationship_graph))
+    for filing_record in company_profile.get("ten_q_filings", []):
+        documents.extend(_documents_from_payloads(filing_record.get("documents", [])))
 
     for freq, max_keep in [('Quarterly', max_quarters), ('Annual', max_annual)]:
         query = """
@@ -1226,18 +1626,13 @@ def build_financial_docs(
                 "most_recent": df['Period End Date'].iloc[0],
                 "source": "yfinance + SQLite",
                 "table_rows": len(df),
-                "competitors": relationship_metadata["competitors"],
-                "major_customers": relationship_metadata["major_customers"],
-                "key_suppliers": relationship_metadata["key_suppliers"],
-                "customer_concentration": relationship_metadata["customer_concentration"],
-                "supplier_concentration": relationship_metadata["supplier_concentration"],
+                "ten_k_count": len(company_profile.get("ten_k_filings", [])),
+                "ten_q_count": len(company_profile.get("ten_q_filings", [])),
             }
         )
         documents.append(doc)
 
     conn.close()
-    if return_relationship_graph:
-        return documents, relationship_graph
     return documents
 
 def update_financial_records(ticker, db_path=DEFAULT_STOCK_DB_PATH):
@@ -1245,7 +1640,7 @@ def update_financial_records(ticker, db_path=DEFAULT_STOCK_DB_PATH):
     Checks and updates financial records for a ticker in SQLite storage.
 
     - Fetches latest from yfinance (all available periods).
-    - For annual: keep most recent 8 years.
+    - For annual: keep most recent 10 years.
     - For quarterly: keep most recent 12 quarters.
     - If up to date (latest period matches), do nothing.
     - Else: add new periods, then trim to max keep (deque-like: remove oldest if excess).
@@ -1253,7 +1648,7 @@ def update_financial_records(ticker, db_path=DEFAULT_STOCK_DB_PATH):
     conn = sqlite3.connect(db_path)
     ticker = ticker.upper()
 
-    for freq, max_keep in [('annual', 8), ('quarterly', 12)]:
+    for freq, max_keep in [('annual', 10), ('quarterly', 12)]:
         freq_label = freq.capitalize()
 
         # Fetch all available latest data from yfinance
@@ -1312,7 +1707,8 @@ def refresh_ticker_data_and_index(
     ticker: str,
     db_path=DEFAULT_STOCK_DB_PATH,
     max_quarters=12,
-    max_annual=8,
+    max_annual=10,
+    filings_base_dir=DEFAULT_STOCK_FILINGS_BASE_DIR,
     storage_base_dir=DEFAULT_STOCK_STORAGE_BASE_DIR):
     """
     End-to-end refresh for one ticker:
@@ -1329,36 +1725,25 @@ def refresh_ticker_data_and_index(
     persist_dir = os.path.join(storage_base_dir, ticker)
 
     # Step 2: build documents from the fresh DB
-    docs, relationship_graph = build_financial_docs(
+    docs = build_financial_docs(
         ticker,
         db_path=db_path,
         max_quarters=max_quarters,
         max_annual=max_annual,
-        include_relationship_graph=True,
-        return_relationship_graph=True,
+        filings_base_dir=filings_base_dir,
     )
 
     if not docs:
         print(f"No documents generated for {ticker} — skipping index update")
         return None
 
-    if relationship_graph is not None:
-        _persist_relationship_graph(relationship_graph, persist_dir=persist_dir)
-
-    # Step 3: upsert into vector store
+    # Step 3: rebuild vector store so old Yahoo-based docs do not linger
     node_parser = SentenceSplitter(chunk_size=1024, chunk_overlap=200)
     nodes = node_parser.get_nodes_from_documents(docs)
-
-    try:
-        storage_context = StorageContext.from_defaults(persist_dir=persist_dir)
-        index = load_index_from_storage(storage_context)
-        index.insert_nodes(nodes)
-        print(f"Updated existing index for {ticker}")
-    except FileNotFoundError:
-        index = VectorStoreIndex(nodes)
-        print(f"Created new index for {ticker}")
-
+    _reset_persist_dir(persist_dir)
+    index = VectorStoreIndex(nodes)
     index.storage_context.persist(persist_dir=persist_dir)
+
     print(f"Index successfully refreshed for {ticker}")
 
 

@@ -57,7 +57,6 @@ def ask_question(ticker,query_str):
 
 ticker = input('which company do you want to know about, give me the ticker: ')
 
-
 if __name__ == "__main__":
     print(
         query.analyze_company(

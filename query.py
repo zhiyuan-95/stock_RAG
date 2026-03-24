@@ -6,11 +6,13 @@ from llama_index.core import Settings, StorageContext, PromptTemplate, load_inde
 from llama_index.core.retrievers import VectorIndexRetriever
 from dotenv import load_dotenv
 
+import ingest_knowledge
 import ingest_stock
 
 load_dotenv("config.env")
 
 DEFAULT_STOCK_STORAGE_BASE_DIR = os.getenv("STOCK_STORAGE_BASE_DIR", "./storage/stock")
+DEFAULT_KNOWLEDGE_STORAGE_DIR = os.getenv("KNOWLEDGE_STORAGE_DIR", "./storage/knowledge")
 DEFAULT_MACRO_STORAGE_DIR = os.getenv("MACRO_STORAGE_DIR", "./storage/macro")
 
 
@@ -24,8 +26,8 @@ ANALYSIS_PROMPT = PromptTemplate(
         === STOCK DATABASE CONTEXT ===
         {stock_context}
 
-        === RELATIONSHIP GRAPH CONTEXT ===
-        {graph_context}
+        === KNOWLEDGE DATABASE CONTEXT ===
+        {knowledge_context}
 
         === MACRO DATABASE CONTEXT ===
         {macro_context}
@@ -33,14 +35,15 @@ ANALYSIS_PROMPT = PromptTemplate(
         The stock context may contain:
         - company overview / business description
         - sector and industry
+        - SEC 10-K / 10-Q filing sections
+        - Item 1 / Item 1A / MD&A / financial statements
         - annual and quarterly financial indicators
 
-        The relationship graph context may contain:
-        - competitors
-        - suppliers
-        - customers
-        - relation summaries
-        - quantitative details like revenue contribution if explicitly extracted
+        The knowledge context may contain:
+        - glossary definitions for common financial indicators
+        - plain-English explanation of what a metric means
+        - common reasons a metric improves or deteriorates
+        - general examples that are not specific to {ticker}
 
         The macro context may contain:
         - Fed funds rate
@@ -54,11 +57,14 @@ ANALYSIS_PROMPT = PromptTemplate(
 
         Requirements:
         - Use exact numbers, percentages, and dates from the retrieved context whenever possible.
+        - When multiple filing periods or years are present, prioritize the most recent dated information unless the user explicitly asks for history.
+        - For current financial trend analysis, prioritize the latest annual and quarterly financial indicator docs over older filing financial statements.
         - Prioritize information that is actually present in the database context.
         - If something is missing from the context, say that clearly instead of guessing.
         - Do not provide price targets, valuation multiples, or named competitors unless they are explicitly present in the retrieved context.
         - Connect company fundamentals to the macro environment in a concrete way.
-        - For relationship questions, use the relationship graph context first and then connect it back to the financial and macro context.
+        - Use SEC filing sections to explain the business, risks, and the reasons behind financial trends when available.
+        - If glossary context is retrieved, use it only to explain what a metric means in plain English. Do not treat glossary examples as company-specific facts about {ticker}.
 
         Follow this structure:
 
@@ -80,10 +86,10 @@ ANALYSIS_PROMPT = PromptTemplate(
         - Whether the current macro environment is supportive, neutral, or adverse
         - How inflation, rates, growth, labor data, and PMI affect the business if relevant
 
-        4. Relationship Graph Takeaways
-        - Relevant competitors, suppliers, or customers from the retrieved graph context
-        - Any quantitative contribution, concentration, or relation detail explicitly present
-        - If the graph does not contain enough evidence for the question, say that directly
+        4. Filing Takeaways
+        - The most important signals from Item 1 / Item 1A / MD&A / financial statements
+        - What the filings say about business drivers, risks, and causality
+        - If the filings do not contain enough evidence for the question, say that directly
 
         5. Risks And Missing Information
         - Main risks visible from the retrieved context
@@ -146,6 +152,34 @@ def _retrieve_context_from_dir(persist_dir, query_str, label, similarity_top_k=4
     return _format_context_chunks(label, chunks)
 
 
+def _matched_knowledge_chunks(query_str, max_matches=3):
+    normalized_query = re.sub(r"\s+", " ", query_str.lower()).strip()
+    exact_matches = []
+
+    for doc in ingest_knowledge.build_glossary_docs():
+        indicator_name = (doc.metadata.get("indicator_name") or "").strip()
+        if not indicator_name:
+            continue
+
+        normalized_indicator = re.sub(r"\s+", " ", indicator_name.lower()).strip()
+        if normalized_indicator and normalized_indicator in normalized_query:
+            exact_matches.append((len(normalized_indicator), doc.text))
+
+    exact_matches.sort(key=lambda item: item[0], reverse=True)
+
+    matched_chunks = []
+    seen = set()
+    for _, text in exact_matches:
+        if text in seen:
+            continue
+        seen.add(text)
+        matched_chunks.append(text)
+        if len(matched_chunks) >= max_matches:
+            break
+
+    return matched_chunks
+
+
 def _load_relationship_graph(persist_dir):
     graph_path = os.path.join(persist_dir, ingest_stock.RELATIONSHIP_GRAPH_FILENAME)
     if not os.path.isfile(graph_path):
@@ -173,7 +207,6 @@ def _relationship_focus(query_str):
         focus.add("supplier")
     if "customer" in lowered_query or "customers" in lowered_query or "revenue contribution" in lowered_query:
         focus.add("customer")
-
     return focus
 
 
@@ -356,12 +389,24 @@ def _ensure_stock_index_directory(ticker, stock_storage_base_dir):
     return persist_dir
 
 
+def _ensure_knowledge_index_directory(knowledge_storage_dir):
+    docstore_path = os.path.join(knowledge_storage_dir, "docstore.json")
+    if os.path.isdir(knowledge_storage_dir) and os.path.isfile(docstore_path):
+        return knowledge_storage_dir
+
+    print("Knowledge index is missing; ingesting glossary knowledge now.")
+    ingest_knowledge.refresh_knowledge_index(storage_dir=knowledge_storage_dir)
+    return knowledge_storage_dir
+
+
 def get_analysis_context(
     ticker,
     query_str,
     stock_storage_base_dir=DEFAULT_STOCK_STORAGE_BASE_DIR,
+    knowledge_storage_dir=DEFAULT_KNOWLEDGE_STORAGE_DIR,
     macro_storage_dir=DEFAULT_MACRO_STORAGE_DIR,
     stock_top_k=4,
+    knowledge_top_k=3,
     macro_top_k=4):
     ingest_stock.env()
 
@@ -370,15 +415,16 @@ def get_analysis_context(
         ticker,
         stock_storage_base_dir=stock_storage_base_dir,
     )
+    resolved_knowledge_storage_dir = _ensure_knowledge_index_directory(knowledge_storage_dir)
     resolved_macro_storage_dir = _resolve_macro_storage_dir(macro_storage_dir)
 
     stock_chunks = []
     seen_stock_chunks = set()
     stock_queries = [
-        query_str,
         f"{ticker} company overview business description sector industry",
-        f"{ticker} sec 10-k item 1 business item 1a risk factors competition customers suppliers business model",
         f"{ticker} financial indicators revenue margins eps cash flow balance sheet leverage quarterly annual",
+        f"{ticker} sec 10-k 10-q item 1 item 1a item 7 item 8 md&a business risk factors financial statements",
+        query_str,
     ]
     for stock_query in stock_queries:
         for chunk in _retrieve_chunks_from_dir(
@@ -390,14 +436,38 @@ def get_analysis_context(
                 continue
             seen_stock_chunks.add(chunk)
             stock_chunks.append(chunk)
+            if len(stock_chunks) >= 8:
+                break
+        if len(stock_chunks) >= 8:
+            break
 
     stock_context = _format_context_chunks(
         f"{ticker} financial context",
         stock_chunks,
     )
-    graph_context = _retrieve_graph_context(
-        stock_persist_dir,
+    knowledge_chunks = []
+    seen_knowledge_chunks = set()
+    for chunk in _matched_knowledge_chunks(query_str):
+        if chunk in seen_knowledge_chunks:
+            continue
+        seen_knowledge_chunks.add(chunk)
+        knowledge_chunks.append(chunk)
+
+    for chunk in _retrieve_chunks_from_dir(
+        resolved_knowledge_storage_dir,
         query_str,
+        similarity_top_k=knowledge_top_k,
+    ):
+        if chunk in seen_knowledge_chunks:
+            continue
+        seen_knowledge_chunks.add(chunk)
+        knowledge_chunks.append(chunk)
+        if len(knowledge_chunks) >= max(knowledge_top_k, 3):
+            break
+
+    knowledge_context = _format_context_chunks(
+        "Financial glossary context",
+        knowledge_chunks,
     )
     macro_context = _retrieve_context_from_dir(
         resolved_macro_storage_dir,
@@ -408,9 +478,10 @@ def get_analysis_context(
 
     return {
         "stock_context": stock_context,
-        "graph_context": graph_context,
+        "knowledge_context": knowledge_context,
         "macro_context": macro_context,
         "stock_persist_dir": stock_persist_dir,
+        "knowledge_persist_dir": resolved_knowledge_storage_dir,
         "macro_persist_dir": resolved_macro_storage_dir,
     }
 
@@ -419,8 +490,10 @@ def analyze_company(
     ticker,
     custom_query=None,
     stock_storage_base_dir=DEFAULT_STOCK_STORAGE_BASE_DIR,
+    knowledge_storage_dir=DEFAULT_KNOWLEDGE_STORAGE_DIR,
     macro_storage_dir=DEFAULT_MACRO_STORAGE_DIR,
     stock_top_k=4,
+    knowledge_top_k=3,
     macro_top_k=4):
     ticker = ticker.upper()
     query_str = custom_query or (
@@ -432,27 +505,29 @@ def analyze_company(
         ticker=ticker,
         query_str=query_str,
         stock_storage_base_dir=stock_storage_base_dir,
+        knowledge_storage_dir=knowledge_storage_dir,
         macro_storage_dir=macro_storage_dir,
         stock_top_k=stock_top_k,
+        knowledge_top_k=knowledge_top_k,
         macro_top_k=macro_top_k,
     )
 
-    if not context["stock_context"] and not context["graph_context"] and not context["macro_context"]:
+    if not context["stock_context"] and not context["knowledge_context"] and not context["macro_context"]:
         raise FileNotFoundError(
-            "No retrievable stock or macro index was found. Refresh the stock index "
-            f"at {context['stock_persist_dir']} and the macro index at "
+            "No retrievable stock, knowledge, or macro index was found. Refresh the stock index "
+            f"at {context['stock_persist_dir']}, the knowledge index at {context['knowledge_persist_dir']}, and the macro index at "
             f"{context['macro_persist_dir']} first."
         )
 
     stock_context = context["stock_context"] or "Stock-specific context was not available."
-    graph_context = context["graph_context"] or "Relationship graph context was not available."
+    knowledge_context = context["knowledge_context"] or "Financial glossary context was not available."
     macro_context = context["macro_context"] or "Macro market context was not available."
 
     prompt = ANALYSIS_PROMPT.format(
         ticker=ticker,
         question=query_str,
         stock_context=stock_context,
-        graph_context=graph_context,
+        knowledge_context=knowledge_context,
         macro_context=macro_context,
     )
 
