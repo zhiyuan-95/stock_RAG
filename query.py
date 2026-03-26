@@ -1,4 +1,3 @@
-import json
 import os
 import re
 
@@ -6,6 +5,7 @@ from llama_index.core import Settings, StorageContext, PromptTemplate, load_inde
 from llama_index.core.retrievers import VectorIndexRetriever
 from dotenv import load_dotenv
 
+import ingest_graph
 import ingest_knowledge
 import ingest_stock
 
@@ -14,6 +14,7 @@ load_dotenv("config.env")
 DEFAULT_STOCK_STORAGE_BASE_DIR = os.getenv("STOCK_STORAGE_BASE_DIR", "./storage/stock")
 DEFAULT_KNOWLEDGE_STORAGE_DIR = os.getenv("KNOWLEDGE_STORAGE_DIR", "./storage/knowledge")
 DEFAULT_MACRO_STORAGE_DIR = os.getenv("MACRO_STORAGE_DIR", "./storage/macro")
+DEFAULT_GRAPH_STORAGE_DIR = os.getenv("GRAPH_STORAGE_DIR", "./storage/graph")
 
 
 ANALYSIS_PROMPT = PromptTemplate(
@@ -31,6 +32,9 @@ ANALYSIS_PROMPT = PromptTemplate(
 
         === MACRO DATABASE CONTEXT ===
         {macro_context}
+
+        === GRAPH LAYER CONTEXT ===
+        {graph_context}
 
         The stock context may contain:
         - company overview / business description
@@ -52,6 +56,12 @@ ANALYSIS_PROMPT = PromptTemplate(
         - GDP
         - payrolls
         - PMI and other macro indicators
+
+        The graph context may contain:
+        - glossary indicator concepts and their group/subgroup relationships
+        - company filing docs connected to the company node
+        - latest stock and macro observations connected to glossary indicators
+        - one-hop relationships that connect definitions, filings, and observations
 
         Your goal is to extract the most relevant information from those contexts and explain what it means for {ticker}.
 
@@ -143,6 +153,15 @@ def _format_context_chunks(label, chunks):
     return f"{label}:\n" + "\n\n".join(chunks)
 
 
+def _limit_context(text, max_chars):
+    if not text:
+        return text
+    normalized_text = str(text).strip()
+    if len(normalized_text) <= max_chars:
+        return normalized_text
+    return normalized_text[: max_chars - 3].rstrip() + "..."
+
+
 def _retrieve_context_from_dir(persist_dir, query_str, label, similarity_top_k=4):
     chunks = _retrieve_chunks_from_dir(
         persist_dir,
@@ -157,13 +176,21 @@ def _matched_knowledge_chunks(query_str, max_matches=3):
     exact_matches = []
 
     for doc in ingest_knowledge.build_glossary_docs():
-        indicator_name = (doc.metadata.get("indicator_name") or "").strip()
-        if not indicator_name:
-            continue
+        candidate_terms = []
+        for key in ("indicator_name", "indicator_canonical_name", "group", "subgroup"):
+            value = (doc.metadata.get(key) or "").strip()
+            if value:
+                candidate_terms.append(value)
+        candidate_terms.extend(doc.metadata.get("indicator_aliases", []))
 
-        normalized_indicator = re.sub(r"\s+", " ", indicator_name.lower()).strip()
-        if normalized_indicator and normalized_indicator in normalized_query:
-            exact_matches.append((len(normalized_indicator), doc.text))
+        best_match_length = 0
+        for term in candidate_terms:
+            normalized_term = re.sub(r"\s+", " ", str(term).lower()).strip()
+            if normalized_term and normalized_term in normalized_query:
+                best_match_length = max(best_match_length, len(normalized_term))
+
+        if best_match_length:
+            exact_matches.append((best_match_length, doc.text))
 
     exact_matches.sort(key=lambda item: item[0], reverse=True)
 
@@ -178,184 +205,6 @@ def _matched_knowledge_chunks(query_str, max_matches=3):
             break
 
     return matched_chunks
-
-
-def _load_relationship_graph(persist_dir):
-    graph_path = os.path.join(persist_dir, ingest_stock.RELATIONSHIP_GRAPH_FILENAME)
-    if not os.path.isfile(graph_path):
-        return None
-
-    with open(graph_path, "r", encoding="utf-8") as graph_file:
-        return json.load(graph_file)
-
-
-def _query_terms(query_str):
-    return {
-        token
-        for token in re.split(r"[^a-zA-Z0-9]+", query_str.lower())
-        if len(token) >= 3
-    }
-
-
-def _relationship_focus(query_str):
-    lowered_query = query_str.lower()
-    focus = set()
-
-    if "competitor" in lowered_query or "competition" in lowered_query:
-        focus.add("competitor")
-    if "supplier" in lowered_query or "suppliers" in lowered_query or "supply chain" in lowered_query:
-        focus.add("supplier")
-    if "customer" in lowered_query or "customers" in lowered_query or "revenue contribution" in lowered_query:
-        focus.add("customer")
-    return focus
-
-
-def _score_graph_edge(edge, target_node, query_terms, relationship_focus):
-    searchable_text = " ".join(
-        [
-            edge.get("relationship_type", ""),
-            target_node.get("name", ""),
-            target_node.get("profile", ""),
-            edge.get("summary", ""),
-            edge.get("quantitative_detail", ""),
-            edge.get("evidence", ""),
-        ]
-    ).lower()
-
-    score = 0
-    for term in query_terms:
-        if term in searchable_text:
-            score += 1
-
-    if relationship_focus and edge.get("relationship_type") in relationship_focus:
-        score += 4
-
-    if edge.get("quantitative_detail") and any(
-        term in query_terms for term in {"revenue", "share", "margin", "contribute", "contribution"}
-    ):
-        score += 2
-
-    return score
-
-
-def _score_graph_node(node, query_terms, relationship_focus):
-    searchable_text = " ".join(
-        [
-            node.get("name", ""),
-            node.get("entity_type", ""),
-            " ".join(node.get("roles", [])),
-            node.get("profile", ""),
-        ]
-    ).lower()
-
-    score = 0
-    for term in query_terms:
-        if term in searchable_text:
-            score += 1
-
-    if relationship_focus and set(node.get("roles", [])) & relationship_focus:
-        score += 3
-
-    return score
-
-
-def _retrieve_graph_context(persist_dir, query_str, max_edges=6, max_neighbor_nodes=8):
-    relationship_graph = _load_relationship_graph(persist_dir)
-    if not relationship_graph:
-        return None
-
-    nodes = relationship_graph.get("nodes", [])
-    edges = relationship_graph.get("edges", [])
-    if not nodes:
-        return None
-
-    node_map = {node["id"]: node for node in nodes}
-    query_terms = _query_terms(query_str)
-    relationship_focus = _relationship_focus(query_str)
-
-    scored_edges = []
-    for edge in edges:
-        target_node = node_map.get(edge.get("target_node_id"), {})
-        score = _score_graph_edge(edge, target_node, query_terms, relationship_focus)
-        if score > 0 or (relationship_focus and edge.get("relationship_type") in relationship_focus):
-            scored_edges.append((score, edge, target_node))
-
-    scored_edges.sort(
-        key=lambda item: (
-            item[0],
-            item[1].get("confidence", 0.0),
-            item[2].get("name", ""),
-        ),
-        reverse=True,
-    )
-    top_edges = scored_edges[:max_edges]
-
-    related_node_ids = []
-    for _, edge, _ in top_edges:
-        related_node_ids.append(edge.get("target_node_id"))
-
-    scored_nodes = []
-    for node in nodes:
-        if node.get("id") == f"company::{relationship_graph.get('ticker')}":
-            continue
-        score = _score_graph_node(node, query_terms, relationship_focus)
-        if score > 0 or (relationship_focus and set(node.get("roles", [])) & relationship_focus):
-            scored_nodes.append((score, node))
-
-    scored_nodes.sort(
-        key=lambda item: (item[0], item[1].get("name", "")),
-        reverse=True,
-    )
-
-    related_nodes = []
-    seen_node_ids = set()
-    for node_id in related_node_ids:
-        if not node_id or node_id in seen_node_ids:
-            continue
-        seen_node_ids.add(node_id)
-        node = node_map.get(node_id)
-        if node:
-            related_nodes.append(node)
-
-    for _, node in scored_nodes:
-        if node.get("id") in seen_node_ids:
-            continue
-        seen_node_ids.add(node.get("id"))
-        related_nodes.append(node)
-        if len(related_nodes) >= max_neighbor_nodes:
-            break
-
-    if not top_edges and not related_nodes:
-        return None
-
-    graph_lines = [
-        f"Company: {relationship_graph.get('company_name', relationship_graph.get('ticker'))}",
-        f"Ticker: {relationship_graph.get('ticker')}",
-    ]
-
-    if top_edges:
-        graph_lines.append("")
-        graph_lines.append("Top relationship matches:")
-        for _, edge, target_node in top_edges:
-            graph_lines.append(
-                f"- {edge.get('relationship_type', 'unknown')} -> {target_node.get('name', 'Unknown')}: "
-                f"{edge.get('summary') or 'No short summary extracted.'}"
-            )
-            if edge.get("quantitative_detail"):
-                graph_lines.append(f"  Quantitative detail: {edge['quantitative_detail']}")
-            if edge.get("evidence"):
-                graph_lines.append(f"  Evidence: {edge['evidence']}")
-
-    if related_nodes:
-        graph_lines.append("")
-        graph_lines.append("Related entities:")
-        for node in related_nodes[:max_neighbor_nodes]:
-            graph_lines.append(
-                f"- {node.get('name', 'Unknown')} | Roles: {', '.join(node.get('roles', [])) or 'Unknown'} | "
-                f"Profile: {node.get('profile') or 'No short profile extracted.'}"
-            )
-
-    return "Relationship graph context:\n" + "\n".join(graph_lines)
 
 
 def _resolve_macro_storage_dir(macro_storage_dir):
@@ -399,15 +248,40 @@ def _ensure_knowledge_index_directory(knowledge_storage_dir):
     return knowledge_storage_dir
 
 
+def _ensure_graph_index_directory(
+    ticker,
+    graph_storage_dir,
+    stock_storage_base_dir,
+    knowledge_storage_dir,
+    macro_storage_dir,
+):
+    if ingest_graph.graph_index_exists(storage_dir=graph_storage_dir):
+        return graph_storage_dir
+
+    print("Graph layer is missing; building the graph index now.")
+    ingest_graph.refresh_full_graph_for_ticker(
+        ticker,
+        stock_db_path=ingest_stock.DEFAULT_STOCK_DB_PATH,
+        macro_db_path=os.getenv("MACRO_SQL_DB_PATH", "macro_data.db"),
+        filings_base_dir=ingest_stock.DEFAULT_STOCK_FILINGS_BASE_DIR,
+        glossary_base_dir=ingest_knowledge.DEFAULT_GLOSSARY_BASE_DIR,
+        metadata_path=ingest_knowledge.DEFAULT_GLOSSARY_METADATA_PATH,
+        storage_dir=graph_storage_dir,
+    )
+    return graph_storage_dir
+
+
 def get_analysis_context(
     ticker,
     query_str,
     stock_storage_base_dir=DEFAULT_STOCK_STORAGE_BASE_DIR,
     knowledge_storage_dir=DEFAULT_KNOWLEDGE_STORAGE_DIR,
     macro_storage_dir=DEFAULT_MACRO_STORAGE_DIR,
+    graph_storage_dir=DEFAULT_GRAPH_STORAGE_DIR,
     stock_top_k=4,
     knowledge_top_k=3,
-    macro_top_k=4):
+    macro_top_k=4,
+    graph_top_k=4):
     ingest_stock.env()
 
     ticker = ticker.upper()
@@ -417,6 +291,13 @@ def get_analysis_context(
     )
     resolved_knowledge_storage_dir = _ensure_knowledge_index_directory(knowledge_storage_dir)
     resolved_macro_storage_dir = _resolve_macro_storage_dir(macro_storage_dir)
+    resolved_graph_storage_dir = _ensure_graph_index_directory(
+        ticker,
+        graph_storage_dir=graph_storage_dir,
+        stock_storage_base_dir=stock_storage_base_dir,
+        knowledge_storage_dir=knowledge_storage_dir,
+        macro_storage_dir=macro_storage_dir,
+    )
 
     stock_chunks = []
     seen_stock_chunks = set()
@@ -436,9 +317,9 @@ def get_analysis_context(
                 continue
             seen_stock_chunks.add(chunk)
             stock_chunks.append(chunk)
-            if len(stock_chunks) >= 8:
+            if len(stock_chunks) >= 6:
                 break
-        if len(stock_chunks) >= 8:
+        if len(stock_chunks) >= 6:
             break
 
     stock_context = _format_context_chunks(
@@ -475,14 +356,26 @@ def get_analysis_context(
         label="Macro market context",
         similarity_top_k=macro_top_k,
     )
+    graph_context = ingest_graph.retrieve_graph_context(
+        query_str,
+        ticker=ticker,
+        storage_dir=resolved_graph_storage_dir,
+        similarity_top_k=graph_top_k,
+    )
+    stock_context = _limit_context(stock_context, 18000)
+    knowledge_context = _limit_context(knowledge_context, 5000)
+    macro_context = _limit_context(macro_context, 5000)
+    graph_context = _limit_context(graph_context, 2500)
 
     return {
         "stock_context": stock_context,
         "knowledge_context": knowledge_context,
         "macro_context": macro_context,
+        "graph_context": graph_context,
         "stock_persist_dir": stock_persist_dir,
         "knowledge_persist_dir": resolved_knowledge_storage_dir,
         "macro_persist_dir": resolved_macro_storage_dir,
+        "graph_persist_dir": resolved_graph_storage_dir,
     }
 
 
@@ -492,9 +385,11 @@ def analyze_company(
     stock_storage_base_dir=DEFAULT_STOCK_STORAGE_BASE_DIR,
     knowledge_storage_dir=DEFAULT_KNOWLEDGE_STORAGE_DIR,
     macro_storage_dir=DEFAULT_MACRO_STORAGE_DIR,
+    graph_storage_dir=DEFAULT_GRAPH_STORAGE_DIR,
     stock_top_k=4,
     knowledge_top_k=3,
-    macro_top_k=4):
+    macro_top_k=4,
+    graph_top_k=4):
     ticker = ticker.upper()
     query_str = custom_query or (
         f"Provide short-term and long-term analysis for {ticker} using both the "
@@ -507,21 +402,29 @@ def analyze_company(
         stock_storage_base_dir=stock_storage_base_dir,
         knowledge_storage_dir=knowledge_storage_dir,
         macro_storage_dir=macro_storage_dir,
+        graph_storage_dir=graph_storage_dir,
         stock_top_k=stock_top_k,
         knowledge_top_k=knowledge_top_k,
         macro_top_k=macro_top_k,
+        graph_top_k=graph_top_k,
     )
 
-    if not context["stock_context"] and not context["knowledge_context"] and not context["macro_context"]:
+    if (
+        not context["stock_context"]
+        and not context["knowledge_context"]
+        and not context["macro_context"]
+        and not context["graph_context"]
+    ):
         raise FileNotFoundError(
-            "No retrievable stock, knowledge, or macro index was found. Refresh the stock index "
+            "No retrievable stock, knowledge, macro, or graph index was found. Refresh the stock index "
             f"at {context['stock_persist_dir']}, the knowledge index at {context['knowledge_persist_dir']}, and the macro index at "
-            f"{context['macro_persist_dir']} first."
+            f"{context['macro_persist_dir']}, and the graph index at {context['graph_persist_dir']} first."
         )
 
     stock_context = context["stock_context"] or "Stock-specific context was not available."
     knowledge_context = context["knowledge_context"] or "Financial glossary context was not available."
     macro_context = context["macro_context"] or "Macro market context was not available."
+    graph_context = context["graph_context"] or "Graph layer context was not available."
 
     prompt = ANALYSIS_PROMPT.format(
         ticker=ticker,
@@ -529,6 +432,7 @@ def analyze_company(
         stock_context=stock_context,
         knowledge_context=knowledge_context,
         macro_context=macro_context,
+        graph_context=graph_context,
     )
 
     response = Settings.llm.complete(prompt)
