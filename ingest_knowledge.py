@@ -1152,8 +1152,5 @@ def refresh_knowledge_index(
     _reset_persist_dir(storage_dir)
     index = VectorStoreIndex(nodes)
     index.storage_context.persist(persist_dir=storage_dir)
-    import ingest_graph
-
-    ingest_graph.refresh_knowledge_graph(docs=docs)
     print(f"Knowledge index successfully refreshed at {storage_dir}")
     return storage_dir

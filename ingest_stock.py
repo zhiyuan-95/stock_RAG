@@ -1775,13 +1775,16 @@ def refresh_ticker_data_and_index(
     import ingest_graph
     import ingest_macro
 
-    ingest_graph.refresh_full_graph_for_ticker(
-        ticker,
-        stock_docs=docs,
-        stock_db_path=db_path,
-        macro_db_path=ingest_macro.DEFAULT_MACRO_DB_PATH,
-        filings_base_dir=filings_base_dir,
-    )
+    try:
+        ingest_graph.refresh_property_graph_for_ticker(
+            ticker,
+            stock_docs=docs,
+            stock_db_path=db_path,
+            macro_db_path=ingest_macro.DEFAULT_MACRO_DB_PATH,
+            filings_base_dir=filings_base_dir,
+        )
+    except Exception as exc:
+        print(f"Graph layer refresh skipped for {ticker}: {exc}")
 
     print(f"Index successfully refreshed for {ticker}")
 

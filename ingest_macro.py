@@ -1309,8 +1309,5 @@ def refresh_macro_index(
 
     persist_result = _persist_documents_as_index(docs, persist_dir=persist_dir)
     actual_persist_dir = persist_result["persist_dir"]
-    import ingest_graph
-
-    ingest_graph.refresh_macro_graph(docs=docs, db_path=db_path)
     print(f"Market environment index successfully refreshed at {actual_persist_dir}")
     return actual_persist_dir

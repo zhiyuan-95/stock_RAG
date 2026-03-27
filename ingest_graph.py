@@ -1,15 +1,21 @@
 import json
 import os
-import re
 import shutil
 import sqlite3
 import stat
-from datetime import datetime
 
 import pandas as pd
 from dotenv import load_dotenv
-from llama_index.core import Document, StorageContext, VectorStoreIndex, load_index_from_storage
+from fsspec.implementations.local import LocalFileSystem
+from llama_index.core import Document, StorageContext, load_index_from_storage
+from llama_index.core.graph_stores import SimplePropertyGraphStore
+from llama_index.core.indices.property_graph import (
+    DynamicLLMPathExtractor,
+    ImplicitPathExtractor,
+    PropertyGraphIndex,
+)
 from llama_index.core.node_parser import SentenceSplitter
+from llama_index.llms.openai import OpenAI
 
 import ingest_knowledge
 import ingest_macro
@@ -19,631 +25,542 @@ import ingest_stock
 load_dotenv("config.env")
 
 DEFAULT_GRAPH_STORAGE_DIR = os.getenv("GRAPH_STORAGE_DIR", "./storage/graph")
-GRAPH_STATE_FILENAME = "graph_state.json"
+_GRAPH_LLM = None
 
-MACRO_GRAPH_CONCEPT_NAMES = {
-    "fed_funds_rate": "Fed interest rate",
-    "real_gdp": "GDP",
-    "cpi_all_items": "CPI",
-    "cpi_inflation_yoy": "Inflation rate",
-    "unemployment_rate": "Unemployment rate",
-    "adp_private_payrolls": "ADP",
-    "nonfarm_payrolls": "BLS",
-    "pmi": "PMI",
-}
+GRAPH_ENTITY_TYPES = [
+    "company",
+    "indicator",
+    "macro_indicator",
+    "financial_indicator",
+    "glossary_concept",
+    "group",
+    "subgroup",
+    "filing",
+    "filing_section",
+    "observation",
+    "period",
+    "source",
+    "risk",
+    "business_driver",
+]
 
+GRAPH_RELATION_TYPES = [
+    "belongs_to",
+    "defines",
+    "describes",
+    "explains",
+    "measures",
+    "reported_in",
+    "has_observation",
+    "affects",
+    "references",
+    "related_to",
+    "released_by",
+    "sourced_from",
+    "covers",
+]
 
-def _slug(value):
-    normalized_value = re.sub(r"[^a-z0-9]+", "_", str(value or "").lower()).strip("_")
-    return normalized_value or "unknown"
+GRAPH_ENTITY_PROPS = [
+    "ticker",
+    "indicator_name",
+    "group",
+    "subgroup",
+    "glossary_domain",
+    "form_type",
+    "section_key",
+    "section_title",
+    "filing_date",
+    "frequency",
+    "period_end_date",
+    "observation_date",
+    "value",
+    "units",
+    "source",
+]
 
-
-def _trim_text(text, max_chars=4000):
-    text = re.sub(r"\s+", " ", str(text or "")).strip()
-    if len(text) <= max_chars:
-        return text
-    return text[: max_chars - 3].rstrip() + "..."
-
-
-def _graph_state_path(storage_dir):
-    return os.path.join(storage_dir, GRAPH_STATE_FILENAME)
-
-
-def _empty_graph_state():
-    return {
-        "nodes": {},
-        "edges": [],
-        "updated_at": None,
-    }
-
-
-def _load_graph_state(storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
-    state_path = _graph_state_path(storage_dir)
-    if not os.path.isfile(state_path):
-        return _empty_graph_state()
-
-    with open(state_path, "r", encoding="utf-8") as state_file:
-        state = json.load(state_file)
-
-    state.setdefault("nodes", {})
-    state.setdefault("edges", [])
-    return state
-
-
-def _save_graph_state(state, storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
-    os.makedirs(storage_dir, exist_ok=True)
-    state["updated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open(_graph_state_path(storage_dir), "w", encoding="utf-8") as state_file:
-        json.dump(state, state_file, ensure_ascii=False, indent=2)
-
-
-def _edge_key(edge):
-    return (
-        edge["source"],
-        edge["target"],
-        edge["type"],
-        edge.get("scope", ""),
-    )
+GRAPH_RELATION_PROPS = [
+    "source_type",
+    "evidence",
+]
 
 
-def _remove_scope(state, scope):
-    state["nodes"] = {
-        node_id: node
-        for node_id, node in state["nodes"].items()
-        if node.get("scope") != scope
-    }
-    state["edges"] = [
-        edge
-        for edge in state["edges"]
-        if edge.get("scope") != scope
-        and edge["source"] in state["nodes"]
-        and edge["target"] in state["nodes"]
-    ]
-
-
-def _merge_scope(state, scope, nodes, edges):
-    _remove_scope(state, scope)
-    for node in nodes:
-        state["nodes"][node["id"]] = node
-
-    existing_edge_keys = {_edge_key(edge) for edge in state["edges"]}
-    for edge in edges:
-        if edge["source"] not in state["nodes"] or edge["target"] not in state["nodes"]:
-            continue
-        edge_key = _edge_key(edge)
-        if edge_key in existing_edge_keys:
-            continue
-        state["edges"].append(edge)
-        existing_edge_keys.add(edge_key)
-
-    state["edges"] = [
-        edge
-        for edge in state["edges"]
-        if edge["source"] in state["nodes"] and edge["target"] in state["nodes"]
-    ]
-    return state
-
-
-def _adjacency_map(state):
-    adjacency = {}
-    for edge in state.get("edges", []):
-        adjacency.setdefault(edge["source"], []).append(edge)
-        adjacency.setdefault(edge["target"], []).append(edge)
-    return adjacency
-
-
-def _node_neighbors(state, node_id):
-    neighbors = []
-    for edge in _adjacency_map(state).get(node_id, []):
-        other_id = edge["target"] if edge["source"] == node_id else edge["source"]
-        other_node = state["nodes"].get(other_id)
-        if not other_node:
-            continue
-        neighbors.append((edge, other_node))
-    return neighbors
-
-
-def _node_to_document(state, node):
-    node_id = node["id"]
-    graph_connections = []
-    for edge, other_node in _node_neighbors(state, node_id)[:10]:
-        graph_connections.append(f"- {edge['type']}: {other_node['label']}")
-
-    text = node["text"]
-    if graph_connections:
-        text = text + "\n\nGraph Connections:\n" + "\n".join(graph_connections)
-
-    metadata = dict(node.get("metadata", {}))
-    metadata.update(
-        {
-            "graph_node_id": node_id,
-            "graph_node_type": node["type"],
-            "graph_scope": node["scope"],
-            "graph_label": node["label"],
-            "graph_domain": node.get("domain"),
-        }
-    )
-    return Document(text=text, metadata=metadata)
-
-
-def _graph_documents_from_state(state):
-    documents = []
-    for node_id in sorted(state.get("nodes", {})):
-        documents.append(_node_to_document(state, state["nodes"][node_id]))
-    return documents
-
-
-def _clear_windows_readonly(path):
-    if os.name != "nt" or not os.path.lexists(path):
-        return
-    try:
-        os.chmod(path, stat.S_IWRITE | stat.S_IREAD)
-    except OSError:
-        pass
-
-
-def _handle_remove_readonly(func, path, exc_info):
-    _clear_windows_readonly(path)
+def _remove_readonly(func, path, _exc):
+    os.chmod(path, stat.S_IWRITE)
     func(path)
 
 
-def _is_windows_reparse_point(path):
-    if os.name != "nt" or not os.path.lexists(path):
-        return False
-    try:
-        return bool(os.lstat(path).st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT)
-    except (AttributeError, OSError):
-        return False
-
-
 def _reset_persist_dir(persist_dir):
-    if os.path.lexists(persist_dir):
-        _clear_windows_readonly(persist_dir)
-        if _is_windows_reparse_point(persist_dir):
-            try:
-                os.rmdir(persist_dir)
-            except OSError:
-                shutil.rmtree(persist_dir, onerror=_handle_remove_readonly)
-        else:
-            shutil.rmtree(persist_dir, onerror=_handle_remove_readonly)
+    if os.path.isdir(persist_dir):
+        shutil.rmtree(persist_dir, onerror=_remove_readonly)
     os.makedirs(persist_dir, exist_ok=True)
 
 
-def _persist_graph_index(state, storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
-    ingest_stock.env()
-    documents = _graph_documents_from_state(state)
-    if not documents:
+def _graph_persist_dir(ticker, storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
+    return os.path.join(storage_dir, ticker.upper())
+
+
+class _UTF8LocalFileSystem(LocalFileSystem):
+    def open(self, path, mode="rb", **kwargs):
+        if "b" not in mode:
+            kwargs.setdefault("encoding", "utf-8")
+        return super().open(path, mode=mode, **kwargs)
+
+
+def graph_index_exists(ticker, storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
+    persist_dir = _graph_persist_dir(ticker, storage_dir=storage_dir)
+    return (
+        os.path.isdir(persist_dir)
+        and os.path.isfile(os.path.join(persist_dir, "property_graph_store.json"))
+        and os.path.isfile(os.path.join(persist_dir, "index_store.json"))
+    )
+
+
+def _normalize_indicator_key(value):
+    normalized = str(value or "").lower()
+    normalized = "".join(ch if ch.isalnum() else " " for ch in normalized)
+    return " ".join(normalized.split())
+
+
+def _stringify_metadata_value(value):
+    if value is None:
         return None
-
-    node_parser = SentenceSplitter(chunk_size=1024, chunk_overlap=200)
-    nodes = node_parser.get_nodes_from_documents(documents)
-    _reset_persist_dir(storage_dir)
-    index = VectorStoreIndex(nodes)
-    index.storage_context.persist(persist_dir=storage_dir)
-    _save_graph_state(state, storage_dir=storage_dir)
-    return storage_dir
-
-
-def _indicator_node_id(domain, indicator_name):
-    return f"indicator::{domain}::{_slug(indicator_name)}"
+    if isinstance(value, list):
+        cleaned = [str(item).strip() for item in value if str(item).strip()]
+        return ", ".join(cleaned) if cleaned else None
+    if isinstance(value, dict):
+        return json.dumps(value, ensure_ascii=False, sort_keys=True)
+    cleaned = str(value).strip()
+    return cleaned or None
 
 
-def _make_node(node_id, label, node_type, scope, text, metadata=None, domain=None):
-    return {
-        "id": node_id,
-        "label": label,
-        "type": node_type,
-        "scope": scope,
-        "domain": domain,
-        "text": text,
-        "metadata": metadata or {},
+def _metadata_preface(metadata, preferred_keys=None):
+    if not metadata:
+        return ""
+
+    ordered_keys = []
+    if preferred_keys:
+        ordered_keys.extend(key for key in preferred_keys if key in metadata)
+    ordered_keys.extend(key for key in sorted(metadata) if key not in ordered_keys)
+
+    lines = []
+    for key in ordered_keys:
+        value = _stringify_metadata_value(metadata.get(key))
+        if not value:
+            continue
+        label = key.replace("_", " ").title()
+        lines.append(f"{label}: {value}")
+    return "\n".join(lines)
+
+
+def _prepare_graph_document(document, source_type):
+    metadata = dict(document.metadata or {})
+    metadata.setdefault("graph_source_type", source_type)
+
+    preface = _metadata_preface(
+        metadata,
+        preferred_keys=[
+            "graph_source_type",
+            "type",
+            "ticker",
+            "company_name",
+            "indicator_name",
+            "group",
+            "subgroup",
+            "glossary_domain",
+            "form_type",
+            "section_key",
+            "section_title",
+            "filing_date",
+            "frequency",
+            "period_end_date",
+            "observation_date",
+            "value",
+            "units",
+            "source",
+        ],
+    )
+    body = (document.text or "").strip()
+    if source_type == "stock_context" and metadata.get("type") == "sec_filing_section":
+        body = body[:4000].strip()
+    elif source_type == "stock_context":
+        body = body[:6000].strip()
+    else:
+        body = body[:5000].strip()
+    text_parts = []
+    if preface:
+        text_parts.append(preface)
+    if body:
+        text_parts.append(body)
+    return Document(
+        text="\n\n".join(text_parts).strip(),
+        metadata=metadata,
+    )
+
+
+def _glossary_indicator_lookup(glossary_docs):
+    lookup = {}
+    for doc in glossary_docs:
+        metadata = doc.metadata or {}
+        candidate_names = []
+        for key in ("indicator_name", "indicator_canonical_name"):
+            value = metadata.get(key)
+            if value:
+                candidate_names.append(value)
+        candidate_names.extend(metadata.get("indicator_aliases", []))
+
+        for candidate in candidate_names:
+            normalized_candidate = _normalize_indicator_key(candidate)
+            if not normalized_candidate or normalized_candidate in lookup:
+                continue
+            lookup[normalized_candidate] = {
+                "indicator_name": metadata.get("indicator_name") or metadata.get("indicator_canonical_name"),
+                "group": metadata.get("group"),
+                "subgroup": metadata.get("subgroup"),
+                "glossary_domain": metadata.get("glossary_domain"),
+            }
+    return lookup
+
+
+def _lookup_indicator_metadata(indicator_name, glossary_lookup, fallback_group=None, fallback_subgroup=None, fallback_domain=None):
+    metadata = glossary_lookup.get(_normalize_indicator_key(indicator_name), {}).copy()
+    if fallback_group and not metadata.get("group"):
+        metadata["group"] = fallback_group
+    if fallback_subgroup and not metadata.get("subgroup"):
+        metadata["subgroup"] = fallback_subgroup
+    if fallback_domain and not metadata.get("glossary_domain"):
+        metadata["glossary_domain"] = fallback_domain
+    return metadata
+
+
+def _company_profile_metadata(stock_docs, ticker):
+    default_profile = {
+        "ticker": ticker,
+        "company_name": ticker,
+        "sector": None,
+        "industry": None,
     }
 
+    for doc in stock_docs:
+        metadata = doc.metadata or {}
+        if metadata.get("type") != "company_profile":
+            continue
+        return {
+            "ticker": ticker,
+            "company_name": metadata.get("company_name") or ticker,
+            "sector": metadata.get("sector"),
+            "industry": metadata.get("industry"),
+        }
 
-def _make_edge(source, target, edge_type, scope, metadata=None):
-    return {
-        "source": source,
-        "target": target,
-        "type": edge_type,
-        "scope": scope,
-        "metadata": metadata or {},
+    return default_profile
+
+
+def _select_stock_docs_for_graph(stock_docs):
+    selected_docs = []
+    sec_docs_by_form = {"10-K": {}, "10-Q": {}}
+    excluded_section_keys = {
+        "item_8_financial_statements",
+        "item_1_financial_statements",
     }
 
-
-def _build_knowledge_graph_elements(docs):
-    scope = "knowledge"
-    nodes = []
-    edges = []
-
-    for doc in docs:
+    for doc in stock_docs:
         metadata = doc.metadata or {}
-        indicator_name = (
-            metadata.get("indicator_canonical_name")
-            or metadata.get("indicator_name")
-            or "Unknown Indicator"
-        )
-        glossary_domain = metadata.get("glossary_domain") or "general"
-        group = metadata.get("group") or ("macro" if glossary_domain == "eco" else "unmapped")
-        subgroup = metadata.get("subgroup") or ("macro" if glossary_domain == "eco" else "unmapped")
-        indicator_aliases = metadata.get("indicator_aliases") or []
+        doc_type = metadata.get("type")
+        if doc_type == "financial_indicators":
+            continue
+        if doc_type != "sec_filing_section":
+            selected_docs.append(doc)
+            continue
 
-        group_node_id = f"group::{glossary_domain}::{_slug(group)}"
-        subgroup_node_id = f"subgroup::{glossary_domain}::{_slug(group)}::{_slug(subgroup)}"
-        indicator_node_id = _indicator_node_id(glossary_domain, indicator_name)
-        glossary_node_id = f"glossary_doc::{glossary_domain}::{_slug(indicator_name)}"
+        form_type = metadata.get("form_type")
+        filing_date = metadata.get("filing_date")
+        section_key = metadata.get("section_key")
+        if section_key in excluded_section_keys:
+            continue
+        if form_type not in sec_docs_by_form or not filing_date:
+            selected_docs.append(doc)
+            continue
+        sec_docs_by_form[form_type].setdefault(filing_date, []).append(doc)
 
-        nodes.append(
-            _make_node(
-                group_node_id,
-                group,
-                "indicator_group",
-                scope,
-                f"Indicator Group: {group}\nDomain: {glossary_domain}",
-                metadata={
-                    "group": group,
-                    "glossary_domain": glossary_domain,
-                },
-                domain=glossary_domain,
-            )
-        )
-        nodes.append(
-            _make_node(
-                subgroup_node_id,
-                subgroup,
-                "indicator_subgroup",
-                scope,
-                f"Indicator Subgroup: {subgroup}\nGroup: {group}\nDomain: {glossary_domain}",
-                metadata={
-                    "group": group,
-                    "subgroup": subgroup,
-                    "glossary_domain": glossary_domain,
-                },
-                domain=glossary_domain,
-            )
-        )
-        nodes.append(
-            _make_node(
-                indicator_node_id,
-                indicator_name,
-                "indicator_concept",
-                scope,
-                (
-                    f"Indicator Concept: {indicator_name}\n"
-                    f"Domain: {glossary_domain}\n"
-                    f"Group: {group}\n"
-                    f"Subgroup: {subgroup}\n"
-                    f"Aliases: {', '.join(indicator_aliases) if indicator_aliases else 'None'}\n\n"
-                    f"{_trim_text(doc.text)}"
-                ),
-                metadata={
-                    "indicator_name": indicator_name,
-                    "indicator_aliases": indicator_aliases,
-                    "group": group,
-                    "subgroup": subgroup,
-                    "glossary_domain": glossary_domain,
-                    "source": metadata.get("source"),
-                },
-                domain=glossary_domain,
-            )
-        )
-        nodes.append(
-            _make_node(
-                glossary_node_id,
-                f"{indicator_name} glossary",
-                "glossary_document",
-                scope,
-                doc.text,
-                metadata=dict(metadata),
-                domain=glossary_domain,
-            )
-        )
+    for form_type, max_filings in (("10-K", 2), ("10-Q", 4)):
+        filing_map = sec_docs_by_form[form_type]
+        for filing_date in sorted(filing_map.keys(), reverse=True)[:max_filings]:
+            selected_docs.extend(filing_map[filing_date])
 
-        edges.extend(
-            [
-                _make_edge(group_node_id, subgroup_node_id, "contains_subgroup", scope),
-                _make_edge(subgroup_node_id, indicator_node_id, "contains_indicator", scope),
-                _make_edge(indicator_node_id, glossary_node_id, "defined_by", scope),
-            ]
-        )
-
-    return nodes, edges
-
-
-def _latest_macro_rows(db_path):
-    conn = sqlite3.connect(db_path)
-    df = pd.read_sql_query(
-        "SELECT * FROM macro_indicators ORDER BY observation_date DESC",
-        conn,
-    )
-    conn.close()
-
-    if df.empty:
-        return []
-
-    df["observation_date"] = pd.to_datetime(df["observation_date"], errors="coerce")
-    df = df.dropna(subset=["observation_date"])
-    latest_df = (
-        df.sort_values("observation_date", ascending=False)
-        .groupby("indicator_key", as_index=False)
-        .first()
-    )
-    return latest_df.to_dict(orient="records")
-
-
-def _build_macro_graph_elements(docs, db_path):
-    scope = "macro"
-    nodes = []
-    edges = []
-    macro_root_id = "macro_environment::global"
-
-    nodes.append(
-        _make_node(
-            macro_root_id,
-            "Macro Environment",
-            "macro_environment",
-            scope,
-            "Global macro environment node connected to glossary concepts, macro documents, and the latest macro observations.",
-            metadata={"type": "macro_environment"},
-            domain="eco",
-        )
-    )
-
-    for doc in docs:
-        metadata = doc.metadata or {}
-        node_id = f"macro_doc::{_slug(metadata.get('type') or 'doc')}::{_slug(metadata.get('category') or 'general')}"
-        label = metadata.get("category") or metadata.get("type") or "Macro Document"
-        nodes.append(
-            _make_node(
-                node_id,
-                label,
-                "macro_document",
-                scope,
-                doc.text,
-                metadata=dict(metadata),
-                domain="eco",
-            )
-        )
-        edges.append(_make_edge(macro_root_id, node_id, "described_by", scope))
-
-    for row in _latest_macro_rows(db_path):
-        indicator_key = row["indicator_key"]
-        concept_name = MACRO_GRAPH_CONCEPT_NAMES.get(indicator_key, row["indicator_name"])
-        observation_id = (
-            f"macro_observation::{indicator_key}::"
-            f"{row['observation_date'].strftime('%Y-%m-%d')}"
-        )
-        concept_id = _indicator_node_id("eco", concept_name)
-        value = row.get("value")
-        units = row.get("units") or ""
-
-        nodes.append(
-            _make_node(
-                observation_id,
-                f"{row['indicator_name']} latest observation",
-                "macro_observation",
-                scope,
-                (
-                    f"Macro Observation\n"
-                    f"Indicator: {row['indicator_name']}\n"
-                    f"Glossary Indicator: {concept_name}\n"
-                    f"Observation Date: {row['observation_date'].strftime('%Y-%m-%d')}\n"
-                    f"Value: {value}\n"
-                    f"Units: {units}\n"
-                    f"Release: {row.get('release_name') or 'Unknown'}\n"
-                    f"Source: {row.get('source') or 'Unknown'}"
-                ),
-                metadata={
-                    "indicator_key": indicator_key,
-                    "indicator_name": row["indicator_name"],
-                    "glossary_indicator_name": concept_name,
-                    "observation_date": row["observation_date"].strftime("%Y-%m-%d"),
-                    "value": value,
-                    "units": units,
-                    "release_name": row.get("release_name"),
-                    "source": row.get("source"),
-                },
-                domain="eco",
-            )
-        )
-        edges.append(_make_edge(macro_root_id, observation_id, "has_observation", scope))
-        edges.append(_make_edge(observation_id, concept_id, "measures", scope))
-
-    return nodes, edges
+    return selected_docs
 
 
 def _latest_stock_rows(ticker, db_path):
+    if not os.path.isfile(db_path):
+        return {}
+
     conn = sqlite3.connect(db_path)
-    latest_rows = []
-    for frequency in ("Quarterly", "Annual"):
-        df = pd.read_sql_query(
+    latest_rows = {}
+    try:
+        for frequency in ("Annual", "Quarterly"):
+            query = """
+                SELECT *
+                FROM financial_indicators
+                WHERE Ticker = ? AND Frequency = ?
+                ORDER BY date([Period End Date]) DESC
+                LIMIT 1
             """
-            SELECT *
-            FROM financial_indicators
-            WHERE Ticker = ? AND Frequency = ?
-            ORDER BY `Period End Date` DESC
-            LIMIT 1
-            """,
-            conn,
-            params=(ticker.upper(), frequency),
-        )
-        if not df.empty:
-            latest_rows.append(df.iloc[0].to_dict())
-    conn.close()
+            df = pd.read_sql_query(query, conn, params=(ticker, frequency))
+            if not df.empty:
+                latest_rows[frequency] = df.iloc[0]
+    finally:
+        conn.close()
     return latest_rows
 
 
-def _stock_doc_node_id(ticker, doc, index_position):
-    metadata = doc.metadata or {}
-    doc_type = metadata.get("type") or "stock_document"
-    if doc_type == "company_profile":
-        return f"stock_doc::{ticker}::company_profile"
-    if doc_type == "financial_indicators":
-        return f"stock_doc::{ticker}::financial_indicators::{_slug(metadata.get('frequency') or 'general')}"
-    if doc_type == "sec_filing_section":
-        return (
-            f"stock_doc::{ticker}::{_slug(metadata.get('form_type') or 'filing')}::"
-            f"{_slug(metadata.get('section_key') or 'section')}::"
-            f"{_slug(metadata.get('filing_date') or index_position)}"
+def _latest_macro_rows(db_path):
+    if not os.path.isfile(db_path):
+        return pd.DataFrame()
+
+    conn = sqlite3.connect(db_path)
+    try:
+        df = pd.read_sql_query(
+            """
+            SELECT *
+            FROM macro_indicators
+            ORDER BY date(observation_date) DESC
+            """,
+            conn,
         )
-    return f"stock_doc::{ticker}::{_slug(doc_type)}::{index_position}"
+    finally:
+        conn.close()
 
+    if df.empty:
+        return df
 
-def _build_stock_graph_elements(ticker, docs, db_path):
-    scope = f"stock:{ticker.upper()}"
-    nodes = []
-    edges = []
-    ticker = ticker.upper()
+    df["observation_date"] = pd.to_datetime(df["observation_date"], errors="coerce")
+    df = df.dropna(subset=["observation_date"])
+    if df.empty:
+        return df
 
-    company_name = ticker
-    sector = "Unknown"
-    industry = "Unknown"
-    for doc in docs:
-        metadata = doc.metadata or {}
-        if metadata.get("type") == "company_profile":
-            company_name = metadata.get("company_name") or company_name
-            sector = metadata.get("sector") or sector
-            industry = metadata.get("industry") or industry
-            break
-
-    company_node_id = f"company::{ticker}"
-    nodes.append(
-        _make_node(
-            company_node_id,
-            company_name,
-            "company",
-            scope,
-            (
-                f"Company: {company_name}\n"
-                f"Ticker: {ticker}\n"
-                f"Sector: {sector}\n"
-                f"Industry: {industry}"
-            ),
-            metadata={
-                "ticker": ticker,
-                "company_name": company_name,
-                "sector": sector,
-                "industry": industry,
-            },
-            domain="company",
-        )
+    latest_rows = (
+        df.sort_values("observation_date", ascending=False)
+        .groupby("indicator_key", as_index=False)
+        .head(1)
+        .reset_index(drop=True)
     )
+    return latest_rows
 
-    for index_position, doc in enumerate(docs):
-        metadata = dict(doc.metadata or {})
-        metadata.setdefault("ticker", ticker)
-        node_id = _stock_doc_node_id(ticker, doc, index_position)
-        label = (
-            metadata.get("section_title")
-            or metadata.get("type")
-            or f"{ticker} document"
-        )
-        nodes.append(
-            _make_node(
-                node_id,
-                label,
-                "stock_document",
-                scope,
-                doc.text,
-                metadata=metadata,
-                domain="company",
-            )
-        )
-        edges.append(_make_edge(company_node_id, node_id, "has_document", scope))
 
-    for row in _latest_stock_rows(ticker, db_path):
-        frequency = row.get("Frequency") or "Unknown"
-        period_end_date = row.get("Period End Date") or "Unknown"
-        for indicator_name in ingest_stock.CORE_GLOSSARY_INDICATORS:
-            value = row.get(indicator_name)
+def _stock_observation_documents(ticker, db_path, glossary_lookup, stock_docs):
+    latest_rows = _latest_stock_rows(ticker, db_path)
+    if not latest_rows:
+        return []
+
+    company_profile = _company_profile_metadata(stock_docs, ticker)
+    documents = []
+    excluded_columns = set(ingest_stock.IDENTIFIER_COLUMNS) | {
+        "_Period Start Date",
+        "_Duration Days",
+        "_Filed Date",
+    }
+    glossary_indicator_names = {
+        metadata.get("indicator_name")
+        for metadata in glossary_lookup.values()
+        if metadata.get("glossary_domain") == "company" and metadata.get("indicator_name")
+    }
+
+    for frequency, row in latest_rows.items():
+        period_end_date = row.get("Period End Date")
+        observation_lines = []
+        for column_name, value in row.items():
+            if column_name in excluded_columns or column_name.startswith("_"):
+                continue
             if pd.isna(value):
                 continue
+            if column_name not in glossary_indicator_names:
+                continue
 
-            observation_id = (
-                f"stock_observation::{ticker}::{_slug(frequency)}::"
-                f"{_slug(period_end_date)}::{_slug(indicator_name)}"
+            indicator_metadata = _lookup_indicator_metadata(
+                column_name,
+                glossary_lookup,
+                fallback_group="company",
+                fallback_subgroup="reported_facts",
+                fallback_domain="company",
             )
-            concept_id = _indicator_node_id("company", indicator_name)
-            nodes.append(
-                _make_node(
-                    observation_id,
-                    f"{indicator_name} latest {frequency.lower()} observation",
-                    "stock_observation",
-                    scope,
-                    (
-                        f"Financial Observation\n"
-                        f"Company: {company_name}\n"
-                        f"Ticker: {ticker}\n"
-                        f"Indicator: {indicator_name}\n"
-                        f"Frequency: {frequency}\n"
-                        f"Period End Date: {period_end_date}\n"
-                        f"Value: {value}"
-                    ),
-                    metadata={
-                        "ticker": ticker,
-                        "company_name": company_name,
-                        "indicator_name": indicator_name,
-                        "frequency": frequency,
-                        "period_end_date": period_end_date,
-                        "value": value,
-                        "sector": sector,
-                        "industry": industry,
-                    },
-                    domain="company",
+            observation_lines.append(
+                (
+                    f"Indicator: {column_name} | Value: {value} | Group: {indicator_metadata.get('group') or 'company'} "
+                    f"| Subgroup: {indicator_metadata.get('subgroup') or 'reported_facts'}"
                 )
             )
-            edges.append(_make_edge(company_node_id, observation_id, "has_observation", scope))
-            edges.append(_make_edge(observation_id, concept_id, "measures", scope))
 
-    return nodes, edges
+        if not observation_lines:
+            continue
+
+        lines = [
+            "Observation Type: Latest stock financial indicator snapshot",
+            f"Company: {company_profile['company_name']}",
+            f"Ticker: {ticker}",
+            f"Sector: {company_profile['sector'] or 'Unknown'}",
+            f"Industry: {company_profile['industry'] or 'Unknown'}",
+            f"Frequency: {frequency}",
+            f"Period End Date: {period_end_date}",
+            "Observation Source: SEC Company Facts with current market price for market-based metrics",
+            "",
+            "Latest indicator observations:",
+            *observation_lines,
+        ]
+        documents.append(
+            Document(
+                text="\n".join(lines),
+                metadata={
+                    "type": "stock_indicator_snapshot",
+                    "ticker": ticker,
+                    "company_name": company_profile["company_name"],
+                    "sector": company_profile["sector"],
+                    "industry": company_profile["industry"],
+                    "group": "company",
+                    "subgroup": "financial_indicators",
+                    "glossary_domain": "company",
+                    "frequency": frequency,
+                    "period_end_date": period_end_date,
+                    "source": "SEC Company Facts with current market price for market-based metrics",
+                },
+            )
+        )
+
+    return documents
 
 
-def refresh_knowledge_graph(docs=None, storage_dir=DEFAULT_GRAPH_STORAGE_DIR, rebuild_index=True):
-    docs = docs or ingest_knowledge.build_glossary_docs()
-    state = _load_graph_state(storage_dir=storage_dir)
-    nodes, edges = _build_knowledge_graph_elements(docs)
-    state = _merge_scope(state, "knowledge", nodes, edges)
-    if rebuild_index:
-        _persist_graph_index(state, storage_dir=storage_dir)
-    else:
-        _save_graph_state(state, storage_dir=storage_dir)
-    return storage_dir
+def _macro_observation_documents(db_path, glossary_lookup):
+    latest_rows = _latest_macro_rows(db_path)
+    if latest_rows.empty:
+        return []
+
+    observation_lines = []
+    for _, row in latest_rows.iterrows():
+        indicator_metadata = _lookup_indicator_metadata(
+            row["indicator_name"],
+            glossary_lookup,
+            fallback_group="macro",
+            fallback_subgroup=row.get("category") or "macro",
+            fallback_domain="eco",
+        )
+        observation_lines.append(
+            (
+                f"Indicator: {row['indicator_name']} | Value: {row['value']} {row['units']} "
+                f"| Observation Date: {row['observation_date'].strftime('%Y-%m-%d')} "
+                f"| Group: {indicator_metadata.get('group') or 'macro'} "
+                f"| Subgroup: {indicator_metadata.get('subgroup') or row.get('category') or 'macro'} "
+                f"| Release: {row['release_name']}"
+            )
+        )
+
+    if not observation_lines:
+        return []
+
+    return [
+        Document(
+            text="\n".join(
+                [
+                    "Observation Type: Latest macro indicator snapshot",
+                    "Source: Macro SQL database",
+                    "",
+                    "Latest macro observations:",
+                    *observation_lines,
+                ]
+            ),
+            metadata={
+                "type": "macro_indicator_snapshot",
+                "group": "macro",
+                "subgroup": "macro",
+                "glossary_domain": "eco",
+                "source": "Macro SQL database",
+            },
+        )
+    ]
 
 
-def refresh_macro_graph(
-    docs=None,
-    db_path=ingest_macro.DEFAULT_MACRO_DB_PATH,
-    storage_dir=DEFAULT_GRAPH_STORAGE_DIR,
-    rebuild_index=True,
-):
-    docs = docs or ingest_macro.build_market_environment_docs(db_path=db_path)
-    state = _load_graph_state(storage_dir=storage_dir)
-    nodes, edges = _build_macro_graph_elements(docs, db_path=db_path)
-    state = _merge_scope(state, "macro", nodes, edges)
-    if rebuild_index:
-        _persist_graph_index(state, storage_dir=storage_dir)
-    else:
-        _save_graph_state(state, storage_dir=storage_dir)
-    return storage_dir
+def _dedupe_documents(documents):
+    deduped_documents = []
+    seen_keys = set()
+    for document in documents:
+        metadata = document.metadata or {}
+        key = (
+            json.dumps(metadata, sort_keys=True, default=str),
+            (document.text or "").strip(),
+        )
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+        deduped_documents.append(document)
+    return deduped_documents
 
 
-def refresh_stock_graph(
+def build_graph_documents_for_ticker(
     ticker,
-    docs,
-    db_path=ingest_stock.DEFAULT_STOCK_DB_PATH,
-    storage_dir=DEFAULT_GRAPH_STORAGE_DIR,
-    rebuild_index=True,
+    stock_docs=None,
+    stock_db_path=ingest_stock.DEFAULT_STOCK_DB_PATH,
+    macro_db_path=ingest_macro.DEFAULT_MACRO_DB_PATH,
+    filings_base_dir=ingest_stock.DEFAULT_STOCK_FILINGS_BASE_DIR,
+    glossary_base_dir=ingest_knowledge.DEFAULT_GLOSSARY_BASE_DIR,
+    metadata_path=ingest_knowledge.DEFAULT_GLOSSARY_METADATA_PATH,
 ):
-    state = _load_graph_state(storage_dir=storage_dir)
-    nodes, edges = _build_stock_graph_elements(ticker, docs, db_path=db_path)
-    state = _merge_scope(state, f"stock:{ticker.upper()}", nodes, edges)
-    if rebuild_index:
-        _persist_graph_index(state, storage_dir=storage_dir)
-    else:
-        _save_graph_state(state, storage_dir=storage_dir)
-    return storage_dir
+    ticker = ticker.upper()
+    stock_docs = stock_docs or ingest_stock.build_financial_docs(
+        ticker,
+        db_path=stock_db_path,
+        filings_base_dir=filings_base_dir,
+    )
+    stock_docs = _select_stock_docs_for_graph(stock_docs)
+    knowledge_docs = ingest_knowledge.build_glossary_docs(
+        glossary_base_dir=glossary_base_dir,
+        metadata_path=metadata_path,
+    )
+    macro_docs = ingest_macro.build_market_environment_docs(db_path=macro_db_path)
+
+    glossary_lookup = _glossary_indicator_lookup(knowledge_docs)
+    stock_observation_docs = _stock_observation_documents(
+        ticker,
+        db_path=stock_db_path,
+        glossary_lookup=glossary_lookup,
+        stock_docs=stock_docs,
+    )
+    macro_observation_docs = _macro_observation_documents(
+        db_path=macro_db_path,
+        glossary_lookup=glossary_lookup,
+    )
+
+    prepared_documents = []
+    for doc in knowledge_docs:
+        prepared_documents.append(_prepare_graph_document(doc, "knowledge_glossary"))
+    for doc in macro_docs:
+        prepared_documents.append(_prepare_graph_document(doc, "macro_context"))
+    for doc in stock_docs:
+        prepared_documents.append(_prepare_graph_document(doc, "stock_context"))
+    for doc in stock_observation_docs:
+        prepared_documents.append(_prepare_graph_document(doc, "stock_observation"))
+    for doc in macro_observation_docs:
+        prepared_documents.append(_prepare_graph_document(doc, "macro_observation"))
+
+    return _dedupe_documents(prepared_documents)
 
 
-def refresh_full_graph_for_ticker(
+def _graph_extractors():
+    global _GRAPH_LLM
+    if _GRAPH_LLM is None:
+        _GRAPH_LLM = OpenAI(model="gpt-4o-mini", temperature=0.1, max_retries=0)
+
+    return [
+        DynamicLLMPathExtractor(
+            llm=_GRAPH_LLM,
+            max_triplets_per_chunk=4,
+            num_workers=1,
+            allowed_entity_types=GRAPH_ENTITY_TYPES,
+            allowed_relation_types=GRAPH_RELATION_TYPES,
+            allowed_entity_props=GRAPH_ENTITY_PROPS,
+            allowed_relation_props=GRAPH_RELATION_PROPS,
+        ),
+        ImplicitPathExtractor(),
+    ]
+
+
+def refresh_property_graph_for_ticker(
     ticker,
     stock_docs=None,
     stock_db_path=ingest_stock.DEFAULT_STOCK_DB_PATH,
@@ -653,129 +570,111 @@ def refresh_full_graph_for_ticker(
     metadata_path=ingest_knowledge.DEFAULT_GLOSSARY_METADATA_PATH,
     storage_dir=DEFAULT_GRAPH_STORAGE_DIR,
 ):
+    ingest_stock.env()
     ingest_macro.refresh_market_environment_if_stale(db_path=macro_db_path)
-    knowledge_docs = ingest_knowledge.build_glossary_docs(
+
+    documents = build_graph_documents_for_ticker(
+        ticker,
+        stock_docs=stock_docs,
+        stock_db_path=stock_db_path,
+        macro_db_path=macro_db_path,
+        filings_base_dir=filings_base_dir,
         glossary_base_dir=glossary_base_dir,
         metadata_path=metadata_path,
     )
-    macro_docs = ingest_macro.build_market_environment_docs(db_path=macro_db_path)
-    if stock_docs is None:
-        stock_docs = ingest_stock.build_financial_docs(
-            ticker,
-            db_path=stock_db_path,
-            filings_base_dir=filings_base_dir,
-        )
-
-    state = _load_graph_state(storage_dir=storage_dir)
-    knowledge_nodes, knowledge_edges = _build_knowledge_graph_elements(knowledge_docs)
-    macro_nodes, macro_edges = _build_macro_graph_elements(macro_docs, db_path=macro_db_path)
-    stock_nodes, stock_edges = _build_stock_graph_elements(ticker, stock_docs, db_path=stock_db_path)
-
-    state = _merge_scope(state, "knowledge", knowledge_nodes, knowledge_edges)
-    state = _merge_scope(state, "macro", macro_nodes, macro_edges)
-    state = _merge_scope(state, f"stock:{ticker.upper()}", stock_nodes, stock_edges)
-    _persist_graph_index(state, storage_dir=storage_dir)
-    return storage_dir
-
-
-def graph_index_exists(storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
-    return (
-        os.path.isdir(storage_dir)
-        and os.path.isfile(os.path.join(storage_dir, "docstore.json"))
-        and os.path.isfile(_graph_state_path(storage_dir))
-    )
-
-
-def _graph_retriever(storage_dir=DEFAULT_GRAPH_STORAGE_DIR, similarity_top_k=4):
-    storage_context = StorageContext.from_defaults(persist_dir=storage_dir)
-    index = load_index_from_storage(storage_context)
-    return index.as_retriever(similarity_top_k=similarity_top_k)
-
-
-def _graph_hit_ids(retrieved_nodes, ticker=None):
-    hit_ids = []
-    for retrieved_node in retrieved_nodes:
-        node = getattr(retrieved_node, "node", retrieved_node)
-        metadata = getattr(node, "metadata", {}) or {}
-        graph_node_id = metadata.get("graph_node_id")
-        node_ticker = (metadata.get("ticker") or "").upper()
-        if ticker and node_ticker and node_ticker != ticker.upper():
-            continue
-        if graph_node_id and graph_node_id not in hit_ids:
-            hit_ids.append(graph_node_id)
-    return hit_ids
-
-
-def _format_graph_section(state, node_id, ticker=None):
-    node = state["nodes"].get(node_id)
-    if not node:
+    if not documents:
         return None
 
-    lines = [
-        f"Node: {node['label']}",
-        f"Type: {node['type']}",
-        _trim_text(node["text"], max_chars=800),
-    ]
+    persist_dir = _graph_persist_dir(ticker, storage_dir=storage_dir)
+    _reset_persist_dir(persist_dir)
 
-    connections = []
-    for edge, other_node in _node_neighbors(state, node_id)[:8]:
-        other_ticker = (other_node.get("metadata", {}).get("ticker") or "").upper()
-        if ticker and other_ticker and other_ticker != ticker.upper():
-            continue
-        connections.append(f"- {edge['type']}: {other_node['label']}")
+    try:
+        storage_context = StorageContext.from_defaults(
+            property_graph_store=SimplePropertyGraphStore()
+        )
+        PropertyGraphIndex.from_documents(
+            documents,
+            storage_context=storage_context,
+            transformations=[SentenceSplitter(chunk_size=4096, chunk_overlap=150)],
+            kg_extractors=_graph_extractors(),
+            embed_kg_nodes=False,
+            show_progress=False,
+            use_async=False,
+        )
+        storage_context.persist(
+            persist_dir=persist_dir,
+            fs=_UTF8LocalFileSystem(auto_mkdir=True),
+        )
+    except Exception as exc:
+        if os.path.isdir(persist_dir):
+            shutil.rmtree(persist_dir, onerror=_remove_readonly)
+        raise RuntimeError(f"Property graph refresh failed for {ticker}: {exc}") from exc
 
-    if connections:
-        lines.append("Related Graph Connections:")
-        lines.extend(connections)
-
-    return "\n".join(lines)
+    return persist_dir
 
 
-def _graph_node_priority(node_type):
-    priorities = {
-        "stock_observation": 0,
-        "macro_observation": 0,
-        "indicator_concept": 1,
-        "glossary_document": 2,
-        "company": 3,
-        "macro_environment": 3,
-        "stock_document": 4,
-        "macro_document": 4,
-        "indicator_group": 5,
-        "indicator_subgroup": 5,
-    }
-    return priorities.get(node_type, 9)
+def refresh_full_graph_for_ticker(*args, **kwargs):
+    return refresh_property_graph_for_ticker(*args, **kwargs)
+
+
+def _load_graph_index(ticker, storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
+    persist_dir = _graph_persist_dir(ticker, storage_dir=storage_dir)
+    if not graph_index_exists(ticker, storage_dir=storage_dir):
+        raise FileNotFoundError(f"Graph index directory not found: {persist_dir}")
+
+    ingest_stock.env()
+    fs = _UTF8LocalFileSystem(auto_mkdir=True)
+    property_graph_store = SimplePropertyGraphStore.from_persist_dir(persist_dir, fs=fs)
+    storage_context = StorageContext.from_defaults(
+        persist_dir=persist_dir,
+        property_graph_store=property_graph_store,
+        fs=fs,
+    )
+    return load_index_from_storage(storage_context)
+
+
+def _node_text(node_with_score):
+    node = getattr(node_with_score, "node", node_with_score)
+    if hasattr(node, "get_content"):
+        text = node.get_content()
+    else:
+        text = getattr(node, "text", "")
+    return str(text).replace("\ufeff", "").strip()
 
 
 def retrieve_graph_context(
     query_str,
-    ticker=None,
+    ticker,
     storage_dir=DEFAULT_GRAPH_STORAGE_DIR,
     similarity_top_k=4,
+    max_chunks=4,
 ):
-    if not graph_index_exists(storage_dir=storage_dir):
+    try:
+        index = _load_graph_index(ticker, storage_dir=storage_dir)
+    except (FileNotFoundError, ValueError):
         return None
 
-    retriever = _graph_retriever(storage_dir=storage_dir, similarity_top_k=similarity_top_k)
-    retrieved_nodes = retriever.retrieve(query_str)
-    hit_ids = _graph_hit_ids(retrieved_nodes, ticker=ticker)
-    if not hit_ids:
-        return None
-
-    state = _load_graph_state(storage_dir=storage_dir)
-    hit_ids = sorted(
-        hit_ids,
-        key=lambda node_id: _graph_node_priority(
-            state["nodes"].get(node_id, {}).get("type", "")
-        ),
+    retriever = index.as_retriever(
+        include_text=True,
+        similarity_top_k=similarity_top_k,
+        path_depth=1,
     )
-    sections = []
-    for node_id in hit_ids[:3]:
-        section = _format_graph_section(state, node_id, ticker=ticker)
-        if section:
-            sections.append(section)
+    nodes = retriever.retrieve(query_str)
+    chunks = []
+    seen_chunks = set()
 
-    if not sections:
+    for node in nodes:
+        text = _node_text(node)
+        if not text:
+            continue
+        if text in seen_chunks:
+            continue
+        seen_chunks.add(text)
+        chunks.append(text)
+        if len(chunks) >= max_chunks:
+            break
+
+    if not chunks:
         return None
 
-    return "Graph layer context:\n\n" + "\n\n".join(sections)
+    return "Graph property context:\n" + "\n\n".join(chunks)

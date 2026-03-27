@@ -1,6 +1,8 @@
 import os
 import re
+import sqlite3
 
+import pandas as pd
 from llama_index.core import Settings, StorageContext, PromptTemplate, load_index_from_storage
 from llama_index.core.retrievers import VectorIndexRetriever
 from dotenv import load_dotenv
@@ -171,6 +173,65 @@ def _retrieve_context_from_dir(persist_dir, query_str, label, similarity_top_k=4
     return _format_context_chunks(label, chunks)
 
 
+def _direct_financial_indicator_context(ticker, db_path=ingest_stock.DEFAULT_STOCK_DB_PATH):
+    if not db_path or not os.path.isfile(db_path):
+        return None
+
+    selected_columns = [
+        "Period End Date",
+        "Total Revenue",
+        "Gross Margin",
+        "Operating Margin",
+        "Net Profit Margin",
+        "Diluted EPS",
+        "Free Cash Flow",
+        "Current Ratio",
+        "Debt-to-Equity (D/E)",
+        "Return on Equity (ROE)",
+        "Price-to-Earnings (P/E) Trailing",
+        "Current Market Price",
+    ]
+
+    conn = sqlite3.connect(db_path)
+    sections = []
+    try:
+        for frequency, limit in (("Quarterly", 4), ("Annual", 4)):
+            df = pd.read_sql_query(
+                """
+                SELECT *
+                FROM financial_indicators
+                WHERE Ticker = ? AND Frequency = ?
+                ORDER BY date([Period End Date]) DESC
+                LIMIT ?
+                """,
+                conn,
+                params=(ticker.upper(), frequency, limit),
+            )
+            if df.empty:
+                continue
+
+            keep_columns = [column for column in selected_columns if column in df.columns]
+            if not keep_columns:
+                continue
+
+            display_df = df[keep_columns].copy()
+            sections.append(
+                "\n".join(
+                    [
+                        f"Latest {len(display_df)} {frequency} financial indicator records from SQL",
+                        display_df.to_markdown(index=False),
+                    ]
+                )
+            )
+    finally:
+        conn.close()
+
+    if not sections:
+        return None
+
+    return "Structured stock indicator context:\n" + "\n\n".join(sections)
+
+
 def _matched_knowledge_chunks(query_str, max_matches=3):
     normalized_query = re.sub(r"\s+", " ", query_str.lower()).strip()
     exact_matches = []
@@ -251,24 +312,25 @@ def _ensure_knowledge_index_directory(knowledge_storage_dir):
 def _ensure_graph_index_directory(
     ticker,
     graph_storage_dir,
-    stock_storage_base_dir,
-    knowledge_storage_dir,
-    macro_storage_dir,
 ):
-    if ingest_graph.graph_index_exists(storage_dir=graph_storage_dir):
-        return graph_storage_dir
+    if ingest_graph.graph_index_exists(ticker=ticker, storage_dir=graph_storage_dir):
+        return os.path.join(graph_storage_dir, ticker.upper())
 
     print("Graph layer is missing; building the graph index now.")
-    ingest_graph.refresh_full_graph_for_ticker(
-        ticker,
-        stock_db_path=ingest_stock.DEFAULT_STOCK_DB_PATH,
-        macro_db_path=os.getenv("MACRO_SQL_DB_PATH", "macro_data.db"),
-        filings_base_dir=ingest_stock.DEFAULT_STOCK_FILINGS_BASE_DIR,
-        glossary_base_dir=ingest_knowledge.DEFAULT_GLOSSARY_BASE_DIR,
-        metadata_path=ingest_knowledge.DEFAULT_GLOSSARY_METADATA_PATH,
-        storage_dir=graph_storage_dir,
-    )
-    return graph_storage_dir
+    try:
+        persist_dir = ingest_graph.refresh_property_graph_for_ticker(
+            ticker,
+            stock_db_path=ingest_stock.DEFAULT_STOCK_DB_PATH,
+            macro_db_path=os.getenv("MACRO_SQL_DB_PATH", "macro_data.db"),
+            filings_base_dir=ingest_stock.DEFAULT_STOCK_FILINGS_BASE_DIR,
+            glossary_base_dir=ingest_knowledge.DEFAULT_GLOSSARY_BASE_DIR,
+            metadata_path=ingest_knowledge.DEFAULT_GLOSSARY_METADATA_PATH,
+            storage_dir=graph_storage_dir,
+        )
+    except Exception as exc:
+        print(f"Graph layer refresh skipped for {ticker}: {exc}")
+        persist_dir = None
+    return persist_dir or os.path.join(graph_storage_dir, ticker.upper())
 
 
 def get_analysis_context(
@@ -294,20 +356,52 @@ def get_analysis_context(
     resolved_graph_storage_dir = _ensure_graph_index_directory(
         ticker,
         graph_storage_dir=graph_storage_dir,
-        stock_storage_base_dir=stock_storage_base_dir,
-        knowledge_storage_dir=knowledge_storage_dir,
-        macro_storage_dir=macro_storage_dir,
     )
 
     stock_chunks = []
     seen_stock_chunks = set()
-    stock_queries = [
-        f"{ticker} company overview business description sector industry",
-        f"{ticker} financial indicators revenue margins eps cash flow balance sheet leverage quarterly annual",
-        f"{ticker} sec 10-k 10-q item 1 item 1a item 7 item 8 md&a business risk factors financial statements",
-        query_str,
+    financial_doc_markers = (
+        "Latest 12 Quarterly Financial Indicators",
+        "Latest 10 Annual Financial Indicators",
+        "Current market price used for market-based ratios",
+    )
+    exact_indicator_queries = [
+        f"{ticker} Latest Quarterly Financial Indicators revenue margins eps cash flow current market price",
+        f"{ticker} Latest Annual Financial Indicators revenue margins eps cash flow balance sheet leverage",
     ]
-    for stock_query in stock_queries:
+    for stock_query in exact_indicator_queries:
+        for chunk in _retrieve_chunks_from_dir(
+            stock_persist_dir,
+            stock_query,
+            similarity_top_k=max(stock_top_k, 12),
+        ):
+            if not any(marker in chunk for marker in financial_doc_markers):
+                continue
+            if chunk in seen_stock_chunks:
+                continue
+            seen_stock_chunks.add(chunk)
+            stock_chunks.append(chunk)
+            if len(stock_chunks) >= 2:
+                break
+        if len(stock_chunks) >= 2:
+            break
+
+    stock_query_plan = [
+        (
+            f"{ticker} company overview business description sector industry",
+            1,
+        ),
+        (
+            f"{ticker} sec item 1 business item 1a risk factors item 7 md&a business drivers risks",
+            2,
+        ),
+        (
+            query_str,
+            2,
+        ),
+    ]
+    for stock_query, chunk_budget in stock_query_plan:
+        added_for_query = 0
         for chunk in _retrieve_chunks_from_dir(
             stock_persist_dir,
             stock_query,
@@ -317,15 +411,23 @@ def get_analysis_context(
                 continue
             seen_stock_chunks.add(chunk)
             stock_chunks.append(chunk)
-            if len(stock_chunks) >= 6:
+            added_for_query += 1
+            if added_for_query >= chunk_budget or len(stock_chunks) >= 8:
                 break
-        if len(stock_chunks) >= 6:
+        if len(stock_chunks) >= 8:
             break
 
     stock_context = _format_context_chunks(
         f"{ticker} financial context",
         stock_chunks,
     )
+    direct_financial_context = _direct_financial_indicator_context(ticker)
+    if direct_financial_context:
+        stock_context = (
+            f"{direct_financial_context}\n\n{stock_context}"
+            if stock_context
+            else direct_financial_context
+        )
     knowledge_chunks = []
     seen_knowledge_chunks = set()
     for chunk in _matched_knowledge_chunks(query_str):
@@ -359,7 +461,7 @@ def get_analysis_context(
     graph_context = ingest_graph.retrieve_graph_context(
         query_str,
         ticker=ticker,
-        storage_dir=resolved_graph_storage_dir,
+        storage_dir=graph_storage_dir,
         similarity_top_k=graph_top_k,
     )
     stock_context = _limit_context(stock_context, 18000)
