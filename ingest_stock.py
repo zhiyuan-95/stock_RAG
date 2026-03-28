@@ -119,6 +119,75 @@ CORE_GLOSSARY_INDICATORS = [
     "Cash Flow Return on Investment (CFROI)",
 ]
 FINANCIAL_INDICATOR_COLUMN_ORDER = IDENTIFIER_COLUMNS + RAW_FACT_COLUMNS + CORE_GLOSSARY_INDICATORS
+ACTIVE_FULLTEXT_FILING_LIMITS = {
+    "10-K": 3,
+    "10-Q": 8,
+}
+FILING_NARRATIVE_SECTIONS = {
+    "10-K": [
+        ("item_1_business", "SEC 10-K Item 1 Business"),
+        ("item_1a_risk_factors", "SEC 10-K Item 1A Risk Factors"),
+        ("item_7_mda", "SEC 10-K Item 7 MD&A"),
+    ],
+    "10-Q": [
+        ("item_2_mda", "SEC 10-Q Item 2 MD&A"),
+        ("item_1a_risk_factors", "SEC 10-Q Item 1A Risk Factors"),
+    ],
+}
+FILING_STATEMENT_SECTIONS = {
+    "10-K": ("item_8_financial_statements", "SEC 10-K Item 8 Financial Statements"),
+    "10-Q": ("item_1_financial_statements", "SEC 10-Q Item 1 Financial Statements"),
+}
+STATEMENT_FACT_COLUMNS = [
+    ("Total Revenue", "Revenue"),
+    ("Gross Profit", "Gross Profit"),
+    ("Operating Income", "Operating Income"),
+    ("Net Income", "Net Income"),
+    ("Diluted EPS", "Diluted EPS"),
+    ("Operating Cash Flow", "Operating Cash Flow"),
+    ("Capital Expenditures", "Capital Expenditures"),
+    ("Free Cash Flow", "Free Cash Flow"),
+    ("Total Debt", "Total Debt"),
+    ("Cash and Equivalents", "Cash and Equivalents"),
+    ("Shareholders Equity", "Shareholders Equity"),
+    ("Shares Outstanding", "Shares Outstanding"),
+]
+STATEMENT_LINKED_FACT_SPECS = [
+    {"label": "Segment revenue", "all": ["segment"], "any": ["revenue", "sales"]},
+    {
+        "label": "Geographic revenue",
+        "any": [
+            "geographic",
+            "international",
+            "americas",
+            "emea",
+            "europe",
+            "greater china",
+            "asia pacific",
+        ],
+    },
+    {
+        "label": "Debt maturity amounts",
+        "any": ["maturit", "due in", "senior notes", "convertible notes", "debt"],
+    },
+    {"label": "Lease obligations", "any": ["lease", "operating lease", "finance lease"]},
+    {"label": "Buybacks", "any": ["repurchase", "buyback", "treasury stock"]},
+    {"label": "Impairments", "any": ["impair", "write-down", "write off"]},
+    {"label": "Goodwill", "any": ["goodwill"]},
+    {"label": "Tax rate", "any": ["effective tax rate", "income tax", "tax rate"]},
+    {"label": "Provisions", "any": ["provision", "contingenc", "litigation"]},
+    {"label": "Reserve changes", "any": ["reserve", "allowance"]},
+]
+FINANCIAL_SECTOR_NOTE_SPECS = [
+    {"label": "Loan quality / charge-offs", "any": ["charge-off", "nonperform", "delinquen", "credit quality"]},
+    {"label": "Deposit mix", "any": ["deposit", "brokered deposits", "noninterest-bearing", "time deposits"]},
+    {"label": "Net interest margin drivers", "any": ["net interest margin", "net interest income", "funding costs"]},
+    {"label": "Reserve methodology", "any": ["cecl", "allowance", "reserve methodology"]},
+    {"label": "AUM / AUA changes", "any": ["assets under management", "aum", "assets under administration", "aua"]},
+    {"label": "Fair value hierarchy", "any": ["fair value", "level 1", "level 2", "level 3"]},
+    {"label": "Capital ratios", "any": ["cet1", "tier 1", "risk-based capital", "leverage ratio"]},
+    {"label": "Underwriting reserves", "any": ["underwriting", "loss reserves", "claim reserves", "policy benefits"]},
+]
 SEC_FACT_SPECS = {
     "Total Revenue": {
         "kind": "duration",
@@ -662,58 +731,164 @@ def _extract_10q_sections(filing_text):
     }
 
 
+def _sorted_filing_records(filing_records):
+    return sorted(
+        filing_records,
+        key=lambda record: pd.to_datetime(record.get("filing_date"), errors="coerce"),
+        reverse=True,
+    )
+
+
+def _fiscal_quarter_from_period(form_type, fiscal_period):
+    period = str(fiscal_period or "").upper().strip()
+    if period.startswith("Q") and len(period) >= 2:
+        return period[:2]
+    if form_type == "10-K":
+        return "FY"
+    return None
+
+
+def _filing_retrieval_tier(form_type, recency_rank):
+    return "active" if recency_rank < ACTIVE_FULLTEXT_FILING_LIMITS.get(form_type, 0) else "archive"
+
+
+def _filing_base_metadata(
+    ticker,
+    company_profile,
+    filing_record,
+    doc_type,
+    section_key,
+    section_title,
+):
+    fiscal_period = filing_record.get("fiscal_period")
+    return {
+        "ticker": ticker,
+        "type": doc_type,
+        "form_type": filing_record["form_type"],
+        "section_key": section_key,
+        "section_title": section_title,
+        "section_name": section_title,
+        "company_name": company_profile["company_name"],
+        "sector": company_profile["sector"] or "Unknown",
+        "industry": company_profile["industry"] or "Unknown",
+        "filing_date": filing_record["filing_date"],
+        "filing_url": filing_record["filing_url"],
+        "accession_number": filing_record["accession_number"],
+        "reporting_date": filing_record.get("reporting_date"),
+        "fiscal_year": filing_record.get("fiscal_year"),
+        "fiscal_period": fiscal_period,
+        "fiscal_quarter": _fiscal_quarter_from_period(filing_record["form_type"], fiscal_period),
+        "retrieval_tier": filing_record.get("retrieval_tier", "archive"),
+        "filing_rank": filing_record.get("recency_rank"),
+        "source": section_title,
+    }
+
+
+def _section_summary_text(text, max_sentences=3, max_chars=520):
+    cleaned_text = _clean_section_text(text)
+    if not cleaned_text:
+        return ""
+
+    paragraphs = [
+        paragraph.strip()
+        for paragraph in re.split(r"\n{2,}", cleaned_text)
+        if len(paragraph.strip()) >= 80
+    ]
+    candidate_text = " ".join(paragraphs[:3]) if paragraphs else cleaned_text
+    sentence_candidates = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9])", candidate_text)
+
+    selected_sentences = []
+    for sentence in sentence_candidates:
+        cleaned_sentence = re.sub(r"\s+", " ", sentence).strip()
+        if len(cleaned_sentence) < 40:
+            continue
+        if cleaned_sentence.lower().startswith("item "):
+            continue
+        selected_sentences.append(cleaned_sentence)
+        if len(selected_sentences) >= max_sentences:
+            break
+
+    summary_text = " ".join(selected_sentences) if selected_sentences else candidate_text
+    return _truncate_text(summary_text, max_chars=max_chars)
+
+
+def _narrative_section_payloads(ticker, company_profile, filing_record, section_key, section_title, section_text):
+    metadata = _filing_base_metadata(
+        ticker,
+        company_profile,
+        filing_record,
+        doc_type="sec_filing_section",
+        section_key=section_key,
+        section_title=section_title,
+    )
+    summary_text = _section_summary_text(section_text)
+
+    payloads = [
+        {
+            "text": (
+                f"**{section_title}**\n\n"
+                f"Company: {company_profile['company_name']}\n"
+                f"Ticker: {ticker}\n"
+                f"Form Type: {filing_record['form_type']}\n"
+                f"Filing Date: {filing_record['filing_date']}\n"
+                f"Reporting Date: {filing_record.get('reporting_date') or 'Unknown'}\n"
+                f"Fiscal Year: {filing_record.get('fiscal_year') or 'Unknown'}\n"
+                f"Fiscal Period: {filing_record.get('fiscal_period') or 'Unknown'}\n"
+                f"Retrieval Tier: {filing_record.get('retrieval_tier', 'archive')}\n"
+                f"Filing URL: {filing_record['filing_url']}\n"
+                f"Sector: {company_profile['sector'] or 'Unknown'}\n"
+                f"Industry: {company_profile['industry'] or 'Unknown'}\n\n"
+                f"{section_text}"
+            ),
+            "metadata": metadata,
+        }
+    ]
+
+    if summary_text:
+        summary_metadata = metadata | {
+            "type": "sec_section_summary",
+            "source": f"{section_title} summary",
+            "section_summary": summary_text,
+        }
+        payloads.append(
+            {
+                "text": (
+                    f"**{section_title} Summary**\n\n"
+                    f"Company: {company_profile['company_name']}\n"
+                    f"Ticker: {ticker}\n"
+                    f"Form Type: {filing_record['form_type']}\n"
+                    f"Filing Date: {filing_record['filing_date']}\n"
+                    f"Reporting Date: {filing_record.get('reporting_date') or 'Unknown'}\n"
+                    f"Fiscal Year: {filing_record.get('fiscal_year') or 'Unknown'}\n"
+                    f"Fiscal Period: {filing_record.get('fiscal_period') or 'Unknown'}\n"
+                    f"Retrieval Tier: {filing_record.get('retrieval_tier', 'archive')}\n\n"
+                    f"Short summary:\n{summary_text}"
+                ),
+                "metadata": summary_metadata,
+            }
+        )
+
+    return payloads
+
+
 def _document_payloads_from_section_map(ticker, company_profile, filing_record):
     form_type = filing_record["form_type"]
     section_map = filing_record["sections"]
     payloads = []
 
-    if form_type == "10-K":
-        ordered_sections = [
-            ("item_1_business", "SEC 10-K Item 1 Business"),
-            ("item_1a_risk_factors", "SEC 10-K Item 1A Risk Factors"),
-            ("item_7_mda", "SEC 10-K Item 7 MD&A"),
-            ("item_8_financial_statements", "SEC 10-K Item 8 Financial Statements"),
-        ]
-    else:
-        ordered_sections = [
-            ("item_1_financial_statements", "SEC 10-Q Item 1 Financial Statements"),
-            ("item_2_mda", "SEC 10-Q Item 2 MD&A"),
-            ("item_1a_risk_factors", "SEC 10-Q Item 1A Risk Factors"),
-        ]
-
-    for section_key, section_title in ordered_sections:
+    for section_key, section_title in FILING_NARRATIVE_SECTIONS[form_type]:
         section_text = section_map.get(section_key) or ""
         if not section_text:
             continue
-
-        payloads.append(
-            {
-                "text": (
-                    f"**{section_title}**\n\n"
-                    f"Company: {company_profile['company_name']}\n"
-                    f"Ticker: {ticker}\n"
-                    f"Form Type: {form_type}\n"
-                    f"Filing Date: {filing_record['filing_date']}\n"
-                    f"Filing URL: {filing_record['filing_url']}\n"
-                    f"Sector: {company_profile['sector'] or 'Unknown'}\n"
-                    f"Industry: {company_profile['industry'] or 'Unknown'}\n\n"
-                    f"{section_text}"
-                ),
-                "metadata": {
-                    "ticker": ticker,
-                    "type": "sec_filing_section",
-                    "form_type": form_type,
-                    "section_key": section_key,
-                    "section_title": section_title,
-                    "company_name": company_profile["company_name"],
-                    "sector": company_profile["sector"] or "Unknown",
-                    "industry": company_profile["industry"] or "Unknown",
-                    "filing_date": filing_record["filing_date"],
-                    "filing_url": filing_record["filing_url"],
-                    "accession_number": filing_record["accession_number"],
-                    "source": section_title,
-                },
-            }
+        payloads.extend(
+            _narrative_section_payloads(
+                ticker,
+                company_profile,
+                filing_record,
+                section_key,
+                section_title,
+                section_text,
+            )
         )
 
     return payloads
@@ -745,6 +920,444 @@ def _documents_from_payloads(document_payloads):
         Document(text=payload["text"], metadata=payload["metadata"])
         for payload in document_payloads
     ]
+
+
+def _load_financial_history_frames(conn, ticker):
+    ticker = ticker.upper()
+    history = {}
+    for frequency in ("Annual", "Quarterly"):
+        df = pd.read_sql_query(
+            """
+            SELECT *
+            FROM financial_indicators
+            WHERE Ticker = ? AND Frequency = ?
+            ORDER BY date([Period End Date]) DESC
+            """,
+            conn,
+            params=(ticker, frequency),
+        )
+        if df.empty:
+            history[frequency] = df
+            continue
+
+        df["Period End Date"] = pd.to_datetime(df["Period End Date"], errors="coerce")
+        df = (
+            df.dropna(subset=["Period End Date"])
+            .sort_values("Period End Date", ascending=False)
+            .reset_index(drop=True)
+        )
+        history[frequency] = df
+    return history
+
+
+def _match_filing_row(financial_history, filing_record):
+    frequency = "Annual" if filing_record["form_type"] == "10-K" else "Quarterly"
+    df = financial_history.get(frequency)
+    if df is None or df.empty:
+        return frequency, None, None
+
+    report_date = pd.to_datetime(filing_record.get("reporting_date"), errors="coerce")
+    if pd.isna(report_date):
+        report_date = pd.to_datetime(filing_record.get("filing_date"), errors="coerce")
+
+    if pd.notna(report_date):
+        exact_match = df[df["Period End Date"] == report_date]
+        if not exact_match.empty:
+            row_index = int(exact_match.index[0])
+        else:
+            delta_days = (df["Period End Date"] - report_date).abs().dt.days
+            row_index = int(delta_days.idxmin())
+    else:
+        row_index = 0
+
+    row = df.iloc[row_index]
+    previous_row = df.iloc[row_index + 1] if row_index + 1 < len(df) else None
+    return frequency, row, previous_row
+
+
+def _row_value(row, column_name):
+    if row is None or column_name not in row.index:
+        return None
+    value = row.get(column_name)
+    if pd.isna(value):
+        return None
+    return value
+
+
+def _format_compact_number(value, prefix=""):
+    numeric_value = _coerce_numeric(value)
+    if numeric_value is None:
+        return None
+    absolute_value = abs(numeric_value)
+    if absolute_value >= 1_000_000_000_000:
+        return f"{prefix}{numeric_value / 1_000_000_000_000:.2f}T"
+    if absolute_value >= 1_000_000_000:
+        return f"{prefix}{numeric_value / 1_000_000_000:.2f}B"
+    if absolute_value >= 1_000_000:
+        return f"{prefix}{numeric_value / 1_000_000:.2f}M"
+    if absolute_value >= 1_000:
+        return f"{prefix}{numeric_value / 1_000:.2f}K"
+    return f"{prefix}{numeric_value:.2f}"
+
+
+def _format_indicator_value(indicator_name, value):
+    numeric_value = _coerce_numeric(value)
+    if numeric_value is None:
+        return None
+
+    percent_markers = (
+        "margin",
+        "growth",
+        "yield",
+        "payout",
+        "return on",
+        "cfroi",
+    )
+    name = indicator_name.lower()
+    if any(marker in name for marker in percent_markers):
+        return f"{numeric_value:.2f}%"
+    if "cycle" in name:
+        return f"{numeric_value:.1f} days"
+    return f"{numeric_value:.2f}"
+
+
+def _format_statement_fact_value(column_name, value):
+    numeric_value = _coerce_numeric(value)
+    if numeric_value is None:
+        return None
+
+    if column_name == "Diluted EPS":
+        return _format_compact_number(numeric_value, prefix="$")
+    if column_name == "Shares Outstanding":
+        return _format_compact_number(numeric_value)
+    return _format_compact_number(numeric_value, prefix="$")
+
+
+def _change_fragment(label, current_value, previous_value, style):
+    current_numeric = _coerce_numeric(current_value)
+    previous_numeric = _coerce_numeric(previous_value)
+    if current_numeric is None or previous_numeric is None:
+        return None
+
+    if style == "pct":
+        if previous_numeric == 0:
+            return None
+        change_pct = ((current_numeric - previous_numeric) / abs(previous_numeric)) * 100.0
+        direction = "up" if change_pct >= 0 else "down"
+        return f"{label} {direction} {abs(change_pct):.1f}%"
+
+    if style == "bps":
+        change_bps = (current_numeric - previous_numeric) * 100.0
+        direction = "up" if change_bps >= 0 else "down"
+        return f"{label} {direction} {abs(change_bps):.0f} bps"
+
+    return None
+
+
+def _filing_change_summary(frequency, current_row, previous_row):
+    if current_row is None or previous_row is None:
+        return ""
+
+    summary_parts = []
+    for column_name, label, style in [
+        ("Total Revenue", "revenue", "pct"),
+        ("Gross Margin", "gross margin", "bps"),
+        ("Operating Margin", "operating margin", "bps"),
+        ("Net Profit Margin", "net margin", "bps"),
+        ("Diluted EPS", "diluted EPS", "pct"),
+        ("Free Cash Flow", "free cash flow", "pct"),
+    ]:
+        fragment = _change_fragment(
+            label,
+            _row_value(current_row, column_name),
+            _row_value(previous_row, column_name),
+            style,
+        )
+        if fragment:
+            summary_parts.append(fragment)
+
+    if not summary_parts:
+        return ""
+
+    comparison_label = "prior annual period" if frequency == "Annual" else "prior quarterly period"
+    return "; ".join(summary_parts[:4]) + f" versus the {comparison_label}."
+
+
+def _statement_fact_lines_from_row(row):
+    if row is None:
+        return []
+
+    fact_lines = []
+    for column_name, label in STATEMENT_FACT_COLUMNS:
+        formatted_value = _format_statement_fact_value(column_name, _row_value(row, column_name))
+        if formatted_value:
+            fact_lines.append(f"{label}: {formatted_value}")
+
+    current_assets = _coerce_numeric(_row_value(row, "Current Assets"))
+    current_liabilities = _coerce_numeric(_row_value(row, "Current Liabilities"))
+    if current_assets is not None and current_liabilities is not None:
+        working_capital = current_assets - current_liabilities
+        fact_lines.append(f"Working Capital: {_format_compact_number(working_capital, prefix='$')}")
+
+    return fact_lines
+
+
+def _extract_matching_passages(text, spec_list, max_chars=340):
+    if not text:
+        return []
+
+    blocks = [
+        re.sub(r"\s+", " ", block).strip()
+        for block in re.split(r"\n{2,}", _clean_section_text(text))
+        if len(block.strip()) >= 80
+    ]
+    if not blocks:
+        blocks = [
+            re.sub(r"\s+", " ", block).strip()
+            for block in re.split(r"(?<=[.!?])\s+", _clean_section_text(text))
+            if len(block.strip()) >= 80
+        ]
+
+    matched_lines = []
+    for spec in spec_list:
+        matches = []
+        for block in blocks:
+            lower_block = block.lower()
+            required_terms = spec.get("all", [])
+            optional_terms = spec.get("any", [])
+            if required_terms and not all(term in lower_block for term in required_terms):
+                continue
+            if optional_terms and not any(term in lower_block for term in optional_terms):
+                continue
+            snippet = _truncate_text(block, max_chars=max_chars)
+            if snippet in matches:
+                continue
+            matches.append(snippet)
+            if len(matches) >= spec.get("max_matches", 2):
+                break
+        if matches:
+            matched_lines.append(f"{spec['label']}: {' | '.join(matches)}")
+
+    return matched_lines
+
+
+def _is_financial_sector(company_profile):
+    sector_blob = " ".join(
+        [
+            str(company_profile.get("sector") or ""),
+            str(company_profile.get("industry") or ""),
+        ]
+    ).lower()
+    return any(
+        keyword in sector_blob
+        for keyword in [
+            "bank",
+            "insurance",
+            "financial",
+            "reit",
+            "broker",
+            "capital markets",
+            "asset management",
+            "investment",
+        ]
+    )
+
+
+def _financial_statement_documents_from_filing(ticker, company_profile, filing_record, financial_history):
+    form_type = filing_record["form_type"]
+    section_key, section_title = FILING_STATEMENT_SECTIONS[form_type]
+    section_text = (filing_record.get("sections") or {}).get(section_key) or ""
+
+    frequency, matched_row, previous_row = _match_filing_row(financial_history, filing_record)
+    change_summary = _filing_change_summary(frequency, matched_row, previous_row)
+    fact_lines = _statement_fact_lines_from_row(matched_row)
+    statement_linked_lines = _extract_matching_passages(section_text, STATEMENT_LINKED_FACT_SPECS)
+    financial_sector_lines = (
+        _extract_matching_passages(section_text, FINANCIAL_SECTOR_NOTE_SPECS)
+        if _is_financial_sector(company_profile)
+        else []
+    )
+
+    base_metadata = _filing_base_metadata(
+        ticker,
+        company_profile,
+        filing_record,
+        doc_type="filing_financial_summary",
+        section_key=section_key,
+        section_title=section_title,
+    )
+    documents = []
+
+    if matched_row is not None:
+        indicator_lines = []
+        for indicator_name in CORE_GLOSSARY_INDICATORS:
+            formatted_value = _format_indicator_value(indicator_name, _row_value(matched_row, indicator_name))
+            if formatted_value is None:
+                continue
+            indicator_lines.append(f"{indicator_name}: {formatted_value}")
+
+        if indicator_lines:
+            documents.append(
+                Document(
+                    text="\n".join(
+                        [
+                            f"**{section_title} Derived Indicators**",
+                            "",
+                            f"Company: {company_profile['company_name']}",
+                            f"Ticker: {ticker}",
+                            f"Form Type: {form_type}",
+                            f"Filing Date: {filing_record['filing_date']}",
+                            f"Reporting Date: {filing_record.get('reporting_date') or 'Unknown'}",
+                            f"Fiscal Year: {filing_record.get('fiscal_year') or 'Unknown'}",
+                            f"Fiscal Period: {filing_record.get('fiscal_period') or 'Unknown'}",
+                            f"Retrieval Tier: {filing_record.get('retrieval_tier', 'archive')}",
+                            "Document Role: Derived 48-indicator filing snapshot from structured financial data.",
+                            "",
+                            f"Short change summary: {change_summary or 'No automatic change summary available.'}",
+                            "",
+                            "Derived indicators:",
+                            *indicator_lines,
+                        ]
+                    ),
+                    metadata=base_metadata
+                    | {
+                        "type": "filing_derived_indicators",
+                        "source": f"{section_title} derived indicators",
+                        "frequency": frequency,
+                        "period_end_date": str(matched_row["Period End Date"].date()),
+                    },
+                )
+            )
+
+        if fact_lines:
+            documents.append(
+                Document(
+                    text="\n".join(
+                        [
+                            f"**{section_title} Reported Facts**",
+                            "",
+                            f"Company: {company_profile['company_name']}",
+                            f"Ticker: {ticker}",
+                            f"Form Type: {form_type}",
+                            f"Filing Date: {filing_record['filing_date']}",
+                            f"Reporting Date: {filing_record.get('reporting_date') or 'Unknown'}",
+                            f"Fiscal Year: {filing_record.get('fiscal_year') or 'Unknown'}",
+                            f"Fiscal Period: {filing_record.get('fiscal_period') or 'Unknown'}",
+                            f"Retrieval Tier: {filing_record.get('retrieval_tier', 'archive')}",
+                            "Document Role: Key reported facts tied to the filing-period financial statements.",
+                            "",
+                            f"Short change summary: {change_summary or 'No automatic change summary available.'}",
+                            "",
+                            "Reported facts:",
+                            *fact_lines,
+                        ]
+                    ),
+                    metadata=base_metadata
+                    | {
+                        "type": "filing_reported_facts",
+                        "source": f"{section_title} reported facts",
+                        "frequency": frequency,
+                        "period_end_date": str(matched_row["Period End Date"].date()),
+                    },
+                )
+            )
+
+    if statement_linked_lines:
+        documents.append(
+            Document(
+                text="\n".join(
+                    [
+                        f"**{section_title} Statement-Linked Facts**",
+                        "",
+                        f"Company: {company_profile['company_name']}",
+                        f"Ticker: {ticker}",
+                        f"Form Type: {form_type}",
+                        f"Filing Date: {filing_record['filing_date']}",
+                        f"Reporting Date: {filing_record.get('reporting_date') or 'Unknown'}",
+                        f"Fiscal Year: {filing_record.get('fiscal_year') or 'Unknown'}",
+                        f"Fiscal Period: {filing_record.get('fiscal_period') or 'Unknown'}",
+                        f"Retrieval Tier: {filing_record.get('retrieval_tier', 'archive')}",
+                        "Document Role: Statement-linked facts extracted from financial statement notes and disclosures.",
+                        "",
+                        *statement_linked_lines,
+                    ]
+                ),
+                metadata=base_metadata
+                | {
+                    "type": "statement_linked_facts",
+                    "source": f"{section_title} statement-linked facts",
+                },
+            )
+        )
+
+    if financial_sector_lines:
+        documents.append(
+            Document(
+                text="\n".join(
+                    [
+                        f"**{section_title} Financial-Sector Note Summary**",
+                        "",
+                        f"Company: {company_profile['company_name']}",
+                        f"Ticker: {ticker}",
+                        f"Form Type: {form_type}",
+                        f"Filing Date: {filing_record['filing_date']}",
+                        f"Reporting Date: {filing_record.get('reporting_date') or 'Unknown'}",
+                        f"Fiscal Year: {filing_record.get('fiscal_year') or 'Unknown'}",
+                        f"Fiscal Period: {filing_record.get('fiscal_period') or 'Unknown'}",
+                        f"Retrieval Tier: {filing_record.get('retrieval_tier', 'archive')}",
+                        "Document Role: Richer note summary for financial-sector disclosures.",
+                        "",
+                        *financial_sector_lines,
+                    ]
+                ),
+                metadata=base_metadata
+                | {
+                    "type": "financial_sector_note_summary",
+                    "source": f"{section_title} financial-sector note summary",
+                },
+            )
+        )
+
+    summary_fragments = []
+    if change_summary:
+        summary_fragments.append(change_summary)
+    if fact_lines:
+        summary_fragments.append("Key facts: " + "; ".join(fact_lines[:4]))
+    if statement_linked_lines:
+        summary_fragments.append("Linked facts: " + "; ".join(statement_linked_lines[:2]))
+    if financial_sector_lines:
+        summary_fragments.append("Financial-sector notes: " + "; ".join(financial_sector_lines[:2]))
+
+    if summary_fragments:
+        documents.append(
+            Document(
+                text="\n".join(
+                    [
+                        f"**{section_title} Summary**",
+                        "",
+                        f"Company: {company_profile['company_name']}",
+                        f"Ticker: {ticker}",
+                        f"Form Type: {form_type}",
+                        f"Filing Date: {filing_record['filing_date']}",
+                        f"Reporting Date: {filing_record.get('reporting_date') or 'Unknown'}",
+                        f"Fiscal Year: {filing_record.get('fiscal_year') or 'Unknown'}",
+                        f"Fiscal Period: {filing_record.get('fiscal_period') or 'Unknown'}",
+                        f"Retrieval Tier: {filing_record.get('retrieval_tier', 'archive')}",
+                        "",
+                        "Short summary:",
+                        _truncate_text(" ".join(summary_fragments), max_chars=900),
+                    ]
+                ),
+                metadata=base_metadata
+                | {
+                    "type": "filing_financial_summary",
+                    "source": f"{section_title} summary",
+                    "section_summary": _truncate_text(" ".join(summary_fragments), max_chars=900),
+                },
+            )
+        )
+
+    return documents
 
 
 def _build_company_profile_from_sec_archive(ticker, archive_payload):
@@ -811,13 +1424,25 @@ def _sync_sec_filing_archive(
     max_by_form = {"10-K": max_10k_filings, "10-Q": max_10q_filings}
     cik_no_zero = str(int(cik))
 
-    for form, accession_number, filing_date, primary_document in zip(
-        recent.get("form") or [],
-        recent.get("accessionNumber") or [],
-        recent.get("filingDate") or [],
-        recent.get("primaryDocument") or [],
-    ):
+    forms = recent.get("form") or []
+    accession_numbers = recent.get("accessionNumber") or []
+    filing_dates = recent.get("filingDate") or []
+    primary_documents = recent.get("primaryDocument") or []
+    report_dates = recent.get("reportDate") or []
+    fiscal_years = recent.get("fy") or []
+    fiscal_periods = recent.get("fp") or []
+
+    for row_index, form in enumerate(forms):
+        accession_number = accession_numbers[row_index] if row_index < len(accession_numbers) else None
+        filing_date = filing_dates[row_index] if row_index < len(filing_dates) else None
+        primary_document = primary_documents[row_index] if row_index < len(primary_documents) else None
+        report_date = report_dates[row_index] if row_index < len(report_dates) else None
+        fiscal_year = fiscal_years[row_index] if row_index < len(fiscal_years) else None
+        fiscal_period = fiscal_periods[row_index] if row_index < len(fiscal_periods) else None
+
         if form not in filing_groups or len(filing_groups[form]) >= max_by_form[form]:
+            continue
+        if not accession_number or not filing_date or not primary_document:
             continue
 
         accession_no_dashes = accession_number.replace("-", "")
@@ -841,6 +1466,11 @@ def _sync_sec_filing_archive(
             "filing_url": filing_url,
             "accession_number": accession_number,
             "primary_document": primary_document,
+            "reporting_date": report_date,
+            "fiscal_year": fiscal_year,
+            "fiscal_period": fiscal_period,
+            "recency_rank": len(filing_groups[form]),
+            "retrieval_tier": _filing_retrieval_tier(form, len(filing_groups[form])),
             "sections": sections,
         }
         filing_record["documents"] = _document_payloads_from_section_map(
@@ -1500,8 +2130,7 @@ def get_historical_financial_indicators(
     frequency="quarterly",
     max_periods=None,
     companyfacts_payload=None,
-    market_snapshot=None,
-):
+    market_snapshot=None):
     ticker = ticker.upper()
     frequency = frequency.lower()
     freq_label = "Quarterly" if frequency == "quarterly" else "Annual"
@@ -1586,6 +2215,9 @@ def build_financial_docs(
         max_10q_filings=12,
     )
     company_profile = _build_company_profile_from_sec_archive(ticker, sec_archive)
+    ten_k_filings = _sorted_filing_records(company_profile.get("ten_k_filings", []))
+    ten_q_filings = _sorted_filing_records(company_profile.get("ten_q_filings", []))
+    financial_history = _load_financial_history_frames(conn, ticker)
 
     profile_lines = [
         f"Company: {company_profile['company_name']}",
@@ -1593,8 +2225,10 @@ def build_financial_docs(
         f"Sector: {company_profile['sector'] or 'Unknown'}",
         f"Industry: {company_profile['industry'] or 'Unknown'}",
         f"Source: {company_profile['source']}",
-        f"Stored 10-K filings: {len(company_profile.get('ten_k_filings', []))}",
-        f"Stored 10-Q filings: {len(company_profile.get('ten_q_filings', []))}",
+        f"Stored 10-K filings: {len(ten_k_filings)}",
+        f"Stored 10-Q filings: {len(ten_q_filings)}",
+        f"Active full-text 10-K filings: {min(ACTIVE_FULLTEXT_FILING_LIMITS['10-K'], len(ten_k_filings))}",
+        f"Active full-text 10-Q filings: {min(ACTIVE_FULLTEXT_FILING_LIMITS['10-Q'], len(ten_q_filings))}",
     ]
     if company_profile.get("latest_filing_date"):
         profile_lines.append(f"Latest 10-K Filing Date: {company_profile['latest_filing_date']}")
@@ -1617,17 +2251,33 @@ def build_financial_docs(
                 "source": company_profile["source"],
                 "filing_date": company_profile.get("latest_filing_date"),
                 "filing_url": company_profile.get("latest_filing_url"),
-                "ten_k_count": len(company_profile.get("ten_k_filings", [])),
-                "ten_q_count": len(company_profile.get("ten_q_filings", [])),
+                "ten_k_count": len(ten_k_filings),
+                "ten_q_count": len(ten_q_filings),
             }
         )
     )
 
-    for filing_record in company_profile.get("ten_k_filings", []):
+    for filing_record in ten_k_filings:
         documents.extend(_documents_from_payloads(filing_record.get("documents", [])))
+        documents.extend(
+            _financial_statement_documents_from_filing(
+                ticker,
+                company_profile,
+                filing_record,
+                financial_history,
+            )
+        )
 
-    for filing_record in company_profile.get("ten_q_filings", []):
+    for filing_record in ten_q_filings:
         documents.extend(_documents_from_payloads(filing_record.get("documents", [])))
+        documents.extend(
+            _financial_statement_documents_from_filing(
+                ticker,
+                company_profile,
+                filing_record,
+                financial_history,
+            )
+        )
 
     for freq, max_keep in [('Quarterly', max_quarters), ('Annual', max_annual)]:
         query = """
@@ -1644,6 +2294,7 @@ def build_financial_docs(
         ordered_columns = [column for column in FINANCIAL_INDICATOR_COLUMN_ORDER if column in df.columns]
         df = df[ordered_columns + [column for column in df.columns if column not in ordered_columns]]
         md_table = df.to_markdown(index=False)
+        quick_summary = _filing_change_summary(freq, df.iloc[0], df.iloc[1] if len(df) > 1 else None)
 
         text = (
             f"**Latest {len(df)} {freq} Financial Indicators - {ticker}**\n\n"
@@ -1653,6 +2304,7 @@ def build_financial_docs(
             f"Current market price used for market-based ratios: {df['Current Market Price'].iloc[0] if 'Current Market Price' in df.columns else 'Unavailable'}\n"
             f"Most recent: {df['Period End Date'].iloc[0]}\n"
             f"Oldest shown: {df['Period End Date'].iloc[-1]}\n\n"
+            f"Quick change summary: {quick_summary or 'No automatic change summary available.'}\n\n"
             f"{md_table}\n\n"
             f"Last updated: {datetime.now().strftime('%Y-%m-%d')}"
         )
@@ -1670,8 +2322,8 @@ def build_financial_docs(
                 "most_recent": df['Period End Date'].iloc[0],
                 "source": "SEC Company Facts + current market price + SQLite",
                 "table_rows": len(df),
-                "ten_k_count": len(company_profile.get("ten_k_filings", [])),
-                "ten_q_count": len(company_profile.get("ten_q_filings", [])),
+                "ten_k_count": len(ten_k_filings),
+                "ten_q_count": len(ten_q_filings),
             }
         )
         documents.append(doc)
@@ -1766,7 +2418,7 @@ def refresh_ticker_data_and_index(
         return None
 
     # Step 3: rebuild vector store so old Yahoo-based docs do not linger
-    node_parser = SentenceSplitter(chunk_size=1024, chunk_overlap=200)
+    node_parser = SentenceSplitter(chunk_size=550, chunk_overlap=60)
     nodes = node_parser.get_nodes_from_documents(docs)
     _reset_persist_dir(persist_dir)
     index = VectorStoreIndex(nodes)

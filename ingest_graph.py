@@ -26,6 +26,7 @@ load_dotenv("config.env")
 
 DEFAULT_GRAPH_STORAGE_DIR = os.getenv("GRAPH_STORAGE_DIR", "./storage/graph")
 _GRAPH_LLM = None
+_GRAPH_INDEX_CACHE = {}
 
 GRAPH_ENTITY_TYPES = [
     "company",
@@ -97,6 +98,18 @@ def _reset_persist_dir(persist_dir):
 
 def _graph_persist_dir(ticker, storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
     return os.path.join(storage_dir, ticker.upper())
+
+
+def _persist_dir_signature(persist_dir, required_files):
+    signature = []
+    for file_name in required_files:
+        file_path = os.path.join(persist_dir, file_name)
+        if not os.path.isfile(file_path):
+            signature.append((file_name, None, None))
+            continue
+        stat_result = os.stat(file_path)
+        signature.append((file_name, stat_result.st_mtime_ns, stat_result.st_size))
+    return tuple(signature)
 
 
 class _UTF8LocalFileSystem(LocalFileSystem):
@@ -261,11 +274,29 @@ def _select_stock_docs_for_graph(stock_docs):
         "item_8_financial_statements",
         "item_1_financial_statements",
     }
+    active_structured_types = {
+        "filing_derived_indicators",
+        "filing_reported_facts",
+        "statement_linked_facts",
+        "financial_sector_note_summary",
+    }
+    summary_types = {
+        "sec_section_summary",
+        "filing_financial_summary",
+    }
 
     for doc in stock_docs:
         metadata = doc.metadata or {}
         doc_type = metadata.get("type")
+        retrieval_tier = metadata.get("retrieval_tier")
         if doc_type == "financial_indicators":
+            continue
+        if doc_type in summary_types:
+            selected_docs.append(doc)
+            continue
+        if doc_type in active_structured_types:
+            if retrieval_tier == "active":
+                selected_docs.append(doc)
             continue
         if doc_type != "sec_filing_section":
             selected_docs.append(doc)
@@ -276,12 +307,17 @@ def _select_stock_docs_for_graph(stock_docs):
         section_key = metadata.get("section_key")
         if section_key in excluded_section_keys:
             continue
+        if retrieval_tier != "active":
+            continue
         if form_type not in sec_docs_by_form or not filing_date:
             selected_docs.append(doc)
             continue
         sec_docs_by_form[form_type].setdefault(filing_date, []).append(doc)
 
-    for form_type, max_filings in (("10-K", 2), ("10-Q", 4)):
+    for form_type, max_filings in (
+        ("10-K", ingest_stock.ACTIVE_FULLTEXT_FILING_LIMITS["10-K"]),
+        ("10-Q", ingest_stock.ACTIVE_FULLTEXT_FILING_LIMITS["10-Q"]),
+    ):
         filing_map = sec_docs_by_form[form_type]
         for filing_date in sorted(filing_map.keys(), reverse=True)[:max_filings]:
             selected_docs.extend(filing_map[filing_date])
@@ -622,6 +658,14 @@ def _load_graph_index(ticker, storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
     if not graph_index_exists(ticker, storage_dir=storage_dir):
         raise FileNotFoundError(f"Graph index directory not found: {persist_dir}")
 
+    signature = _persist_dir_signature(
+        persist_dir,
+        ["property_graph_store.json", "index_store.json", "docstore.json"],
+    )
+    cache_entry = _GRAPH_INDEX_CACHE.get(persist_dir)
+    if cache_entry and cache_entry["signature"] == signature:
+        return cache_entry["index"]
+
     ingest_stock.env()
     fs = _UTF8LocalFileSystem(auto_mkdir=True)
     property_graph_store = SimplePropertyGraphStore.from_persist_dir(persist_dir, fs=fs)
@@ -630,7 +674,12 @@ def _load_graph_index(ticker, storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
         property_graph_store=property_graph_store,
         fs=fs,
     )
-    return load_index_from_storage(storage_context)
+    index = load_index_from_storage(storage_context)
+    _GRAPH_INDEX_CACHE[persist_dir] = {
+        "signature": signature,
+        "index": index,
+    }
+    return index
 
 
 def _node_text(node_with_score):

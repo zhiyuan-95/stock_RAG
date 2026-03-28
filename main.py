@@ -1,5 +1,5 @@
-import ingest_stock
-import ingest_macro
+#import ingest_stock
+#import ingest_macro
 import query
 # get tickers for sp500, nasdaq100, and dow
 def get_index_tickers(index):

@@ -1147,7 +1147,7 @@ def refresh_knowledge_index(
         return None
 
     os.makedirs(os.path.dirname(os.path.normpath(storage_dir)) or ".", exist_ok=True)
-    node_parser = SentenceSplitter(chunk_size=1024, chunk_overlap=200)
+    node_parser = SentenceSplitter(chunk_size=550, chunk_overlap=60)
     nodes = node_parser.get_nodes_from_documents(docs)
     _reset_persist_dir(storage_dir)
     index = VectorStoreIndex(nodes)

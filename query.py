@@ -17,6 +17,8 @@ DEFAULT_STOCK_STORAGE_BASE_DIR = os.getenv("STOCK_STORAGE_BASE_DIR", "./storage/
 DEFAULT_KNOWLEDGE_STORAGE_DIR = os.getenv("KNOWLEDGE_STORAGE_DIR", "./storage/knowledge")
 DEFAULT_MACRO_STORAGE_DIR = os.getenv("MACRO_STORAGE_DIR", "./storage/macro")
 DEFAULT_GRAPH_STORAGE_DIR = os.getenv("GRAPH_STORAGE_DIR", "./storage/graph")
+_INDEX_CACHE = {}
+_GLOSSARY_DOCS_CACHE = {}
 
 
 ANALYSIS_PROMPT = PromptTemplate(
@@ -41,8 +43,10 @@ ANALYSIS_PROMPT = PromptTemplate(
         The stock context may contain:
         - company overview / business description
         - sector and industry
-        - SEC 10-K / 10-Q filing sections
-        - Item 1 / Item 1A / MD&A / financial statements
+        - active-tier and archive-tier SEC 10-K / 10-Q filing sections
+        - short summaries for major filing sections
+        - Item 1 / Item 1A / MD&A narrative sections
+        - structured filing-linked financial statement facts, indicators, and note summaries
         - annual and quarterly financial indicators
 
         The knowledge context may contain:
@@ -117,9 +121,88 @@ def _load_retriever(persist_dir, similarity_top_k=4):
     if not os.path.isdir(persist_dir):
         raise FileNotFoundError(f"Index directory not found: {persist_dir}")
 
-    storage_context = StorageContext.from_defaults(persist_dir=persist_dir)
-    index = load_index_from_storage(storage_context)
-    return VectorIndexRetriever(index=index, similarity_top_k=similarity_top_k)
+    signature = _persist_dir_signature(
+        persist_dir,
+        ["docstore.json", "index_store.json", "default__vector_store.json"],
+    )
+    cache_entry = _INDEX_CACHE.get(persist_dir)
+    if not cache_entry or cache_entry["signature"] != signature:
+        storage_context = StorageContext.from_defaults(persist_dir=persist_dir)
+        index = load_index_from_storage(storage_context)
+        cache_entry = {
+            "signature": signature,
+            "index": index,
+            "retrievers": {},
+        }
+        _INDEX_CACHE[persist_dir] = cache_entry
+
+    retriever = cache_entry["retrievers"].get(similarity_top_k)
+    if retriever is None:
+        retriever = VectorIndexRetriever(
+            index=cache_entry["index"],
+            similarity_top_k=similarity_top_k,
+        )
+        cache_entry["retrievers"][similarity_top_k] = retriever
+    return retriever
+
+
+def _persist_dir_signature(persist_dir, required_files):
+    signature = []
+    for file_name in required_files:
+        file_path = os.path.join(persist_dir, file_name)
+        if not os.path.isfile(file_path):
+            signature.append((file_name, None, None))
+            continue
+        stat_result = os.stat(file_path)
+        signature.append((file_name, stat_result.st_mtime_ns, stat_result.st_size))
+    return tuple(signature)
+
+
+def _glossary_docs_signature(
+    glossary_base_dir=ingest_knowledge.DEFAULT_GLOSSARY_BASE_DIR,
+    metadata_path=ingest_knowledge.DEFAULT_GLOSSARY_METADATA_PATH,
+):
+    files = []
+    for root, _dirs, filenames in os.walk(glossary_base_dir):
+        for filename in filenames:
+            if not filename.lower().endswith((".md", ".txt")):
+                continue
+            files.append(os.path.join(root, filename))
+    if metadata_path:
+        files.append(metadata_path)
+
+    signature = []
+    for file_path in sorted(set(files)):
+        if not os.path.isfile(file_path):
+            signature.append((file_path, None, None))
+            continue
+        stat_result = os.stat(file_path)
+        signature.append((file_path, stat_result.st_mtime_ns, stat_result.st_size))
+    return tuple(signature)
+
+
+def _get_glossary_docs_cached(
+    glossary_base_dir=ingest_knowledge.DEFAULT_GLOSSARY_BASE_DIR,
+    metadata_path=ingest_knowledge.DEFAULT_GLOSSARY_METADATA_PATH,
+):
+    signature = _glossary_docs_signature(
+        glossary_base_dir=glossary_base_dir,
+        metadata_path=metadata_path,
+    )
+    cache_key = (os.path.normpath(glossary_base_dir), os.path.normpath(metadata_path or ""))
+    cache_entry = _GLOSSARY_DOCS_CACHE.get(cache_key)
+    if cache_entry and cache_entry["signature"] == signature:
+        return cache_entry["docs"]
+
+    docs = ingest_knowledge.build_glossary_docs(
+        glossary_base_dir=glossary_base_dir,
+        metadata_path=metadata_path,
+    )
+    _GLOSSARY_DOCS_CACHE[cache_key] = {
+        "signature": signature,
+        "docs": docs,
+    }
+    return docs
 
 
 def _node_text(node_with_score):
@@ -129,13 +212,38 @@ def _node_text(node_with_score):
     return str(getattr(node, "text", "")).strip()
 
 
-def _retrieve_chunks_from_dir(persist_dir, query_str, similarity_top_k=4):
-    try:
-        retriever = _load_retriever(persist_dir, similarity_top_k=similarity_top_k)
-    except (FileNotFoundError, ValueError):
-        return []
+def _node_metadata(node_with_score):
+    node = getattr(node_with_score, "node", node_with_score)
+    return dict(getattr(node, "metadata", {}) or {})
 
+
+def _retrieval_priority(node_with_score):
+    metadata = _node_metadata(node_with_score)
+    doc_type = metadata.get("type")
+    retrieval_tier = metadata.get("retrieval_tier")
+    base_score = float(getattr(node_with_score, "score", 0.0) or 0.0)
+
+    if retrieval_tier == "active":
+        base_score += 5.0
+    elif retrieval_tier == "archive":
+        base_score -= 1.5
+
+    if doc_type in {"company_profile", "sec_section_summary", "filing_financial_summary"}:
+        base_score += 3.0
+    elif doc_type in {
+        "filing_derived_indicators",
+        "filing_reported_facts",
+        "statement_linked_facts",
+        "financial_sector_note_summary",
+    }:
+        base_score += 2.0
+
+    return base_score
+
+
+def _retrieve_chunks(retriever, query_str):
     nodes = retriever.retrieve(query_str)
+    nodes = sorted(nodes, key=_retrieval_priority, reverse=True)
     chunks = []
     seen = set()
 
@@ -147,6 +255,15 @@ def _retrieve_chunks_from_dir(persist_dir, query_str, similarity_top_k=4):
         chunks.append(text)
 
     return chunks
+
+
+def _retrieve_chunks_from_dir(persist_dir, query_str, similarity_top_k=4):
+    try:
+        retriever = _load_retriever(persist_dir, similarity_top_k=similarity_top_k)
+    except (FileNotFoundError, ValueError):
+        return []
+
+    return _retrieve_chunks(retriever, query_str)
 
 
 def _format_context_chunks(label, chunks):
@@ -164,13 +281,75 @@ def _limit_context(text, max_chars):
     return normalized_text[: max_chars - 3].rstrip() + "..."
 
 
-def _retrieve_context_from_dir(persist_dir, query_str, label, similarity_top_k=4):
-    chunks = _retrieve_chunks_from_dir(
-        persist_dir,
-        query_str,
-        similarity_top_k=similarity_top_k,
-    )
+def _query_needs_graph(query_str):
+    normalized_query = re.sub(r"\s+", " ", (query_str or "").lower()).strip()
+    if not normalized_query:
+        return False
+
+    graph_keywords = [
+        "relationship",
+        "related",
+        "connected",
+        "link",
+        "driver",
+        "cause",
+        "why",
+        "because",
+        "risk factor",
+        "filing",
+        "note",
+        "segment",
+        "geographic",
+        "debt maturity",
+        "lease",
+        "reserve",
+        "impair",
+        "goodwill",
+        "tax rate",
+        "provision",
+        "definition",
+        "what does",
+        "what is",
+        "indicator mean",
+        "glossary",
+        "customer",
+        "supplier",
+        "competitor",
+    ]
+    return any(keyword in normalized_query for keyword in graph_keywords)
+
+
+def _query_needs_knowledge(query_str):
+    normalized_query = re.sub(r"\s+", " ", (query_str or "").lower()).strip()
+    if not normalized_query:
+        return False
+
+    knowledge_keywords = [
+        "what is",
+        "what does",
+        "define",
+        "definition",
+        "mean",
+        "glossary",
+        "indicator",
+        "ratio",
+        "metric",
+        "explain",
+    ]
+    return any(keyword in normalized_query for keyword in knowledge_keywords)
+
+
+def _retrieve_context(retriever, query_str, label):
+    chunks = _retrieve_chunks(retriever, query_str)
     return _format_context_chunks(label, chunks)
+
+
+def _retrieve_context_from_dir(persist_dir, query_str, label, similarity_top_k=4):
+    try:
+        retriever = _load_retriever(persist_dir, similarity_top_k=similarity_top_k)
+    except (FileNotFoundError, ValueError):
+        return None
+    return _retrieve_context(retriever, query_str, label)
 
 
 def _direct_financial_indicator_context(ticker, db_path=ingest_stock.DEFAULT_STOCK_DB_PATH):
@@ -236,7 +415,7 @@ def _matched_knowledge_chunks(query_str, max_matches=3):
     normalized_query = re.sub(r"\s+", " ", query_str.lower()).strip()
     exact_matches = []
 
-    for doc in ingest_knowledge.build_glossary_docs():
+    for doc in _get_glossary_docs_cached():
         candidate_terms = []
         for key in ("indicator_name", "indicator_canonical_name", "group", "subgroup"):
             value = (doc.metadata.get(key) or "").strip()
@@ -357,65 +536,43 @@ def get_analysis_context(
         ticker,
         graph_storage_dir=graph_storage_dir,
     )
+    try:
+        stock_retriever = _load_retriever(stock_persist_dir, similarity_top_k=max(stock_top_k, 6))
+    except (FileNotFoundError, ValueError):
+        stock_retriever = None
+
+    try:
+        knowledge_retriever = _load_retriever(
+            resolved_knowledge_storage_dir,
+            similarity_top_k=knowledge_top_k,
+        )
+    except (FileNotFoundError, ValueError):
+        knowledge_retriever = None
+
+    try:
+        macro_retriever = _load_retriever(
+            resolved_macro_storage_dir,
+            similarity_top_k=macro_top_k,
+        )
+    except (FileNotFoundError, ValueError):
+        macro_retriever = None
 
     stock_chunks = []
     seen_stock_chunks = set()
-    financial_doc_markers = (
-        "Latest 12 Quarterly Financial Indicators",
-        "Latest 10 Annual Financial Indicators",
-        "Current market price used for market-based ratios",
-    )
-    exact_indicator_queries = [
-        f"{ticker} Latest Quarterly Financial Indicators revenue margins eps cash flow current market price",
-        f"{ticker} Latest Annual Financial Indicators revenue margins eps cash flow balance sheet leverage",
-    ]
-    for stock_query in exact_indicator_queries:
-        for chunk in _retrieve_chunks_from_dir(
-            stock_persist_dir,
-            stock_query,
-            similarity_top_k=max(stock_top_k, 12),
-        ):
-            if not any(marker in chunk for marker in financial_doc_markers):
-                continue
+    if stock_retriever is not None:
+        stock_query = (
+            f"{ticker} {query_str} "
+            "company overview business description sector industry "
+            "sec filing summary item 1 item 1a item 7 md&a item 2 "
+            "business drivers risks reported facts statement-linked facts"
+        )
+        for chunk in _retrieve_chunks(stock_retriever, stock_query):
             if chunk in seen_stock_chunks:
                 continue
             seen_stock_chunks.add(chunk)
             stock_chunks.append(chunk)
-            if len(stock_chunks) >= 2:
+            if len(stock_chunks) >= 8:
                 break
-        if len(stock_chunks) >= 2:
-            break
-
-    stock_query_plan = [
-        (
-            f"{ticker} company overview business description sector industry",
-            1,
-        ),
-        (
-            f"{ticker} sec item 1 business item 1a risk factors item 7 md&a business drivers risks",
-            2,
-        ),
-        (
-            query_str,
-            2,
-        ),
-    ]
-    for stock_query, chunk_budget in stock_query_plan:
-        added_for_query = 0
-        for chunk in _retrieve_chunks_from_dir(
-            stock_persist_dir,
-            stock_query,
-            similarity_top_k=stock_top_k,
-        ):
-            if chunk in seen_stock_chunks:
-                continue
-            seen_stock_chunks.add(chunk)
-            stock_chunks.append(chunk)
-            added_for_query += 1
-            if added_for_query >= chunk_budget or len(stock_chunks) >= 8:
-                break
-        if len(stock_chunks) >= 8:
-            break
 
     stock_context = _format_context_chunks(
         f"{ticker} financial context",
@@ -436,34 +593,36 @@ def get_analysis_context(
         seen_knowledge_chunks.add(chunk)
         knowledge_chunks.append(chunk)
 
-    for chunk in _retrieve_chunks_from_dir(
-        resolved_knowledge_storage_dir,
-        query_str,
-        similarity_top_k=knowledge_top_k,
-    ):
-        if chunk in seen_knowledge_chunks:
-            continue
-        seen_knowledge_chunks.add(chunk)
-        knowledge_chunks.append(chunk)
-        if len(knowledge_chunks) >= max(knowledge_top_k, 3):
-            break
+    if knowledge_retriever is not None and (_query_needs_knowledge(query_str) or knowledge_chunks):
+        for chunk in _retrieve_chunks(knowledge_retriever, query_str):
+            if chunk in seen_knowledge_chunks:
+                continue
+            seen_knowledge_chunks.add(chunk)
+            knowledge_chunks.append(chunk)
+            if len(knowledge_chunks) >= max(knowledge_top_k, 3):
+                break
 
     knowledge_context = _format_context_chunks(
         "Financial glossary context",
         knowledge_chunks,
     )
-    macro_context = _retrieve_context_from_dir(
-        resolved_macro_storage_dir,
-        query_str,
-        label="Macro market context",
-        similarity_top_k=macro_top_k,
+    macro_context = (
+        _retrieve_context(
+            macro_retriever,
+            query_str,
+            label="Macro market context",
+        )
+        if macro_retriever is not None
+        else None
     )
-    graph_context = ingest_graph.retrieve_graph_context(
-        query_str,
-        ticker=ticker,
-        storage_dir=graph_storage_dir,
-        similarity_top_k=graph_top_k,
-    )
+    graph_context = None
+    if _query_needs_graph(query_str):
+        graph_context = ingest_graph.retrieve_graph_context(
+            query_str,
+            ticker=ticker,
+            storage_dir=graph_storage_dir,
+            similarity_top_k=graph_top_k,
+        )
     stock_context = _limit_context(stock_context, 18000)
     knowledge_context = _limit_context(knowledge_context, 5000)
     macro_context = _limit_context(macro_context, 5000)
