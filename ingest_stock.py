@@ -5,6 +5,7 @@ import shutil
 import sqlite3
 import stat
 import subprocess
+import statistics
 from datetime import datetime
 from html import unescape
 
@@ -739,6 +740,30 @@ def _sorted_filing_records(filing_records):
     )
 
 
+def _dedupe_filing_records(filing_records):
+    deduped_records = []
+    seen_keys = set()
+
+    for filing_record in _sorted_filing_records(filing_records):
+        accession_number = str(filing_record.get("accession_number") or "").strip()
+        primary_document = str(filing_record.get("primary_document") or "").strip()
+        filing_date = str(filing_record.get("filing_date") or "").strip()
+        dedupe_key = accession_number or f"{filing_date}|{primary_document}"
+        if not dedupe_key or dedupe_key in seen_keys:
+            continue
+        seen_keys.add(dedupe_key)
+        deduped_records.append(filing_record)
+
+    return deduped_records
+
+
+def _roll_filing_window(filing_records, max_records):
+    rolled_records = _dedupe_filing_records(filing_records)
+    if max_records is None:
+        return rolled_records
+    return rolled_records[:max_records]
+
+
 def _fiscal_quarter_from_period(form_type, fiscal_period):
     period = str(fiscal_period or "").upper().strip()
     if period.startswith("Q") and len(period) >= 2:
@@ -750,6 +775,36 @@ def _fiscal_quarter_from_period(form_type, fiscal_period):
 
 def _filing_retrieval_tier(form_type, recency_rank):
     return "active" if recency_rank < ACTIVE_FULLTEXT_FILING_LIMITS.get(form_type, 0) else "archive"
+
+
+def _company_profile_from_filing_record(filing_record):
+    sic_description = filing_record.get("sic_description")
+    return {
+        "company_name": filing_record.get("company_name") or filing_record.get("ticker"),
+        "sector": _derive_sector_from_sic(filing_record.get("sic"), sic_description),
+        "industry": sic_description,
+        "sector_source": "SEC SIC-derived sector" if sic_description else None,
+        "industry_source": "SEC SIC description" if sic_description else None,
+        "peer_tickers": [],
+        "peer_source": None,
+    }
+
+
+def _finalize_filing_records(ticker, form_type, filing_records):
+    finalized_records = []
+    for recency_rank, filing_record in enumerate(_sorted_filing_records(filing_records)):
+        finalized_record = dict(filing_record)
+        finalized_record["form_type"] = form_type
+        finalized_record["recency_rank"] = recency_rank
+        finalized_record["retrieval_tier"] = _filing_retrieval_tier(form_type, recency_rank)
+        if finalized_record.get("sections"):
+            finalized_record["documents"] = _document_payloads_from_section_map(
+                ticker.upper(),
+                _company_profile_from_filing_record(finalized_record),
+                finalized_record,
+            )
+        finalized_records.append(finalized_record)
+    return finalized_records
 
 
 def _filing_base_metadata(
@@ -771,6 +826,20 @@ def _filing_base_metadata(
         "company_name": company_profile["company_name"],
         "sector": company_profile["sector"] or "Unknown",
         "industry": company_profile["industry"] or "Unknown",
+        "sector_source": company_profile.get("sector_source"),
+        "industry_source": company_profile.get("industry_source"),
+        "peer_tickers": company_profile.get("peer_tickers", []),
+        "peer_count": len(company_profile.get("peer_tickers", [])),
+        "peer_source": company_profile.get("peer_source"),
+        "filing_release_date": filing_record.get("filing_release_date") or filing_record["filing_date"],
+        "next_release_date": filing_record.get("next_release_date"),
+        "next_release_date_source": filing_record.get("next_release_date_source"),
+        "fiscal_year_end": filing_record.get("fiscal_year_end") or filing_record.get("reporting_date"),
+        "filer_status": filing_record.get("filer_status"),
+        "filer_status_label": _humanize_filer_status(filing_record.get("filer_status")),
+        "filing_deadline_days": filing_record.get("filing_deadline_days"),
+        "filing_lag_days": filing_record.get("filing_lag_days"),
+        "historical_filing_lag_days": filing_record.get("historical_filing_lag_days"),
         "filing_date": filing_record["filing_date"],
         "filing_url": filing_record["filing_url"],
         "accession_number": filing_record["accession_number"],
@@ -894,10 +963,17 @@ def _document_payloads_from_section_map(ticker, company_profile, filing_record):
     return payloads
 
 
-def _persist_filing_payloads(ticker, form_type, filing_records, filings_base_dir=DEFAULT_STOCK_FILINGS_BASE_DIR):
+def _persist_filing_payloads(
+    ticker,
+    form_type,
+    filing_records,
+    filings_base_dir=DEFAULT_STOCK_FILINGS_BASE_DIR,
+    max_records=None,
+):
     form_dir = _filing_form_dir(ticker, form_type, filings_base_dir=filings_base_dir)
     os.makedirs(form_dir, exist_ok=True)
 
+    filing_records = _roll_filing_window(filing_records, max_records=max_records)
     retained_files = set()
     for filing_record in filing_records:
         file_name = _filing_json_name(
@@ -915,11 +991,432 @@ def _persist_filing_payloads(ticker, form_type, filing_records, filings_base_dir
             os.remove(existing_path)
 
 
+def _format_date_like(value):
+    parsed_value = pd.to_datetime(value, errors="coerce")
+    if pd.isna(parsed_value):
+        return None
+    return parsed_value.strftime("%Y-%m-%d")
+
+
+def _infer_next_release_date(form_type, filing_date):
+    formatted_filing_date = _format_date_like(filing_date)
+    if not formatted_filing_date:
+        return None
+
+    filing_timestamp = pd.Timestamp(formatted_filing_date)
+    offset = pd.DateOffset(years=1) if form_type == "10-K" else pd.DateOffset(months=3)
+    return (filing_timestamp + offset).strftime("%Y-%m-%d")
+
+
+def _extract_filer_status(filing_text):
+    if not filing_text:
+        return None
+
+    cover_text = re.sub(r"\s+", " ", filing_text[:25000])
+    checkbox_patterns = [
+        (r"large accelerated filer\s*[:\-]?\s*[\[\(]?(?:x|✓|✔|☒|þ|yes)\b", "large_accelerated_filer"),
+        (r"accelerated filer\s*[:\-]?\s*[\[\(]?(?:x|✓|✔|☒|þ|yes)\b", "accelerated_filer"),
+        (r"non-accelerated filer\s*[:\-]?\s*[\[\(]?(?:x|✓|✔|☒|þ|yes)\b", "non_accelerated_filer"),
+        (r"smaller reporting company\s*[:\-]?\s*[\[\(]?(?:x|✓|✔|☒|þ|yes)\b", "smaller_reporting_company"),
+    ]
+    for pattern, filer_status in checkbox_patterns:
+        if re.search(pattern, cover_text, flags=re.IGNORECASE):
+            return filer_status
+
+    simple_mentions = [
+        ("large accelerated filer", "large_accelerated_filer"),
+        ("accelerated filer", "accelerated_filer"),
+        ("non-accelerated filer", "non_accelerated_filer"),
+        ("smaller reporting company", "smaller_reporting_company"),
+    ]
+    found_statuses = [
+        filer_status
+        for label, filer_status in simple_mentions
+        if label in cover_text.lower()
+    ]
+    if len(found_statuses) == 1:
+        return found_statuses[0]
+    return None
+
+
+def _filer_deadline_days(filer_status):
+    return {
+        "large_accelerated_filer": 60,
+        "accelerated_filer": 75,
+        "non_accelerated_filer": 90,
+        "smaller_reporting_company": 90,
+    }.get(str(filer_status or "").strip().lower())
+
+
+def _humanize_filer_status(filer_status):
+    return {
+        "large_accelerated_filer": "Large accelerated filer",
+        "accelerated_filer": "Accelerated filer",
+        "non_accelerated_filer": "Non-accelerated filer",
+        "smaller_reporting_company": "Smaller reporting company",
+    }.get(str(filer_status or "").strip().lower())
+
+
+def _filing_lag_days(filing_record):
+    report_date = pd.to_datetime(filing_record.get("reporting_date"), errors="coerce")
+    filing_release_date = pd.to_datetime(
+        filing_record.get("filing_release_date") or filing_record.get("filing_date"),
+        errors="coerce",
+    )
+    if pd.isna(report_date) or pd.isna(filing_release_date):
+        return None
+
+    lag_days = int((filing_release_date.normalize() - report_date.normalize()).days)
+    if lag_days < 0:
+        return None
+    return lag_days
+
+
+def _estimate_latest_10k_next_release_date(filing_records):
+    sorted_records = _sorted_filing_records(filing_records)
+    if not sorted_records:
+        return None, None, None, None
+
+    latest_record = sorted_records[0]
+    fiscal_year_end = _format_date_like(latest_record.get("reporting_date"))
+    if not fiscal_year_end:
+        return None, None, None, None
+
+    recent_lags = [
+        lag_days
+        for lag_days in (_filing_lag_days(record) for record in sorted_records[:5])
+        if lag_days is not None
+    ]
+    historical_lag_days = (
+        int(round(statistics.median(recent_lags)))
+        if recent_lags
+        else None
+    )
+
+    filer_status = (
+        latest_record.get("filer_status")
+        or next(
+            (
+                record.get("filer_status")
+                for record in sorted_records
+                if record.get("filer_status")
+            ),
+            None,
+        )
+    )
+    deadline_days = _filer_deadline_days(filer_status)
+
+    next_fiscal_year_end = pd.Timestamp(fiscal_year_end) + pd.DateOffset(years=1)
+    if historical_lag_days is not None:
+        applied_lag_days = min(historical_lag_days, deadline_days) if deadline_days is not None else historical_lag_days
+        next_release_date = (next_fiscal_year_end + pd.Timedelta(days=applied_lag_days)).strftime("%Y-%m-%d")
+        return (
+            next_release_date,
+            "estimated_from_fiscal_year_end_and_historical_10k_pattern",
+            historical_lag_days,
+            deadline_days,
+        )
+
+    if deadline_days is not None:
+        next_release_date = (next_fiscal_year_end + pd.Timedelta(days=deadline_days)).strftime("%Y-%m-%d")
+        return (
+            next_release_date,
+            "estimated_from_fiscal_year_end_and_filer_deadline",
+            None,
+            deadline_days,
+        )
+
+    fallback_date = _infer_next_release_date("10-K", latest_record.get("filing_release_date") or latest_record.get("filing_date"))
+    return fallback_date, "inferred_from_filing_release_date", None, None
+
+
+def _infer_latest_10q_fiscal_quarter(latest_record, reference_fiscal_year_end=None):
+    explicit_quarter = (
+        latest_record.get("fiscal_quarter")
+        or _fiscal_quarter_from_period("10-Q", latest_record.get("fiscal_period"))
+    )
+    if explicit_quarter in {"Q1", "Q2", "Q3"}:
+        return explicit_quarter
+
+    quarter_end = pd.to_datetime(latest_record.get("reporting_date"), errors="coerce")
+    fiscal_year_end = pd.to_datetime(reference_fiscal_year_end, errors="coerce")
+    if pd.isna(quarter_end) or pd.isna(fiscal_year_end):
+        return None
+
+    for fiscal_quarter, months_until_year_end in (("Q3", 3), ("Q2", 6), ("Q1", 9)):
+        candidate_year_end = quarter_end + pd.DateOffset(months=months_until_year_end)
+        if abs((candidate_year_end.normalize() - fiscal_year_end.normalize()).days) <= 5:
+            return fiscal_quarter
+
+    return None
+
+
+def _estimate_latest_10q_next_release_date(
+    filing_records,
+    reference_filer_status=None,
+    reference_fiscal_year_end=None,
+):
+    sorted_records = _sorted_filing_records(filing_records)
+    if not sorted_records:
+        return None, None, None
+
+    latest_record = sorted_records[0]
+    quarter_end = _format_date_like(latest_record.get("reporting_date"))
+    if not quarter_end:
+        return None, None, None
+
+    fiscal_quarter = _infer_latest_10q_fiscal_quarter(
+        latest_record,
+        reference_fiscal_year_end=reference_fiscal_year_end,
+    )
+    filer_status = (
+        latest_record.get("filer_status")
+        or reference_filer_status
+        or next(
+            (
+                record.get("filer_status")
+                for record in sorted_records
+                if record.get("filer_status")
+            ),
+            None,
+        )
+    )
+    deadline_days = 40 if filer_status in {"large_accelerated_filer", "accelerated_filer"} else 45
+
+    quarter_end_ts = pd.Timestamp(quarter_end)
+    month_offset = 6 if fiscal_quarter == "Q3" else 3
+    next_quarter_end = quarter_end_ts + pd.DateOffset(months=month_offset)
+    next_release_date = (next_quarter_end + pd.Timedelta(days=deadline_days)).strftime("%Y-%m-%d")
+    return next_release_date, "estimated_from_quarter_end_and_filer_deadline", deadline_days
+
+
+def _refresh_filing_schedule_metadata(
+    form_type,
+    filing_records,
+    reference_filer_status=None,
+    reference_fiscal_year_end=None,
+):
+    sorted_records = _sorted_filing_records(
+        [_normalize_filing_release_metadata(form_type, filing_record) for filing_record in filing_records]
+    )
+    if not sorted_records:
+        return []
+
+    latest_estimate = (None, None, None, None)
+    if form_type == "10-K":
+        latest_estimate = _estimate_latest_10k_next_release_date(sorted_records)
+    elif form_type == "10-Q":
+        latest_estimate = _estimate_latest_10q_next_release_date(
+            sorted_records,
+            reference_filer_status=reference_filer_status,
+            reference_fiscal_year_end=reference_fiscal_year_end,
+        )
+
+    refreshed_records = []
+    for index, filing_record in enumerate(sorted_records):
+        normalized_record = dict(filing_record)
+        normalized_record["filing_release_date"] = (
+            _format_date_like(normalized_record.get("filing_release_date"))
+            or _format_date_like(normalized_record.get("filing_date"))
+        )
+        normalized_record["fiscal_year_end"] = _format_date_like(normalized_record.get("reporting_date"))
+        lag_days = _filing_lag_days(normalized_record)
+        if lag_days is not None:
+            normalized_record["filing_lag_days"] = lag_days
+
+        if index > 0:
+            next_record = sorted_records[index - 1]
+            normalized_record["next_release_date"] = (
+                _format_date_like(next_record.get("filing_release_date"))
+                or _format_date_like(next_record.get("filing_date"))
+            )
+            normalized_record["next_release_date_source"] = "actual_next_filing_release_date"
+        elif form_type == "10-K":
+            next_release_date, next_release_source, historical_lag_days, deadline_days = latest_estimate
+            normalized_record["next_release_date"] = next_release_date
+            normalized_record["next_release_date_source"] = next_release_source
+            if historical_lag_days is not None:
+                normalized_record["historical_filing_lag_days"] = historical_lag_days
+            if deadline_days is not None:
+                normalized_record["filing_deadline_days"] = deadline_days
+        elif form_type == "10-Q":
+            next_release_date, next_release_source, deadline_days = latest_estimate
+            normalized_record["next_release_date"] = next_release_date
+            normalized_record["next_release_date_source"] = next_release_source
+            normalized_record["filer_status"] = (
+                normalized_record.get("filer_status") or reference_filer_status
+            )
+            inferred_quarter = _infer_latest_10q_fiscal_quarter(
+                normalized_record,
+                reference_fiscal_year_end=reference_fiscal_year_end,
+            )
+            if inferred_quarter and not normalized_record.get("fiscal_quarter"):
+                normalized_record["fiscal_quarter"] = inferred_quarter
+            if deadline_days is not None:
+                normalized_record["filing_deadline_days"] = deadline_days
+        else:
+            normalized_record["next_release_date"] = (
+                _format_date_like(normalized_record.get("next_release_date"))
+                or _infer_next_release_date(form_type, normalized_record.get("filing_release_date"))
+            )
+            normalized_record["next_release_date_source"] = (
+                normalized_record.get("next_release_date_source")
+                or "inferred_from_filing_release_date"
+            )
+
+        refreshed_records.append(normalized_record)
+
+    return refreshed_records
+
+
+def _normalize_filing_release_metadata(form_type, filing_record):
+    normalized_record = dict(filing_record or {})
+    filing_release_date = (
+        _format_date_like(normalized_record.get("filing_release_date"))
+        or _format_date_like(normalized_record.get("release_date"))
+        or _format_date_like(normalized_record.get("filing_date"))
+    )
+    next_release_date = (
+        _format_date_like(normalized_record.get("next_release_date"))
+        or _format_date_like(normalized_record.get("next_filing_date"))
+        or _format_date_like(normalized_record.get("expected_next_release_date"))
+    )
+
+    if next_release_date:
+        next_release_source = normalized_record.get("next_release_date_source") or "document_provided"
+    else:
+        next_release_date = _infer_next_release_date(form_type, filing_release_date)
+        next_release_source = "inferred_from_filing_release_date" if next_release_date else None
+
+    normalized_record["filing_release_date"] = filing_release_date
+    normalized_record["next_release_date"] = next_release_date
+    normalized_record["next_release_date_source"] = next_release_source
+    return normalized_record
+
+
+def _load_persisted_filing_payloads(ticker, form_type, filings_base_dir=DEFAULT_STOCK_FILINGS_BASE_DIR):
+    form_dir = _filing_form_dir(ticker, form_type, filings_base_dir=filings_base_dir)
+    if not os.path.isdir(form_dir):
+        return []
+
+    file_records = []
+    for existing_name in os.listdir(form_dir):
+        if not existing_name.endswith(".json"):
+            continue
+        file_path = os.path.join(form_dir, existing_name)
+        try:
+            with open(file_path, "r", encoding="utf-8") as filing_file:
+                filing_record = json.load(filing_file)
+        except (OSError, json.JSONDecodeError):
+            continue
+        normalized_record = dict(filing_record)
+        normalized_record["_persisted_file_path"] = file_path
+        file_records.append(normalized_record)
+
+    finalized_records = _finalize_filing_records(
+        ticker,
+        form_type,
+        _refresh_filing_schedule_metadata(form_type, _dedupe_filing_records(file_records)),
+    )
+    normalized_records = []
+    for finalized_record in finalized_records:
+        normalized_record = dict(finalized_record)
+        file_path = normalized_record.pop("_persisted_file_path", None)
+        if file_path:
+            try:
+                with open(file_path, "w", encoding="utf-8") as filing_file:
+                    json.dump(normalized_record, filing_file, ensure_ascii=False, indent=2)
+            except OSError:
+                pass
+        normalized_records.append(normalized_record)
+    return normalized_records
+
+
+def _filing_form_is_fresh(form_type, filing_records, as_of_date=None):
+    if not filing_records:
+        return False
+
+    as_of_date = pd.Timestamp(as_of_date or datetime.now().date()).normalize()
+    latest_record = _sorted_filing_records(filing_records)[:1]
+    if not latest_record:
+        return False
+
+    next_release_date = pd.to_datetime(latest_record[0].get("next_release_date"), errors="coerce")
+    if pd.isna(next_release_date):
+        return False
+
+    next_release_date = next_release_date.normalize()
+    return as_of_date < next_release_date
+
+
 def _documents_from_payloads(document_payloads):
     return [
         Document(text=payload["text"], metadata=payload["metadata"])
         for payload in document_payloads
     ]
+
+
+VECTOR_INDEX_METADATA_ALLOWED_KEYS = {
+    "ticker",
+    "type",
+    "form_type",
+    "section_key",
+    "section_title",
+    "company_name",
+    "sector",
+    "industry",
+    "filing_date",
+    "reporting_date",
+    "fiscal_year",
+    "fiscal_period",
+    "fiscal_quarter",
+    "retrieval_tier",
+    "filing_rank",
+    "frequency",
+    "period_end_date",
+    "most_recent",
+    "group",
+    "subgroup",
+    "glossary_domain",
+}
+
+
+def _normalize_metadata_for_vector_index(metadata, max_value_chars=180):
+    normalized_metadata = {}
+    for key, value in (metadata or {}).items():
+        if key not in VECTOR_INDEX_METADATA_ALLOWED_KEYS or value is None:
+            continue
+
+        if isinstance(value, list):
+            if not value:
+                continue
+            value = ", ".join(str(item).strip() for item in value if str(item).strip())
+            if not value:
+                continue
+        elif isinstance(value, dict):
+            value = json.dumps(value, ensure_ascii=False, sort_keys=True)
+        else:
+            value = str(value).strip()
+
+        if not value:
+            continue
+        if len(value) > max_value_chars:
+            value = value[: max_value_chars - 3].rstrip() + "..."
+        normalized_metadata[key] = value
+
+    return normalized_metadata
+
+
+def _prepare_documents_for_vector_index(documents):
+    prepared_documents = []
+    for document in documents:
+        prepared_documents.append(
+            Document(
+                text=document.text,
+                metadata=_normalize_metadata_for_vector_index(document.metadata),
+            )
+        )
+    return prepared_documents
 
 
 def _load_financial_history_frames(conn, ticker):
@@ -1362,6 +1859,7 @@ def _financial_statement_documents_from_filing(ticker, company_profile, filing_r
 
 def _build_company_profile_from_sec_archive(ticker, archive_payload):
     latest_10k = (archive_payload.get("10k_filings") or [{}])[0]
+    latest_10q = (archive_payload.get("10q_filings") or [{}])[0]
     yahoo_fallback = _get_yahoo_taxonomy_fallback(ticker)
 
     company_name = (
@@ -1384,6 +1882,10 @@ def _build_company_profile_from_sec_archive(ticker, archive_payload):
         "company_name": company_name,
         "sector": sector,
         "industry": industry,
+        "sector_source": "SEC SIC-derived sector" if sector else None,
+        "industry_source": "SEC SIC description" if industry else None,
+        "peer_tickers": [],
+        "peer_source": None,
         "description": description,
         "source": "SEC EDGAR filings archive" if latest_10k else "Yahoo Finance via yfinance",
         "cik": archive_payload.get("cik"),
@@ -1391,8 +1893,71 @@ def _build_company_profile_from_sec_archive(ticker, archive_payload):
         "sic_description": latest_10k.get("sic_description") or archive_payload.get("sic_description"),
         "latest_filing_date": latest_10k.get("filing_date"),
         "latest_filing_url": latest_10k.get("filing_url"),
+        "latest_10k_release_date": latest_10k.get("filing_release_date") or latest_10k.get("filing_date"),
+        "latest_10k_next_release_date": latest_10k.get("next_release_date"),
+        "latest_10k_next_release_source": latest_10k.get("next_release_date_source"),
+        "latest_10k_fiscal_year_end": latest_10k.get("fiscal_year_end") or latest_10k.get("reporting_date"),
+        "latest_10k_filer_status": latest_10k.get("filer_status"),
+        "latest_10k_filer_status_label": _humanize_filer_status(latest_10k.get("filer_status")),
+        "latest_10k_filing_deadline_days": latest_10k.get("filing_deadline_days"),
+        "latest_10k_filing_lag_days": latest_10k.get("filing_lag_days"),
+        "latest_10k_historical_filing_lag_days": latest_10k.get("historical_filing_lag_days"),
+        "latest_10q_release_date": latest_10q.get("filing_release_date") or latest_10q.get("filing_date"),
+        "latest_10q_next_release_date": latest_10q.get("next_release_date"),
+        "latest_10q_next_release_source": latest_10q.get("next_release_date_source"),
         "ten_k_filings": archive_payload.get("10k_filings", []),
         "ten_q_filings": archive_payload.get("10q_filings", []),
+    }
+
+
+def _archive_payload_from_local_files(ticker, filings_base_dir=DEFAULT_STOCK_FILINGS_BASE_DIR):
+    ticker = ticker.upper()
+    ten_k_filings = _load_persisted_filing_payloads(ticker, "10-K", filings_base_dir=filings_base_dir)
+    ten_q_filings = _load_persisted_filing_payloads(ticker, "10-Q", filings_base_dir=filings_base_dir)
+    reference_filer_status = next(
+        (
+            filing_record.get("filer_status")
+            for filing_record in ten_k_filings + ten_q_filings
+            if filing_record.get("filer_status")
+        ),
+        None,
+    )
+    reference_fiscal_year_end = next(
+        (
+            filing_record.get("reporting_date") or filing_record.get("fiscal_year_end")
+            for filing_record in ten_k_filings
+            if filing_record.get("reporting_date") or filing_record.get("fiscal_year_end")
+        ),
+        None,
+    )
+    ten_k_filings = _finalize_filing_records(
+        ticker,
+        "10-K",
+        _refresh_filing_schedule_metadata("10-K", _roll_filing_window(ten_k_filings, max_records=10)),
+    )
+    ten_q_filings = _finalize_filing_records(
+        ticker,
+        "10-Q",
+        _refresh_filing_schedule_metadata(
+            "10-Q",
+            _roll_filing_window(ten_q_filings, max_records=12),
+            reference_filer_status=reference_filer_status,
+            reference_fiscal_year_end=reference_fiscal_year_end,
+        ),
+    )
+    _persist_filing_payloads(ticker, "10-K", ten_k_filings, filings_base_dir=filings_base_dir, max_records=10)
+    _persist_filing_payloads(ticker, "10-Q", ten_q_filings, filings_base_dir=filings_base_dir, max_records=12)
+    local_records = _sorted_filing_records(ten_k_filings + ten_q_filings)
+    latest_record = local_records[0] if local_records else {}
+
+    return {
+        "ticker": ticker,
+        "company_name": latest_record.get("company_name") or ticker,
+        "cik": latest_record.get("cik"),
+        "sic": latest_record.get("sic"),
+        "sic_description": latest_record.get("sic_description"),
+        "10k_filings": ten_k_filings,
+        "10q_filings": ten_q_filings,
     }
 
 
@@ -1402,6 +1967,15 @@ def _sync_sec_filing_archive(
     max_10k_filings=10,
     max_10q_filings=12):
     ticker = ticker.upper()
+    local_10k_filings = _load_persisted_filing_payloads(ticker, "10-K", filings_base_dir=filings_base_dir)
+    local_10q_filings = _load_persisted_filing_payloads(ticker, "10-Q", filings_base_dir=filings_base_dir)
+
+    ten_k_is_fresh = _filing_form_is_fresh("10-K", local_10k_filings)
+    ten_q_is_fresh = _filing_form_is_fresh("10-Q", local_10q_filings)
+
+    if ten_k_is_fresh and ten_q_is_fresh:
+        return _archive_payload_from_local_files(ticker, filings_base_dir=filings_base_dir)
+
     ticker_map = _load_sec_ticker_map()
     sec_identity = ticker_map.get(ticker)
     if not sec_identity:
@@ -1420,7 +1994,10 @@ def _sync_sec_filing_archive(
         "industry": sic_description,
     }
 
-    filing_groups = {"10-K": [], "10-Q": []}
+    filing_groups = {
+        "10-K": _roll_filing_window(local_10k_filings, max_records=max_10k_filings) if ten_k_is_fresh else [],
+        "10-Q": _roll_filing_window(local_10q_filings, max_records=max_10q_filings) if ten_q_is_fresh else [],
+    }
     max_by_form = {"10-K": max_10k_filings, "10-Q": max_10q_filings}
     cik_no_zero = str(int(cik))
 
@@ -1442,6 +2019,10 @@ def _sync_sec_filing_archive(
 
         if form not in filing_groups or len(filing_groups[form]) >= max_by_form[form]:
             continue
+        if form == "10-K" and ten_k_is_fresh:
+            continue
+        if form == "10-Q" and ten_q_is_fresh:
+            continue
         if not accession_number or not filing_date or not primary_document:
             continue
 
@@ -1454,6 +2035,7 @@ def _sync_sec_filing_archive(
         filing_html = _sec_get_text(filing_url)
         filing_text = _html_to_text_preserve_lines(filing_html)
         sections = _extract_10k_sections(filing_text) if form == "10-K" else _extract_10q_sections(filing_text)
+        filer_status = _extract_filer_status(filing_text)
 
         filing_record = {
             "ticker": ticker,
@@ -1469,19 +2051,56 @@ def _sync_sec_filing_archive(
             "reporting_date": report_date,
             "fiscal_year": fiscal_year,
             "fiscal_period": fiscal_period,
+            "filer_status": filer_status,
             "recency_rank": len(filing_groups[form]),
             "retrieval_tier": _filing_retrieval_tier(form, len(filing_groups[form])),
             "sections": sections,
         }
-        filing_record["documents"] = _document_payloads_from_section_map(
-            ticker,
-            base_profile | {"company_name": company_name},
-            filing_record,
+        filing_groups[form] = _roll_filing_window(
+            filing_groups[form] + [filing_record],
+            max_records=max_by_form[form],
         )
-        filing_groups[form].append(filing_record)
 
-    _persist_filing_payloads(ticker, "10-K", filing_groups["10-K"], filings_base_dir=filings_base_dir)
-    _persist_filing_payloads(ticker, "10-Q", filing_groups["10-Q"], filings_base_dir=filings_base_dir)
+    reference_filer_status = next(
+        (
+            filing_record.get("filer_status")
+            for filing_record in filing_groups["10-K"] + filing_groups["10-Q"]
+            if filing_record.get("filer_status")
+        ),
+        None,
+    )
+    reference_fiscal_year_end = next(
+        (
+            filing_record.get("reporting_date") or filing_record.get("fiscal_year_end")
+            for filing_record in filing_groups["10-K"]
+            if filing_record.get("reporting_date") or filing_record.get("fiscal_year_end")
+        ),
+        None,
+    )
+    for form_type in ("10-K", "10-Q"):
+        rolled_records = _roll_filing_window(filing_groups[form_type], max_records=max_by_form[form_type])
+        refreshed_records = _refresh_filing_schedule_metadata(
+            form_type,
+            rolled_records,
+            reference_filer_status=reference_filer_status if form_type == "10-Q" else None,
+            reference_fiscal_year_end=reference_fiscal_year_end if form_type == "10-Q" else None,
+        )
+        filing_groups[form_type] = _finalize_filing_records(ticker, form_type, refreshed_records)
+
+    _persist_filing_payloads(
+        ticker,
+        "10-K",
+        filing_groups["10-K"],
+        filings_base_dir=filings_base_dir,
+        max_records=max_10k_filings,
+    )
+    _persist_filing_payloads(
+        ticker,
+        "10-Q",
+        filing_groups["10-Q"],
+        filings_base_dir=filings_base_dir,
+        max_records=max_10q_filings,
+    )
 
     return {
         "ticker": ticker,
@@ -2172,8 +2791,7 @@ def _ensure_financial_indicators_table(conn, df):
             column_type = "TEXT" if column_name in IDENTIFIER_COLUMNS else "FLOAT"
             column_definitions.append(f"{_quote_sql_identifier(column_name)} {column_type}")
         conn.execute(
-            f"CREATE TABLE IF NOT EXISTS financial_indicators ({', '.join(column_definitions)})"
-        )
+            f"CREATE TABLE IF NOT EXISTS financial_indicators ({', '.join(column_definitions)})")
         return
 
     for column_name in df.columns:
@@ -2224,6 +2842,7 @@ def build_financial_docs(
         f"Ticker: {ticker}",
         f"Sector: {company_profile['sector'] or 'Unknown'}",
         f"Industry: {company_profile['industry'] or 'Unknown'}",
+        f"Sector Source: {company_profile.get('sector_source') or 'Unknown'}",
         f"Source: {company_profile['source']}",
         f"Stored 10-K filings: {len(ten_k_filings)}",
         f"Stored 10-Q filings: {len(ten_q_filings)}",
@@ -2234,6 +2853,32 @@ def build_financial_docs(
         profile_lines.append(f"Latest 10-K Filing Date: {company_profile['latest_filing_date']}")
     if company_profile.get("latest_filing_url"):
         profile_lines.append(f"Latest 10-K Filing URL: {company_profile['latest_filing_url']}")
+    if company_profile.get("latest_10k_release_date"):
+        profile_lines.append(f"Latest 10-K Release Date: {company_profile['latest_10k_release_date']}")
+    if company_profile.get("latest_10k_fiscal_year_end"):
+        profile_lines.append(f"Latest 10-K Fiscal Year End: {company_profile['latest_10k_fiscal_year_end']}")
+    if company_profile.get("latest_10k_filer_status_label"):
+        profile_lines.append(f"Latest 10-K Filer Status: {company_profile['latest_10k_filer_status_label']}")
+    if company_profile.get("latest_10k_historical_filing_lag_days") is not None:
+        profile_lines.append(
+            f"Historical 10-K Filing Lag Used: {company_profile['latest_10k_historical_filing_lag_days']} days"
+        )
+    if company_profile.get("latest_10k_filing_deadline_days") is not None:
+        profile_lines.append(
+            f"Estimated 10-K SEC Deadline: {company_profile['latest_10k_filing_deadline_days']} days after fiscal year end"
+        )
+    if company_profile.get("latest_10k_next_release_date"):
+        profile_lines.append(
+            f"Next 10-K Release Date: {company_profile['latest_10k_next_release_date']} "
+            f"({company_profile.get('latest_10k_next_release_source') or 'stored'})"
+        )
+    if company_profile.get("latest_10q_release_date"):
+        profile_lines.append(f"Latest 10-Q Release Date: {company_profile['latest_10q_release_date']}")
+    if company_profile.get("latest_10q_next_release_date"):
+        profile_lines.append(
+            f"Next 10-Q Release Date: {company_profile['latest_10q_next_release_date']} "
+            f"({company_profile.get('latest_10q_next_release_source') or 'stored'})"
+        )
     if company_profile["description"]:
         profile_lines.append("")
         profile_lines.append("Business Description (Recent SEC Item 1 Excerpt):")
@@ -2248,9 +2893,26 @@ def build_financial_docs(
                 "company_name": company_profile["company_name"],
                 "sector": company_profile["sector"] or "Unknown",
                 "industry": company_profile["industry"] or "Unknown",
+                "sector_source": company_profile.get("sector_source"),
+                "industry_source": company_profile.get("industry_source"),
+                "peer_tickers": company_profile.get("peer_tickers", []),
+                "peer_count": len(company_profile.get("peer_tickers", [])),
+                "peer_source": company_profile.get("peer_source"),
                 "source": company_profile["source"],
                 "filing_date": company_profile.get("latest_filing_date"),
                 "filing_url": company_profile.get("latest_filing_url"),
+                "latest_10k_release_date": company_profile.get("latest_10k_release_date"),
+                "latest_10k_next_release_date": company_profile.get("latest_10k_next_release_date"),
+                "latest_10k_next_release_source": company_profile.get("latest_10k_next_release_source"),
+                "latest_10k_fiscal_year_end": company_profile.get("latest_10k_fiscal_year_end"),
+                "latest_10k_filer_status": company_profile.get("latest_10k_filer_status"),
+                "latest_10k_filer_status_label": company_profile.get("latest_10k_filer_status_label"),
+                "latest_10k_filing_deadline_days": company_profile.get("latest_10k_filing_deadline_days"),
+                "latest_10k_filing_lag_days": company_profile.get("latest_10k_filing_lag_days"),
+                "latest_10k_historical_filing_lag_days": company_profile.get("latest_10k_historical_filing_lag_days"),
+                "latest_10q_release_date": company_profile.get("latest_10q_release_date"),
+                "latest_10q_next_release_date": company_profile.get("latest_10q_next_release_date"),
+                "latest_10q_next_release_source": company_profile.get("latest_10q_next_release_source"),
                 "ten_k_count": len(ten_k_filings),
                 "ten_q_count": len(ten_q_filings),
             }
@@ -2300,7 +2962,9 @@ def build_financial_docs(
             f"**Latest {len(df)} {freq} Financial Indicators - {ticker}**\n\n"
             f"Company: {company_profile['company_name']}\n"
             f"Sector: {company_profile['sector'] or 'Unknown'}\n"
-            f"Industry: {company_profile['industry'] or 'Unknown'}\n\n"
+            f"Industry: {company_profile['industry'] or 'Unknown'}\n"
+            f"Latest 10-K Next Release Date: {company_profile.get('latest_10k_next_release_date') or 'Unavailable'}\n"
+            f"Latest 10-Q Next Release Date: {company_profile.get('latest_10q_next_release_date') or 'Unavailable'}\n\n"
             f"Current market price used for market-based ratios: {df['Current Market Price'].iloc[0] if 'Current Market Price' in df.columns else 'Unavailable'}\n"
             f"Most recent: {df['Period End Date'].iloc[0]}\n"
             f"Oldest shown: {df['Period End Date'].iloc[-1]}\n\n"
@@ -2317,6 +2981,10 @@ def build_financial_docs(
                 "company_name": company_profile["company_name"],
                 "sector": company_profile["sector"] or "Unknown",
                 "industry": company_profile["industry"] or "Unknown",
+                "latest_10k_next_release_date": company_profile.get("latest_10k_next_release_date"),
+                "latest_10k_next_release_source": company_profile.get("latest_10k_next_release_source"),
+                "latest_10q_next_release_date": company_profile.get("latest_10q_next_release_date"),
+                "latest_10q_next_release_source": company_profile.get("latest_10q_next_release_source"),
                 "frequency": freq,
                 "periods": len(df),
                 "most_recent": df['Period End Date'].iloc[0],
@@ -2418,8 +3086,9 @@ def refresh_ticker_data_and_index(
         return None
 
     # Step 3: rebuild vector store so old Yahoo-based docs do not linger
-    node_parser = SentenceSplitter(chunk_size=550, chunk_overlap=60)
-    nodes = node_parser.get_nodes_from_documents(docs)
+    index_docs = _prepare_documents_for_vector_index(docs)
+    node_parser = SentenceSplitter(chunk_size=800, chunk_overlap=70)
+    nodes = node_parser.get_nodes_from_documents(index_docs)
     _reset_persist_dir(persist_dir)
     index = VectorStoreIndex(nodes)
     index.storage_context.persist(persist_dir=persist_dir)

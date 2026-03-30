@@ -3,6 +3,7 @@ import os
 import shutil
 import sqlite3
 import stat
+import hashlib
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -25,6 +26,9 @@ import ingest_stock
 load_dotenv("config.env")
 
 DEFAULT_GRAPH_STORAGE_DIR = os.getenv("GRAPH_STORAGE_DIR", "./storage/graph")
+LEGACY_SHARED_GRAPH_SUBDIR = "shared"
+GRAPH_MANIFEST_FILENAME = "graph_manifest.json"
+GLOBAL_GRAPH_SCOPE = "__global__"
 _GRAPH_LLM = None
 _GRAPH_INDEX_CACHE = {}
 
@@ -96,8 +100,92 @@ def _reset_persist_dir(persist_dir):
     os.makedirs(persist_dir, exist_ok=True)
 
 
-def _graph_persist_dir(ticker, storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
-    return os.path.join(storage_dir, ticker.upper())
+def _legacy_graph_persist_dir(storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
+    return os.path.join(storage_dir, LEGACY_SHARED_GRAPH_SUBDIR)
+
+
+def _graph_persist_dir(storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
+    return storage_dir
+
+
+def _migrate_legacy_graph_storage(storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
+    persist_dir = _graph_persist_dir(storage_dir=storage_dir)
+    legacy_dir = _legacy_graph_persist_dir(storage_dir=storage_dir)
+    marker_files = (
+        "property_graph_store.json",
+        "index_store.json",
+        GRAPH_MANIFEST_FILENAME,
+    )
+
+    current_has_graph = any(os.path.isfile(os.path.join(persist_dir, file_name)) for file_name in marker_files)
+    legacy_has_graph = os.path.isdir(legacy_dir) and any(
+        os.path.isfile(os.path.join(legacy_dir, file_name)) for file_name in marker_files
+    )
+
+    if current_has_graph or not legacy_has_graph:
+        return persist_dir
+
+    os.makedirs(persist_dir, exist_ok=True)
+    for entry_name in os.listdir(legacy_dir):
+        source_path = os.path.join(legacy_dir, entry_name)
+        destination_path = os.path.join(persist_dir, entry_name)
+        if os.path.exists(destination_path):
+            continue
+        shutil.move(source_path, destination_path)
+
+    try:
+        if not os.listdir(legacy_dir):
+            os.rmdir(legacy_dir)
+    except OSError:
+        pass
+
+    return persist_dir
+
+
+def shared_graph_persist_dir(storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
+    return _migrate_legacy_graph_storage(storage_dir=storage_dir)
+
+
+def _graph_manifest_path(storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
+    return os.path.join(_graph_persist_dir(storage_dir=storage_dir), GRAPH_MANIFEST_FILENAME)
+
+
+def _default_graph_manifest():
+    return {
+        "knowledge_doc_ids": [],
+        "macro_doc_ids": [],
+        "ticker_doc_ids": {},
+    }
+
+
+def _load_graph_manifest(storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
+    _migrate_legacy_graph_storage(storage_dir=storage_dir)
+    manifest_path = _graph_manifest_path(storage_dir=storage_dir)
+    if not os.path.isfile(manifest_path):
+        return _default_graph_manifest()
+
+    with open(manifest_path, "r", encoding="utf-8") as manifest_file:
+        manifest = json.load(manifest_file)
+
+    default_manifest = _default_graph_manifest()
+    default_manifest.update({
+        "knowledge_doc_ids": manifest.get("knowledge_doc_ids", []),
+        "macro_doc_ids": manifest.get("macro_doc_ids", []),
+        "ticker_doc_ids": manifest.get("ticker_doc_ids", {}),
+    })
+    return default_manifest
+
+
+def _save_graph_manifest(manifest, storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
+    persist_dir = _migrate_legacy_graph_storage(storage_dir=storage_dir)
+    os.makedirs(persist_dir, exist_ok=True)
+    manifest_path = _graph_manifest_path(storage_dir=storage_dir)
+    with open(manifest_path, "w", encoding="utf-8") as manifest_file:
+        json.dump(manifest, manifest_file, ensure_ascii=False, indent=2, sort_keys=True)
+
+
+def _invalidate_graph_cache(storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
+    _GRAPH_INDEX_CACHE.pop(_graph_persist_dir(storage_dir=storage_dir), None)
 
 
 def _persist_dir_signature(persist_dir, required_files):
@@ -112,6 +200,53 @@ def _persist_dir_signature(persist_dir, required_files):
     return tuple(signature)
 
 
+def _sanitize_property_graph_store(storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
+    persist_dir = _migrate_legacy_graph_storage(storage_dir=storage_dir)
+    store_path = os.path.join(persist_dir, "property_graph_store.json")
+    if not os.path.isfile(store_path):
+        return False
+
+    try:
+        with open(store_path, "r", encoding="utf-8") as store_file:
+            store_data = json.load(store_file)
+    except (OSError, json.JSONDecodeError):
+        return False
+
+    nodes = store_data.get("nodes")
+    relations = store_data.get("relations")
+    triplets = store_data.get("triplets")
+    if not isinstance(nodes, dict) or not isinstance(relations, dict) or not isinstance(triplets, list):
+        return False
+
+    node_ids = set(nodes.keys())
+    filtered_relations = {
+        relation_id: relation
+        for relation_id, relation in relations.items()
+        if isinstance(relation, dict)
+        and relation.get("source_id") in node_ids
+        and relation.get("target_id") in node_ids
+    }
+    filtered_triplets = [
+        triplet
+        for triplet in triplets
+        if isinstance(triplet, list)
+        and len(triplet) == 3
+        and triplet[0] in node_ids
+        and triplet[2] in node_ids
+    ]
+
+    if len(filtered_relations) == len(relations) and len(filtered_triplets) == len(triplets):
+        return False
+
+    store_data["relations"] = filtered_relations
+    store_data["triplets"] = filtered_triplets
+    with open(store_path, "w", encoding="utf-8") as store_file:
+        json.dump(store_data, store_file, ensure_ascii=False, indent=2)
+
+    _invalidate_graph_cache(storage_dir=storage_dir)
+    return True
+
+
 class _UTF8LocalFileSystem(LocalFileSystem):
     def open(self, path, mode="rb", **kwargs):
         if "b" not in mode:
@@ -119,13 +254,17 @@ class _UTF8LocalFileSystem(LocalFileSystem):
         return super().open(path, mode=mode, **kwargs)
 
 
-def graph_index_exists(ticker, storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
-    persist_dir = _graph_persist_dir(ticker, storage_dir=storage_dir)
-    return (
+def graph_index_exists(ticker=None, storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
+    persist_dir = _migrate_legacy_graph_storage(storage_dir=storage_dir)
+    exists = (
         os.path.isdir(persist_dir)
         and os.path.isfile(os.path.join(persist_dir, "property_graph_store.json"))
         and os.path.isfile(os.path.join(persist_dir, "index_store.json"))
     )
+    if not exists or ticker is None:
+        return exists
+    manifest = _load_graph_manifest(storage_dir=storage_dir)
+    return ticker.upper() in manifest.get("ticker_doc_ids", {})
 
 
 def _normalize_indicator_key(value):
@@ -168,6 +307,10 @@ def _metadata_preface(metadata, preferred_keys=None):
 def _prepare_graph_document(document, source_type):
     metadata = dict(document.metadata or {})
     metadata.setdefault("graph_source_type", source_type)
+    metadata.setdefault(
+        "graph_scope",
+        "ticker" if metadata.get("ticker") else "global",
+    )
 
     preface = _metadata_preface(
         metadata,
@@ -208,6 +351,33 @@ def _prepare_graph_document(document, source_type):
         text="\n\n".join(text_parts).strip(),
         metadata=metadata,
     )
+
+
+def _graph_document_id(document):
+    metadata = dict(document.metadata or {})
+    ticker = str(metadata.get("ticker") or "").upper()
+    scope_prefix = f"ticker::{ticker}" if ticker else GLOBAL_GRAPH_SCOPE
+    payload = {
+        "metadata": metadata,
+        "text": (document.text or "").strip(),
+    }
+    digest = hashlib.sha1(
+        json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str).encode("utf-8")
+    ).hexdigest()
+    return f"{scope_prefix}::{digest}"
+
+
+def _assign_graph_document_ids(documents):
+    assigned_documents = []
+    for document in documents:
+        assigned_documents.append(
+            Document(
+                text=document.text,
+                metadata=dict(document.metadata or {}),
+                id_=_graph_document_id(document),
+            )
+        )
+    return assigned_documents
 
 
 def _glossary_indicator_lookup(glossary_docs):
@@ -528,11 +698,55 @@ def _dedupe_documents(documents):
     return deduped_documents
 
 
+def _load_glossary_docs_and_lookup(
+    glossary_base_dir=ingest_knowledge.DEFAULT_GLOSSARY_BASE_DIR,
+    metadata_path=ingest_knowledge.DEFAULT_GLOSSARY_METADATA_PATH,
+):
+    glossary_docs = ingest_knowledge.build_glossary_docs(
+        glossary_base_dir=glossary_base_dir,
+        metadata_path=metadata_path,
+    )
+    return glossary_docs, _glossary_indicator_lookup(glossary_docs)
+
+
+def build_global_graph_documents(
+    macro_db_path=ingest_macro.DEFAULT_MACRO_DB_PATH,
+    glossary_base_dir=ingest_knowledge.DEFAULT_GLOSSARY_BASE_DIR,
+    metadata_path=ingest_knowledge.DEFAULT_GLOSSARY_METADATA_PATH,
+):
+    glossary_docs, glossary_lookup = _load_glossary_docs_and_lookup(
+        glossary_base_dir=glossary_base_dir,
+        metadata_path=metadata_path,
+    )
+    macro_docs = ingest_macro.build_market_environment_docs(db_path=macro_db_path)
+    macro_observation_docs = _macro_observation_documents(
+        db_path=macro_db_path,
+        glossary_lookup=glossary_lookup,
+    )
+
+    knowledge_graph_docs = _dedupe_documents(
+        [
+            _prepare_graph_document(doc, "knowledge_glossary")
+            for doc in glossary_docs
+        ]
+    )
+    macro_graph_docs = _dedupe_documents(
+        [
+            _prepare_graph_document(doc, "macro_context")
+            for doc in macro_docs
+        ]
+        + [
+            _prepare_graph_document(doc, "macro_observation")
+            for doc in macro_observation_docs
+        ]
+    )
+    return knowledge_graph_docs, macro_graph_docs, glossary_lookup
+
+
 def build_graph_documents_for_ticker(
     ticker,
     stock_docs=None,
     stock_db_path=ingest_stock.DEFAULT_STOCK_DB_PATH,
-    macro_db_path=ingest_macro.DEFAULT_MACRO_DB_PATH,
     filings_base_dir=ingest_stock.DEFAULT_STOCK_FILINGS_BASE_DIR,
     glossary_base_dir=ingest_knowledge.DEFAULT_GLOSSARY_BASE_DIR,
     metadata_path=ingest_knowledge.DEFAULT_GLOSSARY_METADATA_PATH,
@@ -544,35 +758,23 @@ def build_graph_documents_for_ticker(
         filings_base_dir=filings_base_dir,
     )
     stock_docs = _select_stock_docs_for_graph(stock_docs)
-    knowledge_docs = ingest_knowledge.build_glossary_docs(
+    _glossary_docs, glossary_lookup = _load_glossary_docs_and_lookup(
         glossary_base_dir=glossary_base_dir,
         metadata_path=metadata_path,
     )
-    macro_docs = ingest_macro.build_market_environment_docs(db_path=macro_db_path)
 
-    glossary_lookup = _glossary_indicator_lookup(knowledge_docs)
     stock_observation_docs = _stock_observation_documents(
         ticker,
         db_path=stock_db_path,
         glossary_lookup=glossary_lookup,
         stock_docs=stock_docs,
     )
-    macro_observation_docs = _macro_observation_documents(
-        db_path=macro_db_path,
-        glossary_lookup=glossary_lookup,
-    )
 
     prepared_documents = []
-    for doc in knowledge_docs:
-        prepared_documents.append(_prepare_graph_document(doc, "knowledge_glossary"))
-    for doc in macro_docs:
-        prepared_documents.append(_prepare_graph_document(doc, "macro_context"))
     for doc in stock_docs:
         prepared_documents.append(_prepare_graph_document(doc, "stock_context"))
     for doc in stock_observation_docs:
         prepared_documents.append(_prepare_graph_document(doc, "stock_observation"))
-    for doc in macro_observation_docs:
-        prepared_documents.append(_prepare_graph_document(doc, "macro_observation"))
 
     return _dedupe_documents(prepared_documents)
 
@@ -596,6 +798,88 @@ def _graph_extractors():
     ]
 
 
+def _create_graph_index(documents):
+    storage_context = StorageContext.from_defaults(
+        property_graph_store=SimplePropertyGraphStore()
+    )
+    index = PropertyGraphIndex.from_documents(
+        documents,
+        storage_context=storage_context,
+        transformations=[SentenceSplitter(chunk_size=4096, chunk_overlap=150)],
+        kg_extractors=_graph_extractors(),
+        embed_kg_nodes=False,
+        show_progress=False,
+        use_async=False,
+    )
+    return index
+
+
+def _persist_graph_index(index, storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
+    persist_dir = _migrate_legacy_graph_storage(storage_dir=storage_dir)
+    os.makedirs(persist_dir, exist_ok=True)
+    index.storage_context.persist(
+        persist_dir=persist_dir,
+        fs=_UTF8LocalFileSystem(auto_mkdir=True),
+    )
+    _invalidate_graph_cache(storage_dir=storage_dir)
+    return persist_dir
+
+
+def _delete_ref_docs(index, ref_doc_ids):
+    deleted_ref_doc_ids = []
+    for ref_doc_id in ref_doc_ids:
+        try:
+            index.delete_ref_doc(ref_doc_id, delete_from_docstore=True)
+            deleted_ref_doc_ids.append(ref_doc_id)
+        except KeyError:
+            continue
+        except ValueError:
+            continue
+    return deleted_ref_doc_ids
+
+
+def _insert_documents(index, documents):
+    for document in documents:
+        index.insert(document)
+
+
+def refresh_shared_property_graph_globals(
+    macro_db_path=ingest_macro.DEFAULT_MACRO_DB_PATH,
+    glossary_base_dir=ingest_knowledge.DEFAULT_GLOSSARY_BASE_DIR,
+    metadata_path=ingest_knowledge.DEFAULT_GLOSSARY_METADATA_PATH,
+    storage_dir=DEFAULT_GRAPH_STORAGE_DIR,
+):
+    knowledge_docs, macro_docs, _glossary_lookup = build_global_graph_documents(
+        macro_db_path=macro_db_path,
+        glossary_base_dir=glossary_base_dir,
+        metadata_path=metadata_path,
+    )
+    knowledge_docs = _assign_graph_document_ids(knowledge_docs)
+    macro_docs = _assign_graph_document_ids(macro_docs)
+    manifest = _load_graph_manifest(storage_dir=storage_dir)
+
+    if not graph_index_exists(storage_dir=storage_dir):
+        documents = _dedupe_documents(knowledge_docs + macro_docs)
+        if not documents:
+            return None
+        persist_dir = _graph_persist_dir(storage_dir=storage_dir)
+        _reset_persist_dir(persist_dir)
+        index = _create_graph_index(documents)
+        _persist_graph_index(index, storage_dir=storage_dir)
+    else:
+        index = _load_graph_index(storage_dir=storage_dir)
+        _delete_ref_docs(index, manifest.get("knowledge_doc_ids", []))
+        _delete_ref_docs(index, manifest.get("macro_doc_ids", []))
+        _insert_documents(index, knowledge_docs)
+        _insert_documents(index, macro_docs)
+        _persist_graph_index(index, storage_dir=storage_dir)
+
+    manifest["knowledge_doc_ids"] = [doc.id_ for doc in knowledge_docs]
+    manifest["macro_doc_ids"] = [doc.id_ for doc in macro_docs]
+    _save_graph_manifest(manifest, storage_dir=storage_dir)
+    return _graph_persist_dir(storage_dir=storage_dir)
+
+
 def refresh_property_graph_for_ticker(
     ticker,
     stock_docs=None,
@@ -609,54 +893,49 @@ def refresh_property_graph_for_ticker(
     ingest_stock.env()
     ingest_macro.refresh_market_environment_if_stale(db_path=macro_db_path)
 
-    documents = build_graph_documents_for_ticker(
+    ticker = ticker.upper()
+    ticker_documents = build_graph_documents_for_ticker(
         ticker,
         stock_docs=stock_docs,
         stock_db_path=stock_db_path,
-        macro_db_path=macro_db_path,
         filings_base_dir=filings_base_dir,
         glossary_base_dir=glossary_base_dir,
         metadata_path=metadata_path,
     )
-    if not documents:
+    ticker_documents = _assign_graph_document_ids(ticker_documents)
+    if not ticker_documents:
         return None
 
-    persist_dir = _graph_persist_dir(ticker, storage_dir=storage_dir)
-    _reset_persist_dir(persist_dir)
-
     try:
-        storage_context = StorageContext.from_defaults(
-            property_graph_store=SimplePropertyGraphStore()
+        refresh_shared_property_graph_globals(
+            macro_db_path=macro_db_path,
+            glossary_base_dir=glossary_base_dir,
+            metadata_path=metadata_path,
+            storage_dir=storage_dir,
         )
-        PropertyGraphIndex.from_documents(
-            documents,
-            storage_context=storage_context,
-            transformations=[SentenceSplitter(chunk_size=4096, chunk_overlap=150)],
-            kg_extractors=_graph_extractors(),
-            embed_kg_nodes=False,
-            show_progress=False,
-            use_async=False,
-        )
-        storage_context.persist(
-            persist_dir=persist_dir,
-            fs=_UTF8LocalFileSystem(auto_mkdir=True),
-        )
+        manifest = _load_graph_manifest(storage_dir=storage_dir)
+        index = _load_graph_index(storage_dir=storage_dir)
+        _delete_ref_docs(index, manifest.get("ticker_doc_ids", {}).get(ticker, []))
+        _insert_documents(index, ticker_documents)
+        _persist_graph_index(index, storage_dir=storage_dir)
+        manifest["ticker_doc_ids"][ticker] = [doc.id_ for doc in ticker_documents]
+        _save_graph_manifest(manifest, storage_dir=storage_dir)
     except Exception as exc:
-        if os.path.isdir(persist_dir):
-            shutil.rmtree(persist_dir, onerror=_remove_readonly)
-        raise RuntimeError(f"Property graph refresh failed for {ticker}: {exc}") from exc
+        raise RuntimeError(f"Shared property graph refresh failed for {ticker}: {exc}") from exc
 
-    return persist_dir
+    return _graph_persist_dir(storage_dir=storage_dir)
 
 
 def refresh_full_graph_for_ticker(*args, **kwargs):
     return refresh_property_graph_for_ticker(*args, **kwargs)
 
 
-def _load_graph_index(ticker, storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
-    persist_dir = _graph_persist_dir(ticker, storage_dir=storage_dir)
-    if not graph_index_exists(ticker, storage_dir=storage_dir):
+def _load_graph_index(storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
+    persist_dir = _migrate_legacy_graph_storage(storage_dir=storage_dir)
+    if not graph_index_exists(storage_dir=storage_dir):
         raise FileNotFoundError(f"Graph index directory not found: {persist_dir}")
+
+    _sanitize_property_graph_store(storage_dir=storage_dir)
 
     signature = _persist_dir_signature(
         persist_dir,
@@ -691,6 +970,47 @@ def _node_text(node_with_score):
     return str(text).replace("\ufeff", "").strip()
 
 
+def _node_metadata(node_with_score):
+    node = getattr(node_with_score, "node", node_with_score)
+    return dict(getattr(node, "metadata", {}) or {})
+
+
+def _graph_node_priority(node_with_score, ticker):
+    score = float(getattr(node_with_score, "score", 0.0) or 0.0)
+    metadata = _node_metadata(node_with_score)
+    node_ticker = str(metadata.get("ticker") or "").upper()
+
+    if node_ticker == ticker:
+        score += 5.0
+    elif node_ticker:
+        score -= 4.0
+    else:
+        score += 1.0
+
+    graph_source_type = metadata.get("graph_source_type")
+    if graph_source_type == "stock_observation":
+        score += 1.5
+    elif graph_source_type == "stock_context":
+        score += 1.0
+
+    return score
+
+
+def _graph_node_matches_ticker(node_with_score, ticker):
+    metadata = _node_metadata(node_with_score)
+    node_ticker = str(metadata.get("ticker") or "").upper()
+    if node_ticker:
+        return node_ticker == ticker
+
+    text = _node_text(node_with_score)
+    graph_scope = metadata.get("graph_scope")
+    graph_source_type = metadata.get("graph_source_type")
+    if graph_scope == "global" or graph_source_type in {"knowledge_glossary", "macro_context", "macro_observation"}:
+        return True
+
+    return f"Ticker: {ticker}" in text
+
+
 def retrieve_graph_context(
     query_str,
     ticker,
@@ -699,7 +1019,7 @@ def retrieve_graph_context(
     max_chunks=4,
 ):
     try:
-        index = _load_graph_index(ticker, storage_dir=storage_dir)
+        index = _load_graph_index(storage_dir=storage_dir)
     except (FileNotFoundError, ValueError):
         return None
 
@@ -708,11 +1028,14 @@ def retrieve_graph_context(
         similarity_top_k=similarity_top_k,
         path_depth=1,
     )
-    nodes = retriever.retrieve(query_str)
+    nodes = retriever.retrieve(f"{ticker} {query_str}")
+    nodes = sorted(nodes, key=lambda node: _graph_node_priority(node, ticker.upper()), reverse=True)
     chunks = []
     seen_chunks = set()
 
     for node in nodes:
+        if not _graph_node_matches_ticker(node, ticker.upper()):
+            continue
         text = _node_text(node)
         if not text:
             continue

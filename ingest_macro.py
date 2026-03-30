@@ -1208,7 +1208,7 @@ def _persist_documents_as_index(documents, persist_dir):
         return None
 
     ingest_stock.env()
-    node_parser = SentenceSplitter(chunk_size=550, chunk_overlap=60)
+    node_parser = SentenceSplitter(chunk_size=800, chunk_overlap=70)
     nodes = node_parser.get_nodes_from_documents(documents)
 
     try:

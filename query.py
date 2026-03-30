@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 import ingest_graph
 import ingest_knowledge
 import ingest_stock
-
 load_dotenv("config.env")
 
 DEFAULT_STOCK_STORAGE_BASE_DIR = os.getenv("STOCK_STORAGE_BASE_DIR", "./storage/stock")
@@ -471,6 +470,7 @@ def _ensure_stock_index_directory(ticker, stock_storage_base_dir):
         return persist_dir
 
     print(f"{ticker} is missing from storage/stock; ingesting it now.")
+    import ingest_knowledge
     ingest_stock.refresh_ticker_data_and_index(
         ticker,
         storage_base_dir=stock_storage_base_dir,
@@ -493,9 +493,12 @@ def _ensure_graph_index_directory(
     graph_storage_dir,
 ):
     if ingest_graph.graph_index_exists(ticker=ticker, storage_dir=graph_storage_dir):
-        return os.path.join(graph_storage_dir, ticker.upper())
+        return ingest_graph.shared_graph_persist_dir(storage_dir=graph_storage_dir)
 
-    print("Graph layer is missing; building the graph index now.")
+    if ingest_graph.graph_index_exists(storage_dir=graph_storage_dir):
+        print(f"{ticker} is missing from the shared graph; adding it now.")
+    else:
+        print("Shared graph layer is missing; building it now.")
     try:
         persist_dir = ingest_graph.refresh_property_graph_for_ticker(
             ticker,
@@ -509,7 +512,7 @@ def _ensure_graph_index_directory(
     except Exception as exc:
         print(f"Graph layer refresh skipped for {ticker}: {exc}")
         persist_dir = None
-    return persist_dir or os.path.join(graph_storage_dir, ticker.upper())
+    return persist_dir or ingest_graph.shared_graph_persist_dir(storage_dir=graph_storage_dir)
 
 
 def get_analysis_context(
