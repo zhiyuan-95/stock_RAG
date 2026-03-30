@@ -126,17 +126,170 @@ def _ensure_seaborn_pandas_compat():
         register_option("mode.use_inf_as_null", False, validator=is_bool)
 
 
-def plot_sql_trends_and_benchmarks(ticker, peer_count=10, output_base_dir="plots"):
-    import os
-    import matplotlib
-
-    matplotlib.use("Agg")
-
-    import matplotlib.pyplot as plt
+def _format_percent(value):
     import pandas as pd
-    import seaborn as sns
 
-    _ensure_seaborn_pandas_compat()
+    if pd.isna(value):
+        return "n/a"
+    return f"{float(value) * 100:.1f}%"
+
+
+def _format_ratio(value):
+    import pandas as pd
+
+    if pd.isna(value):
+        return "n/a"
+    return f"{float(value):.2f}x"
+
+
+def _benchmark_direction(target_value, peer_value, higher_is_better=True):
+    import pandas as pd
+
+    if pd.isna(target_value) or pd.isna(peer_value):
+        return "unavailable", 0
+
+    if higher_is_better:
+        if target_value > peer_value:
+            return "above", 1
+        if target_value < peer_value:
+            return "below", -1
+    else:
+        if target_value < peer_value:
+            return "better", 1
+        if target_value > peer_value:
+            return "worse", -1
+    return "in line", 0
+
+
+def _build_benchmark_summary_payload(
+    ticker,
+    sector,
+    peer_tickers,
+    latest_target_row,
+    latest_peer_rows,
+    trend_plot_path,
+    ratio_plot_path,
+):
+    import pandas as pd
+
+    peer_latest_revenue_yoy = latest_peer_rows["Revenue Growth YoY"].dropna().mean() if not latest_peer_rows.empty else float("nan")
+    peer_latest_revenue_cagr = latest_peer_rows["Revenue CAGR 5-Year"].dropna().mean() if not latest_peer_rows.empty else float("nan")
+    peer_latest_roe = latest_peer_rows["Return on Equity (ROE)"].dropna().mean() if not latest_peer_rows.empty else float("nan")
+    peer_latest_gross_margin = latest_peer_rows["Gross Margin"].dropna().mean() if not latest_peer_rows.empty else float("nan")
+    peer_latest_operating_margin = latest_peer_rows["Operating Margin"].dropna().mean() if not latest_peer_rows.empty else float("nan")
+    peer_latest_net_margin = latest_peer_rows["Net Profit Margin"].dropna().mean() if not latest_peer_rows.empty else float("nan")
+    peer_latest_de = latest_peer_rows["Debt-to-Equity (D/E)"].dropna().mean() if not latest_peer_rows.empty else float("nan")
+
+    latest_revenue_yoy = latest_target_row.get("Revenue Growth YoY")
+    latest_revenue_cagr = latest_target_row.get("Revenue CAGR 5-Year")
+    latest_roe = latest_target_row.get("Return on Equity (ROE)")
+    latest_gross_margin = latest_target_row.get("Gross Margin")
+    latest_operating_margin = latest_target_row.get("Operating Margin")
+    latest_net_margin = latest_target_row.get("Net Profit Margin")
+    latest_de = latest_target_row.get("Debt-to-Equity (D/E)")
+
+    comparisons = [
+        ("Revenue YoY growth", latest_revenue_yoy, peer_latest_revenue_yoy, True),
+        ("Revenue CAGR 5-Year", latest_revenue_cagr, peer_latest_revenue_cagr, True),
+        ("ROE", latest_roe, peer_latest_roe, True),
+        ("Gross margin", latest_gross_margin, peer_latest_gross_margin, True),
+        ("Operating margin", latest_operating_margin, peer_latest_operating_margin, True),
+        ("Net margin", latest_net_margin, peer_latest_net_margin, True),
+        ("Debt / equity", latest_de, peer_latest_de, False),
+    ]
+
+    score = 0
+    comparison_lines = []
+    for label, target_value, peer_value, higher_is_better in comparisons:
+        direction, delta = _benchmark_direction(target_value, peer_value, higher_is_better=higher_is_better)
+        score += delta
+        if "margin" in label.lower() or label == "ROE" or "Revenue" in label:
+            comparison_lines.append(
+                f"{label}: {ticker} {_format_percent(target_value)} vs {sector} peer average {_format_percent(peer_value)} ({direction})."
+            )
+        else:
+            comparison_lines.append(
+                f"{label}: {ticker} {_format_ratio(target_value)} vs {sector} peer average {_format_ratio(peer_value)} ({direction})."
+            )
+
+    if score >= 3:
+        conclusion = (
+            f"{ticker} screens as stronger than the current {sector} peer average on this benchmark set, "
+            "with more growth/profitability wins than leverage weaknesses."
+        )
+    elif score <= -3:
+        conclusion = (
+            f"{ticker} screens weaker than the current {sector} peer average on this benchmark set, "
+            "with more benchmark shortfalls than relative strengths."
+        )
+    else:
+        conclusion = (
+            f"{ticker} looks mixed versus the current {sector} peer average, with the benchmark picture split "
+            "between strengths and weaker areas."
+        )
+
+    summary = "\n".join(
+        [
+            f"SQL benchmark analysis for {ticker} in {sector}.",
+            f"Peers used: {', '.join(peer_tickers)}.",
+            f"Latest annual period: {latest_target_row.get('Period End Date')}.",
+            *comparison_lines,
+            f"Trend plot: {trend_plot_path}.",
+            f"Ratio plot: {ratio_plot_path}.",
+        ]
+    )
+
+    return summary, conclusion
+
+
+def _analysis_graph_documents(
+    ticker,
+    sector,
+    peer_tickers,
+    summary,
+    conclusion,
+    trend_plot_path,
+    ratio_plot_path,
+):
+    from llama_index.core import Document
+
+    shared_metadata = {
+        "ticker": ticker,
+        "sector": sector,
+        "peer_tickers": peer_tickers,
+        "source": "SQL benchmark analysis",
+        "analysis_scope": "sector_peer_benchmark",
+        "trend_plot_path": trend_plot_path,
+        "ratio_plot_path": ratio_plot_path,
+    }
+
+    return [
+        Document(
+            text=summary,
+            metadata={
+                **shared_metadata,
+                "type": "analysis_summary",
+            },
+        ),
+        Document(
+            text=conclusion,
+            metadata={
+                **shared_metadata,
+                "type": "analysis_conclusion",
+            },
+        ),
+    ]
+
+
+def analyze_ticker_sql_benchmarks(
+    ticker,
+    peer_count=10,
+    output_base_dir="plots",
+    generate_plots=False,
+    persist_to_graph=True,
+):
+    import os
+    import pandas as pd
 
     ticker = str(ticker).upper()
     annual_history = _load_annual_financial_history_from_sql()
@@ -213,6 +366,7 @@ def plot_sql_trends_and_benchmarks(ticker, peer_count=10, output_base_dir="plots
         .tail(1)
         .copy()
     )
+    latest_comparison = _add_revenue_cagr_5yr(latest_comparison)
     latest_target_row = latest_comparison[latest_comparison["Ticker"] == ticker].iloc[0]
     latest_peer_rows = latest_comparison[latest_comparison["Ticker"] != ticker].copy()
 
@@ -242,95 +396,135 @@ def plot_sql_trends_and_benchmarks(ticker, peer_count=10, output_base_dir="plots
 
     ratio_frame = pd.DataFrame(ratio_rows)
 
-    sns.set_theme(style="whitegrid", context="talk")
     output_dir = os.path.join(output_base_dir, ticker)
     os.makedirs(output_dir, exist_ok=True)
 
     trend_path = os.path.join(output_dir, f"{ticker}_revenue_trends.png")
-    fig, axes = plt.subplots(2, 1, figsize=(14, 11), sharex=True)
-    metric_specs = [
-        ("Revenue Growth YoY Pct", "Revenue YoY Growth vs Same-Sector Peers", "Revenue YoY Growth (%)"),
-        ("Revenue CAGR 5-Year Pct", "Revenue CAGR 5-Year vs Same-Sector Peers", "Revenue CAGR 5-Year (%)"),
-    ]
-
-    for axis, (metric_column, title, ylabel) in zip(axes, metric_specs):
-        target_metric = target_history.dropna(subset=[metric_column]).copy()
-        if not target_metric.empty:
-            sns.lineplot(
-                data=target_metric,
-                x="Fiscal Year",
-                y=metric_column,
-                marker="o",
-                linewidth=2.5,
-                label=ticker,
-                ax=axis,
-            )
-
-        metric_peer = peer_trends[peer_trends["Metric"] == metric_column].copy()
-        if not metric_peer.empty:
-            axis.fill_between(
-                metric_peer["Fiscal Year"],
-                metric_peer["peer_p25"],
-                metric_peer["peer_p75"],
-                alpha=0.18,
-                color="#4c72b0",
-                label=f"{target_sector} peer IQR",
-            )
-            sns.lineplot(
-                data=metric_peer,
-                x="Fiscal Year",
-                y="peer_average",
-                marker="o",
-                linewidth=2.5,
-                linestyle="--",
-                label=f"{target_sector} peer average",
-                ax=axis,
-            )
-
-        axis.set_title(title)
-        axis.set_ylabel(ylabel)
-        axis.legend(loc="best")
-
-    axes[-1].set_xlabel("Fiscal Year")
-    fig.suptitle(
-        f"{ticker} Revenue Trend Benchmarking vs {target_sector} Peers in SQL",
-        y=1.02,
-        fontsize=18,
-    )
-    fig.tight_layout()
-    fig.savefig(trend_path, dpi=220, bbox_inches="tight")
-    plt.close(fig)
-
     ratio_path = os.path.join(output_base_dir, ticker, f"{ticker}_key_ratio_benchmark.png")
-    fig, axes = plt.subplots(1, 2, figsize=(16, 7), gridspec_kw={"width_ratios": [4, 1.4]})
 
-    percent_frame = ratio_frame[ratio_frame["Category"] == "percent"].copy()
-    if not percent_frame.empty:
-        sns.barplot(data=percent_frame, x="Metric", y="Value", hue="Series", ax=axes[0])
-        axes[0].set_ylabel("Percent")
-        axes[0].set_xlabel("")
-        axes[0].tick_params(axis="x", rotation=25)
-        axes[0].set_title(f"{ticker} ROE and Margin Benchmark vs {target_sector} Average")
-    else:
-        axes[0].set_axis_off()
+    if generate_plots:
+        import matplotlib
 
-    ratio_only_frame = ratio_frame[ratio_frame["Category"] == "ratio"].copy()
-    if not ratio_only_frame.empty:
-        sns.barplot(data=ratio_only_frame, x="Metric", y="Value", hue="Series", ax=axes[1])
-        axes[1].set_ylabel("Ratio")
-        axes[1].set_xlabel("")
-        axes[1].tick_params(axis="x", rotation=25)
-        axes[1].set_title("Debt / Equity")
-    else:
-        axes[1].set_axis_off()
+        matplotlib.use("Agg")
 
-    for axis in axes:
-        if axis.has_data():
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+
+        _ensure_seaborn_pandas_compat()
+        sns.set_theme(style="whitegrid", context="talk")
+
+        fig, axes = plt.subplots(2, 1, figsize=(14, 11), sharex=True)
+        metric_specs = [
+            ("Revenue Growth YoY Pct", "Revenue YoY Growth vs Same-Sector Peers", "Revenue YoY Growth (%)"),
+            ("Revenue CAGR 5-Year Pct", "Revenue CAGR 5-Year vs Same-Sector Peers", "Revenue CAGR 5-Year (%)"),
+        ]
+
+        for axis, (metric_column, title, ylabel) in zip(axes, metric_specs):
+            target_metric = target_history.dropna(subset=[metric_column]).copy()
+            if not target_metric.empty:
+                sns.lineplot(
+                    data=target_metric,
+                    x="Fiscal Year",
+                    y=metric_column,
+                    marker="o",
+                    linewidth=2.5,
+                    label=ticker,
+                    ax=axis,
+                )
+
+            metric_peer = peer_trends[peer_trends["Metric"] == metric_column].copy()
+            if not metric_peer.empty:
+                axis.fill_between(
+                    metric_peer["Fiscal Year"],
+                    metric_peer["peer_p25"],
+                    metric_peer["peer_p75"],
+                    alpha=0.18,
+                    color="#4c72b0",
+                    label=f"{target_sector} peer IQR",
+                )
+                sns.lineplot(
+                    data=metric_peer,
+                    x="Fiscal Year",
+                    y="peer_average",
+                    marker="o",
+                    linewidth=2.5,
+                    linestyle="--",
+                    label=f"{target_sector} peer average",
+                    ax=axis,
+                )
+
+            axis.set_title(title)
+            axis.set_ylabel(ylabel)
             axis.legend(loc="best")
 
-    fig.tight_layout()
-    fig.savefig(ratio_path, dpi=220, bbox_inches="tight")
-    plt.close(fig)
+        axes[-1].set_xlabel("Fiscal Year")
+        fig.suptitle(
+            f"{ticker} Revenue Trend Benchmarking vs {target_sector} Peers in SQL",
+            y=1.02,
+            fontsize=18,
+        )
+        fig.tight_layout()
+        fig.savefig(trend_path, dpi=220, bbox_inches="tight")
+        plt.close(fig)
+
+        fig, axes = plt.subplots(1, 2, figsize=(16, 7), gridspec_kw={"width_ratios": [4, 1.4]})
+
+        percent_frame = ratio_frame[ratio_frame["Category"] == "percent"].copy()
+        if not percent_frame.empty:
+            sns.barplot(data=percent_frame, x="Metric", y="Value", hue="Series", ax=axes[0])
+            axes[0].set_ylabel("Percent")
+            axes[0].set_xlabel("")
+            axes[0].tick_params(axis="x", rotation=25)
+            axes[0].set_title(f"{ticker} ROE and Margin Benchmark vs {target_sector} Average")
+        else:
+            axes[0].set_axis_off()
+
+        ratio_only_frame = ratio_frame[ratio_frame["Category"] == "ratio"].copy()
+        if not ratio_only_frame.empty:
+            sns.barplot(data=ratio_only_frame, x="Metric", y="Value", hue="Series", ax=axes[1])
+            axes[1].set_ylabel("Ratio")
+            axes[1].set_xlabel("")
+            axes[1].tick_params(axis="x", rotation=25)
+            axes[1].set_title("Debt / Equity")
+        else:
+            axes[1].set_axis_off()
+
+        for axis in axes:
+            if axis.has_data():
+                axis.legend(loc="best")
+
+        fig.tight_layout()
+        fig.savefig(ratio_path, dpi=220, bbox_inches="tight")
+        plt.close(fig)
+    else:
+        trend_path = None
+        ratio_path = None
+
+    summary, conclusion = _build_benchmark_summary_payload(
+        ticker=ticker,
+        sector=target_sector,
+        peer_tickers=peer_tickers,
+        latest_target_row=latest_target_row,
+        latest_peer_rows=latest_peer_rows,
+        trend_plot_path=trend_path,
+        ratio_plot_path=ratio_path,
+    )
+
+    if persist_to_graph:
+        import ingest_graph
+
+        ingest_graph.upsert_ticker_analysis_documents(
+            ticker,
+            _analysis_graph_documents(
+                ticker=ticker,
+                sector=target_sector,
+                peer_tickers=peer_tickers,
+                summary=summary,
+                conclusion=conclusion,
+                trend_plot_path=trend_path,
+                ratio_plot_path=ratio_path,
+            ),
+        )
 
     return {
         "ticker": ticker,
@@ -338,4 +532,16 @@ def plot_sql_trends_and_benchmarks(ticker, peer_count=10, output_base_dir="plots
         "peer_tickers": peer_tickers,
         "trend_plot_path": trend_path,
         "ratio_plot_path": ratio_path,
+        "summary": summary,
+        "conclusion": conclusion,
     }
+
+
+def plot_sql_trends_and_benchmarks(ticker, peer_count=10, output_base_dir="plots"):
+    return analyze_ticker_sql_benchmarks(
+        ticker=ticker,
+        peer_count=peer_count,
+        output_base_dir=output_base_dir,
+        generate_plots=True,
+        persist_to_graph=True,
+    )

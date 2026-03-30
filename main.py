@@ -162,6 +162,7 @@ def ingest_companies(tickers):
 
 
 def ingest_companies_to_database(tickers):
+    import analysis
     import ingest_stock
 
     total = len(tickers)
@@ -169,6 +170,12 @@ def ingest_companies_to_database(tickers):
         print(f"[{index}/{total}] Updating database for {ticker}...")
         try:
             ingest_stock.update_financial_records(ticker)
+            analysis_result = analysis.analyze_ticker_sql_benchmarks(
+                ticker,
+                generate_plots=False,
+                persist_to_graph=True,
+            )
+            print(f"Stored benchmark analysis for {ticker}: {analysis_result['conclusion']}")
         except Exception as exc:
             print(f"Skipping {ticker}: {exc}")
         print()
@@ -241,6 +248,10 @@ def main():
         import analysis
 
         plot_result = analysis.plot_sql_trends_and_benchmarks(plot_ticker)
+        print(plot_result["summary"])
+        print()
+        print(f"Conclusion: {plot_result['conclusion']}")
+        print()
         print(
             f"Generated benchmark plots for {plot_result['ticker']} vs {plot_result['sector']} peers: "
             f"{plot_result['trend_plot_path']} and {plot_result['ratio_plot_path']}"

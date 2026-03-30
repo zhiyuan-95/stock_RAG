@@ -9,13 +9,16 @@ import pandas as pd
 from dotenv import load_dotenv
 from fsspec.implementations.local import LocalFileSystem
 from llama_index.core import Document, StorageContext, load_index_from_storage
-from llama_index.core.graph_stores import SimplePropertyGraphStore
+from llama_index.core.graph_stores import SimpleGraphStore, SimplePropertyGraphStore
 from llama_index.core.indices.property_graph import (
     DynamicLLMPathExtractor,
     ImplicitPathExtractor,
     PropertyGraphIndex,
 )
 from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.storage.docstore.simple_docstore import SimpleDocumentStore
+from llama_index.core.storage.index_store.simple_index_store import SimpleIndexStore
+from llama_index.core.vector_stores.simple import SimpleVectorStore
 from llama_index.llms.openai import OpenAI
 
 import ingest_knowledge
@@ -155,6 +158,7 @@ def _default_graph_manifest():
         "knowledge_doc_ids": [],
         "macro_doc_ids": [],
         "ticker_doc_ids": {},
+        "analysis_doc_ids": {},
     }
 
 
@@ -172,6 +176,7 @@ def _load_graph_manifest(storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
         "knowledge_doc_ids": manifest.get("knowledge_doc_ids", []),
         "macro_doc_ids": manifest.get("macro_doc_ids", []),
         "ticker_doc_ids": manifest.get("ticker_doc_ids", {}),
+        "analysis_doc_ids": manifest.get("analysis_doc_ids", {}),
     })
     return default_manifest
 
@@ -947,11 +952,15 @@ def _load_graph_index(storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
 
     ingest_stock.env()
     fs = _UTF8LocalFileSystem(auto_mkdir=True)
+    docstore = SimpleDocumentStore.from_persist_dir(persist_dir, fs=fs)
+    index_store = SimpleIndexStore.from_persist_dir(persist_dir, fs=fs)
     property_graph_store = SimplePropertyGraphStore.from_persist_dir(persist_dir, fs=fs)
-    storage_context = StorageContext.from_defaults(
-        persist_dir=persist_dir,
+    storage_context = StorageContext(
+        docstore=docstore,
+        index_store=index_store,
+        vector_stores={"default": SimpleVectorStore()},
+        graph_store=SimpleGraphStore(),
         property_graph_store=property_graph_store,
-        fs=fs,
     )
     index = load_index_from_storage(storage_context)
     _GRAPH_INDEX_CACHE[persist_dir] = {
@@ -992,8 +1001,37 @@ def _graph_node_priority(node_with_score, ticker):
         score += 1.5
     elif graph_source_type == "stock_context":
         score += 1.0
+    elif graph_source_type == "analysis_summary":
+        score += 4.0
+
+    if metadata.get("type") in {"analysis_summary", "analysis_conclusion"}:
+        score += 2.0
 
     return score
+
+
+def upsert_ticker_analysis_documents(
+    ticker,
+    documents,
+    storage_dir=DEFAULT_GRAPH_STORAGE_DIR,
+):
+    ticker = ticker.upper()
+    prepared_documents = _dedupe_documents(
+        [_prepare_graph_document(doc, "analysis_summary") for doc in documents]
+    )
+    prepared_documents = _assign_graph_document_ids(prepared_documents)
+
+    if not graph_index_exists(storage_dir=storage_dir):
+        refresh_shared_property_graph_globals(storage_dir=storage_dir)
+    manifest = _load_graph_manifest(storage_dir=storage_dir)
+    index = _load_graph_index(storage_dir=storage_dir)
+    _delete_ref_docs(index, manifest.get("analysis_doc_ids", {}).get(ticker, []))
+    if prepared_documents:
+        _insert_documents(index, prepared_documents)
+    _persist_graph_index(index, storage_dir=storage_dir)
+    manifest.setdefault("analysis_doc_ids", {})[ticker] = [doc.id_ for doc in prepared_documents]
+    _save_graph_manifest(manifest, storage_dir=storage_dir)
+    return _graph_persist_dir(storage_dir=storage_dir)
 
 
 def _graph_node_matches_ticker(node_with_score, ticker):
@@ -1011,6 +1049,54 @@ def _graph_node_matches_ticker(node_with_score, ticker):
     return f"Ticker: {ticker}" in text
 
 
+def _query_needs_analysis_docs(query_str):
+    normalized_query = " ".join(str(query_str or "").lower().split())
+    keywords = [
+        "analysis",
+        "summary",
+        "conclusion",
+        "benchmark",
+        "peer average",
+        "revenue growth",
+        "cagr",
+        "roe",
+        "debt equity",
+        "margin",
+    ]
+    return any(keyword in normalized_query for keyword in keywords)
+
+
+def _analysis_doc_chunks(ticker, storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
+    manifest = _load_graph_manifest(storage_dir=storage_dir)
+    ref_doc_ids = manifest.get("analysis_doc_ids", {}).get(ticker.upper(), [])
+    if not ref_doc_ids:
+        return []
+
+    index = _load_graph_index(storage_dir=storage_dir)
+    docstore = index.storage_context.docstore
+    chunks = []
+
+    for ref_doc_id in ref_doc_ids:
+        try:
+            ref_doc_info = docstore.get_ref_doc_info(ref_doc_id)
+        except (KeyError, ValueError):
+            continue
+        if ref_doc_info is None:
+            continue
+        for node_id in ref_doc_info.node_ids:
+            try:
+                document = docstore.get_document(node_id)
+            except (KeyError, ValueError):
+                continue
+            if document is None:
+                continue
+            text = str(getattr(document, "text", "") or "").strip()
+            if text:
+                chunks.append(text)
+
+    return chunks
+
+
 def retrieve_graph_context(
     query_str,
     ticker,
@@ -1023,6 +1109,18 @@ def retrieve_graph_context(
     except (FileNotFoundError, ValueError):
         return None
 
+    chunks = []
+    seen_chunks = set()
+
+    if _query_needs_analysis_docs(query_str):
+        for chunk in _analysis_doc_chunks(ticker, storage_dir=storage_dir):
+            if chunk in seen_chunks:
+                continue
+            seen_chunks.add(chunk)
+            chunks.append(chunk)
+            if len(chunks) >= max_chunks:
+                return "Graph property context:\n" + "\n\n".join(chunks)
+
     retriever = index.as_retriever(
         include_text=True,
         similarity_top_k=similarity_top_k,
@@ -1030,8 +1128,6 @@ def retrieve_graph_context(
     )
     nodes = retriever.retrieve(f"{ticker} {query_str}")
     nodes = sorted(nodes, key=lambda node: _graph_node_priority(node, ticker.upper()), reverse=True)
-    chunks = []
-    seen_chunks = set()
 
     for node in nodes:
         if not _graph_node_matches_ticker(node, ticker.upper()):

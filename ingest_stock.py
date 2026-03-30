@@ -3107,6 +3107,18 @@ def refresh_ticker_data_and_index(
     except Exception as exc:
         print(f"Graph layer refresh skipped for {ticker}: {exc}")
 
+    try:
+        import analysis
+
+        analysis_result = analysis.analyze_ticker_sql_benchmarks(
+            ticker,
+            generate_plots=False,
+            persist_to_graph=True,
+        )
+        print(f"Benchmark analysis summary stored for {ticker}: {analysis_result['conclusion']}")
+    except Exception as exc:
+        print(f"Benchmark analysis skipped for {ticker}: {exc}")
+
     print(f"Index successfully refreshed for {ticker}")
 
 
