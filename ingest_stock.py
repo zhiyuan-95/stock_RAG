@@ -22,6 +22,9 @@ load_dotenv("config.env")
 DEFAULT_STOCK_DB_PATH = os.getenv("STOCK_SQL_DB_PATH")
 DEFAULT_STOCK_STORAGE_BASE_DIR = os.getenv("STOCK_STORAGE_BASE_DIR")
 DEFAULT_STOCK_FILINGS_BASE_DIR = os.getenv("STOCK_FILINGS_BASE_DIR", "./data_store/filings")
+DEFAULT_LLM_MODEL = "gemini-2.5-flash"
+DEFAULT_EMBED_MODEL = "voyage-finance-2"
+DEFAULT_EMBED_DIMENSION = 1024
 SEC_TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 SEC_SUBMISSIONS_URL_TEMPLATE = "https://data.sec.gov/submissions/CIK{cik}.json"
 SEC_COMPANYFACTS_URL_TEMPLATE = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
@@ -404,12 +407,40 @@ SEC_FACT_SPECS = {
     },
 }
 
+def _require_config_value(name):
+    value = os.getenv(name)
+    normalized = str(value or "").strip()
+    if not normalized:
+        raise ValueError(f"{name} is not set in config.env or the environment.")
+    return normalized
+
+
+def get_gemini_api_key():
+    return _require_config_value("Gemini_API_KEY")
+
+
+def get_voyage_api_key():
+    return _require_config_value("Voyage_API_KEY")
+
+
 def env():
-    from llama_index.embeddings.openai import OpenAIEmbedding
-    from llama_index.llms.openai import OpenAI
+    from llama_index.embeddings.voyageai import VoyageEmbedding
+    from llama_index.llms.google_genai import GoogleGenAI
+
     load_dotenv("config.env")
-    Settings.llm = OpenAI(model="gpt-4o", temperature=0.1)
-    Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small", api_key = os.getenv('OPENAI_API_KEY'))
+
+    gemini_api_key = get_gemini_api_key()
+    voyage_api_key = get_voyage_api_key()
+
+    Settings.llm = GoogleGenAI(
+        model=DEFAULT_LLM_MODEL,
+        api_key=gemini_api_key,
+        temperature=0.1,
+    )
+    Settings.embed_model = VoyageEmbedding(
+        model_name=DEFAULT_EMBED_MODEL,
+        voyage_api_key=voyage_api_key,
+    )
 
 """
     ingestion and updating process
@@ -1197,8 +1228,7 @@ def _refresh_filing_schedule_metadata(
     reference_fiscal_year_end=None,
 ):
     sorted_records = _sorted_filing_records(
-        [_normalize_filing_release_metadata(form_type, filing_record) for filing_record in filing_records]
-    )
+        [_normalize_filing_release_metadata(form_type, filing_record) for filing_record in filing_records])
     if not sorted_records:
         return []
 
@@ -1209,8 +1239,7 @@ def _refresh_filing_schedule_metadata(
         latest_estimate = _estimate_latest_10q_next_release_date(
             sorted_records,
             reference_filer_status=reference_filer_status,
-            reference_fiscal_year_end=reference_fiscal_year_end,
-        )
+            reference_fiscal_year_end=reference_fiscal_year_end)
 
     refreshed_records = []
     for index, filing_record in enumerate(sorted_records):

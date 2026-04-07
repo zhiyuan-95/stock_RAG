@@ -19,7 +19,7 @@ from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.storage.docstore.simple_docstore import SimpleDocumentStore
 from llama_index.core.storage.index_store.simple_index_store import SimpleIndexStore
 from llama_index.core.vector_stores.simple import SimpleVectorStore
-from llama_index.llms.openai import OpenAI
+from llama_index.llms.google_genai import GoogleGenAI
 
 import ingest_knowledge
 import ingest_macro
@@ -159,6 +159,7 @@ def _default_graph_manifest():
         "macro_doc_ids": [],
         "ticker_doc_ids": {},
         "analysis_doc_ids": {},
+        "news_doc_ids": {},
     }
 
 
@@ -177,6 +178,7 @@ def _load_graph_manifest(storage_dir=DEFAULT_GRAPH_STORAGE_DIR):
         "macro_doc_ids": manifest.get("macro_doc_ids", []),
         "ticker_doc_ids": manifest.get("ticker_doc_ids", {}),
         "analysis_doc_ids": manifest.get("analysis_doc_ids", {}),
+        "news_doc_ids": manifest.get("news_doc_ids", {}),
     })
     return default_manifest
 
@@ -787,7 +789,13 @@ def build_graph_documents_for_ticker(
 def _graph_extractors():
     global _GRAPH_LLM
     if _GRAPH_LLM is None:
-        _GRAPH_LLM = OpenAI(model="gpt-4o-mini", temperature=0.1, max_retries=0)
+        gemini_api_key = ingest_stock.get_gemini_api_key()
+        _GRAPH_LLM = GoogleGenAI(
+            model="gemini-2.5-flash",
+            api_key=gemini_api_key,
+            temperature=0.1,
+            max_retries=0,
+        )
 
     return [
         DynamicLLMPathExtractor(
@@ -1030,6 +1038,30 @@ def upsert_ticker_analysis_documents(
         _insert_documents(index, prepared_documents)
     _persist_graph_index(index, storage_dir=storage_dir)
     manifest.setdefault("analysis_doc_ids", {})[ticker] = [doc.id_ for doc in prepared_documents]
+    _save_graph_manifest(manifest, storage_dir=storage_dir)
+    return _graph_persist_dir(storage_dir=storage_dir)
+
+
+def upsert_news_documents(
+    scope,
+    documents,
+    storage_dir=DEFAULT_GRAPH_STORAGE_DIR,
+):
+    scope = str(scope or "broad_news").strip() or "broad_news"
+    prepared_documents = _dedupe_documents(
+        [_prepare_graph_document(doc, "news_context") for doc in documents]
+    )
+    prepared_documents = _assign_graph_document_ids(prepared_documents)
+
+    if not graph_index_exists(storage_dir=storage_dir):
+        refresh_shared_property_graph_globals(storage_dir=storage_dir)
+    manifest = _load_graph_manifest(storage_dir=storage_dir)
+    index = _load_graph_index(storage_dir=storage_dir)
+    _delete_ref_docs(index, manifest.get("news_doc_ids", {}).get(scope, []))
+    if prepared_documents:
+        _insert_documents(index, prepared_documents)
+    _persist_graph_index(index, storage_dir=storage_dir)
+    manifest.setdefault("news_doc_ids", {})[scope] = [doc.id_ for doc in prepared_documents]
     _save_graph_manifest(manifest, storage_dir=storage_dir)
     return _graph_persist_dir(storage_dir=storage_dir)
 

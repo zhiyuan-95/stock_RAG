@@ -2,7 +2,8 @@
 *storage
 *__pycache__
 *data_store
-*.txt
+*config
 *.db
 *.md
 *plots
+*structure

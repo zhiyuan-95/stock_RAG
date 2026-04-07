@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import sqlite3
@@ -9,6 +10,7 @@ from dotenv import load_dotenv
 
 import ingest_graph
 import ingest_knowledge
+import ingest_macro
 import ingest_stock
 load_dotenv("config.env")
 
@@ -18,6 +20,7 @@ DEFAULT_MACRO_STORAGE_DIR = os.getenv("MACRO_STORAGE_DIR", "./storage/macro")
 DEFAULT_GRAPH_STORAGE_DIR = os.getenv("GRAPH_STORAGE_DIR", "./storage/graph")
 _INDEX_CACHE = {}
 _GLOSSARY_DOCS_CACHE = {}
+EXPECTED_EMBEDDING_DIM = getattr(ingest_stock, "DEFAULT_EMBED_DIMENSION", 1024)
 
 
 ANALYSIS_PROMPT = PromptTemplate(
@@ -157,6 +160,43 @@ def _persist_dir_signature(persist_dir, required_files):
     return tuple(signature)
 
 
+def _vector_store_embedding_dim(persist_dir):
+    vector_store_path = os.path.join(persist_dir, "default__vector_store.json")
+    if not os.path.isfile(vector_store_path):
+        return None
+
+    try:
+        with open(vector_store_path, "r", encoding="utf-8") as vector_store_file:
+            vector_store = json.load(vector_store_file)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    embedding_dict = vector_store.get("embedding_dict") or {}
+    if not isinstance(embedding_dict, dict) or not embedding_dict:
+        return None
+
+    first_embedding = next(iter(embedding_dict.values()), None)
+    if not isinstance(first_embedding, list):
+        return None
+    return len(first_embedding)
+
+
+def _index_embedding_is_current(persist_dir):
+    embedding_dim = _vector_store_embedding_dim(persist_dir)
+    if embedding_dim is None:
+        return True
+    return embedding_dim == EXPECTED_EMBEDDING_DIM
+
+
+def _has_index_files(persist_dir):
+    return (
+        os.path.isdir(persist_dir)
+        and os.path.isfile(os.path.join(persist_dir, "docstore.json"))
+        and os.path.isfile(os.path.join(persist_dir, "index_store.json"))
+        and os.path.isfile(os.path.join(persist_dir, "default__vector_store.json"))
+    )
+
+
 def _glossary_docs_signature(
     glossary_base_dir=ingest_knowledge.DEFAULT_GLOSSARY_BASE_DIR,
     metadata_path=ingest_knowledge.DEFAULT_GLOSSARY_METADATA_PATH,
@@ -241,7 +281,11 @@ def _retrieval_priority(node_with_score):
 
 
 def _retrieve_chunks(retriever, query_str):
-    nodes = retriever.retrieve(query_str)
+    try:
+        nodes = retriever.retrieve(query_str)
+    except Exception as exc:
+        print(f"Vector retrieval skipped: {exc}")
+        return []
     nodes = sorted(nodes, key=_retrieval_priority, reverse=True)
     chunks = []
     seen = set()
@@ -254,15 +298,6 @@ def _retrieve_chunks(retriever, query_str):
         chunks.append(text)
 
     return chunks
-
-
-def _retrieve_chunks_from_dir(persist_dir, query_str, similarity_top_k=4):
-    try:
-        retriever = _load_retriever(persist_dir, similarity_top_k=similarity_top_k)
-    except (FileNotFoundError, ValueError):
-        return []
-
-    return _retrieve_chunks(retriever, query_str)
 
 
 def _format_context_chunks(label, chunks):
@@ -278,6 +313,90 @@ def _limit_context(text, max_chars):
     if len(normalized_text) <= max_chars:
         return normalized_text
     return normalized_text[: max_chars - 3].rstrip() + "..."
+
+
+def _keyword_terms(text):
+    return {
+        term
+        for term in re.findall(r"[a-z0-9]+", str(text or "").lower())
+        if len(term) > 2
+    }
+
+
+def _fallback_stock_context(ticker, query_str, max_chunks=6):
+    try:
+        docs = ingest_stock.build_financial_docs(ticker)
+    except Exception as exc:
+        print(f"Stock doc fallback skipped for {ticker}: {exc}")
+        return None
+
+    query_terms = _keyword_terms(f"{ticker} {query_str}")
+    ranked_docs = []
+    for doc in docs:
+        text = str(doc.text or "").strip()
+        if not text:
+            continue
+        metadata = dict(doc.metadata or {})
+        doc_terms = _keyword_terms(text[:4000])
+        overlap = len(query_terms & doc_terms)
+        priority = 0
+        if metadata.get("type") == "company_profile":
+            priority += 5
+        if metadata.get("type") in {"sec_section_summary", "filing_financial_summary"}:
+            priority += 4
+        if metadata.get("type") in {
+            "filing_derived_indicators",
+            "filing_reported_facts",
+            "statement_linked_facts",
+            "financial_indicators",
+        }:
+            priority += 3
+        if metadata.get("retrieval_tier") == "active":
+            priority += 2
+        ranked_docs.append((overlap * 10 + priority, text))
+
+    ranked_docs.sort(key=lambda item: item[0], reverse=True)
+    selected_chunks = []
+    seen = set()
+    for _score, text in ranked_docs:
+        if text in seen:
+            continue
+        seen.add(text)
+        selected_chunks.append(text)
+        if len(selected_chunks) >= max_chunks:
+            break
+
+    return _format_context_chunks(f"{ticker} financial context", selected_chunks)
+
+
+def _fallback_macro_context(query_str, max_chunks=4):
+    try:
+        docs = ingest_macro.build_market_environment_docs()
+    except Exception as exc:
+        print(f"Macro doc fallback skipped: {exc}")
+        return None
+
+    query_terms = _keyword_terms(query_str)
+    ranked_docs = []
+    for doc in docs:
+        text = str(doc.text or "").strip()
+        if not text:
+            continue
+        overlap = len(query_terms & _keyword_terms(text[:3000]))
+        ranked_docs.append((overlap, text))
+
+    ranked_docs.sort(key=lambda item: item[0], reverse=True)
+    selected_chunks = []
+    seen = set()
+    for _score, text in ranked_docs:
+        if text in seen:
+            continue
+        seen.add(text)
+        selected_chunks.append(text)
+        if len(selected_chunks) >= max_chunks:
+            break
+
+    return _format_context_chunks("Macro market context", selected_chunks)
 
 
 def _query_needs_graph(query_str):
@@ -341,14 +460,6 @@ def _query_needs_knowledge(query_str):
 def _retrieve_context(retriever, query_str, label):
     chunks = _retrieve_chunks(retriever, query_str)
     return _format_context_chunks(label, chunks)
-
-
-def _retrieve_context_from_dir(persist_dir, query_str, label, similarity_top_k=4):
-    try:
-        retriever = _load_retriever(persist_dir, similarity_top_k=similarity_top_k)
-    except (FileNotFoundError, ValueError):
-        return None
-    return _retrieve_context(retriever, query_str, label)
 
 
 def _direct_financial_indicator_context(ticker, db_path=ingest_stock.DEFAULT_STOCK_DB_PATH):
@@ -446,7 +557,7 @@ def _matched_knowledge_chunks(query_str, max_matches=3):
     return matched_chunks
 
 
-def _resolve_macro_storage_dir(macro_storage_dir):
+def _ensure_macro_index_directory(macro_storage_dir):
     candidates = [macro_storage_dir]
     normalized_dir = os.path.normpath(macro_storage_dir)
     fallback_dir = os.path.join(
@@ -456,36 +567,47 @@ def _resolve_macro_storage_dir(macro_storage_dir):
     candidates.append(fallback_dir)
 
     for candidate in candidates:
-        docstore_path = os.path.join(candidate, "docstore.json")
-        if os.path.isdir(candidate) and os.path.isfile(docstore_path):
+        if _has_index_files(candidate) and _index_embedding_is_current(candidate):
             return candidate
 
-    return macro_storage_dir
+    print("Macro index is missing or outdated; refreshing it now.")
+    try:
+        return ingest_macro.refresh_macro_index(
+            db_path=ingest_macro.DEFAULT_MACRO_DB_PATH,
+            persist_dir=macro_storage_dir,
+        ) or macro_storage_dir
+    except Exception as exc:
+        print(f"Macro index refresh skipped: {exc}")
+        return macro_storage_dir
 
 
 def _ensure_stock_index_directory(ticker, stock_storage_base_dir):
     ticker = ticker.upper()
     persist_dir = os.path.join(stock_storage_base_dir, ticker)
-    if os.path.isdir(persist_dir):
+    if _has_index_files(persist_dir) and _index_embedding_is_current(persist_dir):
         return persist_dir
 
-    print(f"{ticker} is missing from storage/stock; ingesting it now.")
-    import ingest_knowledge
-    ingest_stock.refresh_ticker_data_and_index(
-        ticker,
-        storage_base_dir=stock_storage_base_dir,
-    )
+    print(f"{ticker} stock index is missing or outdated; refreshing it now.")
+    try:
+        ingest_stock.refresh_ticker_data_and_index(
+            ticker,
+            storage_base_dir=stock_storage_base_dir,
+        )
+    except Exception as exc:
+        print(f"Stock index refresh skipped for {ticker}: {exc}")
     return persist_dir
 
 
 def _ensure_knowledge_index_directory(knowledge_storage_dir):
-    docstore_path = os.path.join(knowledge_storage_dir, "docstore.json")
-    if os.path.isdir(knowledge_storage_dir) and os.path.isfile(docstore_path):
+    if _has_index_files(knowledge_storage_dir) and _index_embedding_is_current(knowledge_storage_dir):
         return knowledge_storage_dir
 
-    print("Knowledge index is missing; ingesting glossary knowledge now.")
-    ingest_knowledge.refresh_knowledge_index(storage_dir=knowledge_storage_dir)
-    return knowledge_storage_dir
+    print("Knowledge index is missing or outdated; refreshing it now.")
+    try:
+        return ingest_knowledge.refresh_knowledge_index(storage_dir=knowledge_storage_dir) or knowledge_storage_dir
+    except Exception as exc:
+        print(f"Knowledge index refresh skipped: {exc}")
+        return knowledge_storage_dir
 
 
 def _ensure_graph_index_directory(
@@ -534,10 +656,15 @@ def get_analysis_context(
         stock_storage_base_dir=stock_storage_base_dir,
     )
     resolved_knowledge_storage_dir = _ensure_knowledge_index_directory(knowledge_storage_dir)
-    resolved_macro_storage_dir = _resolve_macro_storage_dir(macro_storage_dir)
-    resolved_graph_storage_dir = _ensure_graph_index_directory(
-        ticker,
-        graph_storage_dir=graph_storage_dir,
+    resolved_macro_storage_dir = _ensure_macro_index_directory(macro_storage_dir)
+    graph_is_needed = _query_needs_graph(query_str)
+    resolved_graph_storage_dir = (
+        _ensure_graph_index_directory(
+            ticker,
+            graph_storage_dir=graph_storage_dir,
+        )
+        if graph_is_needed
+        else ingest_graph.shared_graph_persist_dir(storage_dir=graph_storage_dir)
     )
     try:
         stock_retriever = _load_retriever(stock_persist_dir, similarity_top_k=max(stock_top_k, 6))
@@ -581,6 +708,8 @@ def get_analysis_context(
         f"{ticker} financial context",
         stock_chunks,
     )
+    if not stock_context:
+        stock_context = _fallback_stock_context(ticker, query_str)
     direct_financial_context = _direct_financial_indicator_context(ticker)
     if direct_financial_context:
         stock_context = (
@@ -618,8 +747,10 @@ def get_analysis_context(
         if macro_retriever is not None
         else None
     )
+    if not macro_context:
+        macro_context = _fallback_macro_context(query_str)
     graph_context = None
-    if _query_needs_graph(query_str):
+    if graph_is_needed:
         graph_context = ingest_graph.retrieve_graph_context(
             query_str,
             ticker=ticker,
