@@ -17,7 +17,7 @@ from llama_index.core.node_parser import SentenceSplitter
 
 load_dotenv("config.env")
 MACRO_TABLE_SQL = """
-    CREATE TABLE IF NOT EXISTS macro_indicators (
+        CREATE TABLE IF NOT EXISTS macro_indicators (
         indicator_key TEXT,
         indicator_name TEXT,
         category TEXT,
@@ -30,8 +30,7 @@ MACRO_TABLE_SQL = """
         units TEXT,
         source_url TEXT,
         notes TEXT,
-        retrieved_at TEXT
-    )
+        retrieved_at TEXT)
     """
 
 
@@ -47,6 +46,8 @@ FRED_OBSERVATIONS_URL = "https://api.stlouisfed.org/fred/series/observations"
 FRED_TABLE_DATA_URL_TEMPLATE = "https://fred.stlouisfed.org/data/{series_id}"
 DEFAULT_MACRO_DB_PATH = os.getenv("MACRO_SQL_DB_PATH", "macro_data.db")
 DEFAULT_MACRO_STORAGE_DIR = os.getenv("MACRO_STORAGE_DIR", "./storage/macro")
+DEFAULT_GLOSSARY_BASE_DIR = os.getenv("GLOSSARY_BASE_DIR", "./data_store/glossary")
+DEFAULT_ECO_GLOSSARY_DIR = os.path.join(DEFAULT_GLOSSARY_BASE_DIR, "eco", "raw")
 
 FRED_SERIES_CATALOG = [
         {
@@ -205,32 +206,89 @@ FRED_SERIES_CATALOG = [
 
 ISM_SERIES_CATALOG = [
         {
-            "indicator_key": "ism_manufacturing_pmi",
-            "indicator_name": "ISM Manufacturing PMI",
+            "indicator_key": "pmi",
+            "indicator_name": "PMI",
             "category": "business_activity",
-            "release_name": "ISM Manufacturing PMI Report",
+            "release_name": "ISM PMI Report",
             "source": "Institute for Supply Management",
             "frequency": "Monthly",
             "units": "Percent",
-            "notes": "Manufacturing PMI from the official ISM monthly report page.",
+            "notes": "PMI from the official ISM monthly report page.",
             "sector": "manufacturing",
             "history_limit": 12,
             "ycharts_url": "https://ycharts.com/indicators/us_pmi",
         },
-        {
-            "indicator_key": "ism_services_pmi",
-            "indicator_name": "ISM Services PMI",
-            "category": "business_activity",
-            "release_name": "ISM Services PMI Report",
-            "source": "Institute for Supply Management",
-            "frequency": "Monthly",
-            "units": "Percent",
-            "notes": "Services PMI from the official ISM monthly report page.",
-            "sector": "services",
-            "history_limit": 12,
-            "ycharts_url": "https://ycharts.com/indicators/us_ism_non_manufacturing_index",
-        },
     ]
+
+
+MACRO_GLOSSARY_FILE_TO_KEYS = {
+    "fed interest rate": {"fed_funds_rate"},
+    "gdp": {"real_gdp"},
+    "cpi": {"cpi_all_items"},
+    "inflation rate": {"cpi_inflation_yoy"},
+    "unemployment rate": {"unemployment_rate"},
+    "adp": {"adp_private_payrolls"},
+    "bls": {"nonfarm_payrolls"},
+    "pmi": {"pmi"},
+}
+
+
+def _normalize_glossary_indicator_name(name):
+    return re.sub(r"\s+", " ", name.strip().lower())
+
+
+def _available_macro_glossary_names(glossary_dir=DEFAULT_ECO_GLOSSARY_DIR):
+    glossary_names = set()
+    candidate_dirs = [
+        glossary_dir,
+        os.path.join(DEFAULT_GLOSSARY_BASE_DIR, "eco"),
+    ]
+
+    for candidate_dir in candidate_dirs:
+        if not os.path.isdir(candidate_dir):
+            continue
+
+        for file_name in os.listdir(candidate_dir):
+            file_path = os.path.join(candidate_dir, file_name)
+            if not os.path.isfile(file_path):
+                continue
+
+            stem, _ = os.path.splitext(file_name)
+            glossary_names.add(_normalize_glossary_indicator_name(stem))
+
+    return glossary_names
+
+
+def _selected_macro_catalogs(glossary_dir=DEFAULT_ECO_GLOSSARY_DIR):
+    glossary_names = _available_macro_glossary_names(glossary_dir=glossary_dir)
+    allowed_keys = set()
+
+    for glossary_name in glossary_names:
+        allowed_keys.update(MACRO_GLOSSARY_FILE_TO_KEYS.get(glossary_name, set()))
+
+    selected_fred_catalog = []
+    for series_def in FRED_SERIES_CATALOG:
+        include_base = series_def["indicator_key"] in allowed_keys
+        selected_derivations = [
+            derivation
+            for derivation in series_def.get("derivations", [])
+            if derivation["indicator_key"] in allowed_keys
+        ]
+        if not include_base and not selected_derivations:
+            continue
+
+        selected_series_def = dict(series_def)
+        selected_series_def["_include_base"] = include_base
+        selected_series_def["derivations"] = selected_derivations
+        selected_fred_catalog.append(selected_series_def)
+
+    selected_ism_catalog = [
+        dict(series_def)
+        for series_def in ISM_SERIES_CATALOG
+        if series_def["indicator_key"] in allowed_keys
+    ]
+
+    return selected_fred_catalog, selected_ism_catalog, allowed_keys
 
 
 def _ensure_tables(conn):
@@ -403,15 +461,7 @@ def _flatten_columns(columns):
 
 
 def _expected_indicator_keys():
-    keys = set()
-    for series_def in FRED_SERIES_CATALOG:
-        keys.add(series_def["indicator_key"])
-        for derivation in series_def.get("derivations", []):
-            keys.add(derivation["indicator_key"])
-
-    for series_def in ISM_SERIES_CATALOG:
-        keys.add(series_def["indicator_key"])
-
+    _, _, keys = _selected_macro_catalogs()
     return keys
 
 
@@ -705,13 +755,10 @@ def _fetch_ycharts_pmi_history(series_def, timeout=20):
     response = requests.get(ycharts_url, headers=REQUEST_HEADERS, timeout=timeout)
     response.raise_for_status()
 
-    history_df = _extract_ycharts_history_table(
-        response.text,
-        history_limit=series_def.get("history_limit"),
-    )
+    history_df = _extract_ycharts_history_table(response.text,history_limit=series_def.get("history_limit"))
+
     if history_df.empty:
         raise ValueError("Could not parse YCharts PMI history table.")
-
     return history_df, ycharts_url
 
 
@@ -719,15 +766,10 @@ def _extract_ism_pmi_history_table(html, sector, history_limit):
     text = _html_to_text(html)
 
     if sector == "manufacturing":
-        heading_patterns = [
-            r"THE LAST 12 MONTHS",
-            r"MANUFACTURING\s+PMI.*?HISTORY",
-        ]
+        heading_patterns = [r"THE LAST 12 MONTHS",
+            r"MANUFACTURING\s+PMI.*?HISTORY"]
     else:
-        heading_patterns = [
-            r"SERVICES\s+PMI.*?HISTORY",
-            r"THE LAST 12 MONTHS",
-        ]
+        heading_patterns = [r"SERVICES\s+PMI.*?HISTORY", r"THE LAST 12 MONTHS"]
 
     history_section = None
     for heading_pattern in heading_patterns:
@@ -869,17 +911,35 @@ def _rows_from_dataframe(df, series_def, retrieved_at):
     ]
 
 
+def _prune_macro_indicator_rows(conn, allowed_keys):
+    if not allowed_keys:
+        conn.execute("DELETE FROM macro_indicators")
+        return
+
+    placeholders = ",".join("?" for _ in allowed_keys)
+    conn.execute(
+        f"DELETE FROM macro_indicators WHERE indicator_key NOT IN ({placeholders})",
+        tuple(sorted(allowed_keys)),
+    )
+
+
 def market_environment_needs_refresh(db_path=DEFAULT_MACRO_DB_PATH, stale_after_hours=24):
     ensure_sql_tables(db_path)
+    expected_indicator_keys = _expected_indicator_keys()
+    if not expected_indicator_keys:
+        return False
+
     conn = sqlite3.connect(db_path)
     latest_df = pd.read_sql_query(
-        """
+        f"""
         SELECT
             MAX(retrieved_at) AS latest_retrieved_at,
             COUNT(DISTINCT indicator_key) AS indicator_count
         FROM macro_indicators
+        WHERE indicator_key IN ({",".join("?" for _ in expected_indicator_keys)})
         """,
         conn,
+        params=tuple(sorted(expected_indicator_keys)),
     )
     conn.close()
 
@@ -887,7 +947,7 @@ def market_environment_needs_refresh(db_path=DEFAULT_MACRO_DB_PATH, stale_after_
     indicator_count = int(latest_df["indicator_count"].iloc[0] or 0)
     if pd.isna(latest_value) or not latest_value:
         return True
-    if indicator_count < len(_expected_indicator_keys()):
+    if indicator_count < len(expected_indicator_keys):
         return True
 
     latest_dt = pd.to_datetime(latest_value, errors="coerce")
@@ -905,8 +965,11 @@ def update_market_environment_records(db_path=DEFAULT_MACRO_DB_PATH):
     ensure_sql_tables(db_path)
     conn = sqlite3.connect(db_path)
     total_rows_written = 0
+    fred_catalog, ism_catalog, allowed_keys = _selected_macro_catalogs()
 
-    for series_def in FRED_SERIES_CATALOG:
+    _prune_macro_indicator_rows(conn, allowed_keys)
+
+    for series_def in fred_catalog:
         try:
             base_df = _fetch_fred_series_history(
                 series_def["series_id"],
@@ -920,9 +983,13 @@ def update_market_environment_records(db_path=DEFAULT_MACRO_DB_PATH):
 
         retrieved_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         base_def = dict(series_def)
-        base_rows = _rows_from_dataframe(base_df, base_def, retrieved_at)
-        indicator_frames = [base_rows]
-        indicator_keys_to_replace = [base_def["indicator_key"]]
+        indicator_frames = []
+        indicator_keys_to_replace = []
+
+        if series_def.get("_include_base", True):
+            base_rows = _rows_from_dataframe(base_df, base_def, retrieved_at)
+            indicator_frames.append(base_rows)
+            indicator_keys_to_replace.append(base_def["indicator_key"])
 
         for derivation in series_def.get("derivations", []):
             derived_df = _derive_series(base_df, derivation)
@@ -944,6 +1011,9 @@ def update_market_environment_records(db_path=DEFAULT_MACRO_DB_PATH):
             indicator_frames.append(_rows_from_dataframe(derived_df, derived_def, retrieved_at))
             indicator_keys_to_replace.append(derivation["indicator_key"])
 
+        if not indicator_frames:
+            continue
+
         conn.executemany(
             "DELETE FROM macro_indicators WHERE indicator_key = ?",
             [(indicator_key,) for indicator_key in indicator_keys_to_replace],
@@ -953,7 +1023,7 @@ def update_market_environment_records(db_path=DEFAULT_MACRO_DB_PATH):
             frame.to_sql("macro_indicators", conn, if_exists="append", index=False)
             total_rows_written += len(frame)
 
-    for series_def in ISM_SERIES_CATALOG:
+    for series_def in ism_catalog:
         try:
             history_df, source_url = _fetch_ism_pmi_history(series_def)
         except Exception as exc:
@@ -979,6 +1049,12 @@ def update_market_environment_records(db_path=DEFAULT_MACRO_DB_PATH):
 
 
 def refresh_market_environment_if_stale(db_path=DEFAULT_MACRO_DB_PATH, stale_after_hours=24):
+    ensure_sql_tables(db_path)
+    conn = sqlite3.connect(db_path)
+    _prune_macro_indicator_rows(conn, _expected_indicator_keys())
+    conn.commit()
+    conn.close()
+
     if market_environment_needs_refresh(
         db_path=db_path,
         stale_after_hours=stale_after_hours,
@@ -1040,14 +1116,20 @@ def _build_macro_snapshot_df(df):
 
 def build_market_environment_docs(db_path=DEFAULT_MACRO_DB_PATH, max_history_per_indicator=12):
     ensure_sql_tables(db_path)
+    expected_indicator_keys = _expected_indicator_keys()
+    if not expected_indicator_keys:
+        return []
+
     conn = sqlite3.connect(db_path)
     df = pd.read_sql_query(
-        """
+        f"""
         SELECT *
         FROM macro_indicators
+        WHERE indicator_key IN ({",".join("?" for _ in expected_indicator_keys)})
         ORDER BY category, indicator_name, observation_date DESC
         """,
         conn,
+        params=tuple(sorted(expected_indicator_keys)),
     )
     conn.close()
 
@@ -1120,12 +1202,13 @@ def build_market_environment_docs(db_path=DEFAULT_MACRO_DB_PATH, max_history_per
 
     return documents
 
+
 def _persist_documents_as_index(documents, persist_dir):
     if not documents:
         return None
 
     ingest_stock.env()
-    node_parser = SentenceSplitter(chunk_size=1024, chunk_overlap=200)
+    node_parser = SentenceSplitter(chunk_size=800, chunk_overlap=70)
     nodes = node_parser.get_nodes_from_documents(documents)
 
     try:

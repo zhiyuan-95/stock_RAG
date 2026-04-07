@@ -1,7 +1,9 @@
 *.env
 *storage
 *__pycache__
-*stock_data
-*.txt
+*data_store
+*config
 *.db
 *.md
+*plots
+*structure
