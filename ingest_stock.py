@@ -34,6 +34,56 @@ SEC_ARCHIVES_DOCUMENT_URL_TEMPLATE = (
 DEFAULT_SEC_USER_AGENT = os.getenv("SEC_USER_AGENT")
 _SEC_TICKER_MAP = None
 
+INDUSTRY_SECTOR_TAXONOMY = {
+    "Energy": ["Energy"],
+    "Materials": ["Materials"],
+    "Industrials": [
+        "Capital Goods",
+        "Commercial & Professional Services",
+        "Transportation",
+    ],
+    "Consumer Discretionary": [
+        "Automobiles & Components",
+        "Consumer Durables & Apparel",
+        "Consumer Services",
+        "E-Commerce & Direct-to-Consumer",
+        "Brick-and-Mortar & Specialty Retail",
+    ],
+    "Consumer Staples": [
+        "Consumer Staples Distribution & Retail",
+        "Food, Beverage & Tobacco",
+        "Household & Personal Products",
+    ],
+    "Health Care": [
+        "Health Care Equipment & Services",
+        "Pharmaceuticals, Biotechnology & Life Sciences",
+    ],
+    "Financials": [
+        "Banks",
+        "Financial Services",
+        "Insurance",
+    ],
+    "Information Technology": [
+        "Semiconductors & Semiconductor Equipment",
+        "Software & Services",
+        "Technology Hardware & Equipment",
+    ],
+    "Communication Services": [
+        "Media & Entertainment",
+        "Telecommunication Services",
+    ],
+    "Utilities": ["Utilities"],
+    "Real Estate": [
+        "Equity Real Estate Investment Trusts (REITs)",
+        "Real Estate Management & Development",
+    ],
+}
+SECTOR_TO_INDUSTRY = {
+    sector: industry
+    for industry, sectors in INDUSTRY_SECTOR_TAXONOMY.items()
+    for sector in sectors
+}
+
 IDENTIFIER_COLUMNS = ["Ticker", "Frequency", "Period End Date"]
 RAW_FACT_COLUMNS = [
     "Total Revenue",
@@ -524,39 +574,66 @@ def _derive_sector_from_sic(sic_code, sic_description):
     description = (sic_description or "").lower()
     code_text = str(sic_code or "").strip()
 
-    if any(keyword in description for keyword in [
-        "beverage", "food", "retail", "consumer", "restaurant", "apparel", "household", "cosmetic"
-    ]):
-        return "Consumer Defensive"
-    if any(keyword in description for keyword in [
-        "software", "semiconductor", "computer", "communications", "internet", "data processing"
-    ]):
-        return "Technology"
-    if any(keyword in description for keyword in [
-        "pharmaceutical", "biotech", "medical", "health", "hospital"
-    ]):
-        return "Healthcare"
-    if any(keyword in description for keyword in [
-        "bank", "insurance", "financial", "asset", "investment", "capital"
-    ]):
-        return "Financial Services"
-    if any(keyword in description for keyword in [
-        "oil", "gas", "energy", "pipeline", "coal", "electric"
-    ]):
-        return "Energy"
-    if any(keyword in description for keyword in [
-        "industrial", "machinery", "transportation", "aerospace", "manufacturing", "construction"
-    ]):
-        return "Industrials"
-    if any(keyword in description for keyword in [
-        "telecom", "media", "entertainment", "broadcasting"
-    ]):
-        return "Communication Services"
-    if any(keyword in description for keyword in ["real estate", "reit", "property"]):
-        return "Real Estate"
     if code_text.startswith(("48", "49")):
         return "Utilities"
+    if any(keyword in description for keyword in ["reit", "real estate investment trust"]):
+        return "Equity Real Estate Investment Trusts (REITs)"
+    if any(keyword in description for keyword in ["real estate", "property", "land subdivision", "real estate management", "development"]):
+        return "Real Estate Management & Development"
+    if any(keyword in description for keyword in ["insurance", "insurer", "underwriter", "title insurance"]):
+        return "Insurance"
+    if any(keyword in description for keyword in ["bank", "savings institution", "national commercial bank", "state commercial bank", "credit union"]):
+        return "Banks"
+    if any(keyword in description for keyword in ["asset", "investment", "capital", "broker", "securities", "finance", "financial", "consumer lending", "mortgage banker", "exchange"]):
+        return "Financial Services"
+    if any(keyword in description for keyword in ["pharmaceutical", "biotech", "biological", "life science", "drug", "medicinal"]):
+        return "Pharmaceuticals, Biotechnology & Life Sciences"
+    if any(keyword in description for keyword in ["medical", "health care", "healthcare", "hospital", "clinic", "laboratory", "dental", "medical equipment", "health services"]):
+        return "Health Care Equipment & Services"
+    if any(keyword in description for keyword in ["semiconductor", "integrated circuit", "electronic component", "silicon", "chip"]):
+        return "Semiconductors & Semiconductor Equipment"
+    if any(keyword in description for keyword in ["software", "data processing", "internet", "cloud", "it service", "computer programming", "prepackaged software"]):
+        return "Software & Services"
+    if any(keyword in description for keyword in ["computer", "communications equipment", "telephone apparatus", "electronic computer", "computer peripheral", "storage device"]):
+        return "Technology Hardware & Equipment"
+    if any(keyword in description for keyword in ["telecom", "telecommunication", "wireless", "telephone communications", "communications services"]):
+        return "Telecommunication Services"
+    if any(keyword in description for keyword in ["media", "entertainment", "broadcast", "cable", "publishing", "motion picture", "streaming"]):
+        return "Media & Entertainment"
+    if any(keyword in description for keyword in ["oil", "gas", "pipeline", "drilling", "exploration", "refining", "coal"]):
+        return "Energy"
+    if any(keyword in description for keyword in ["chemical", "mining", "metal", "forest product", "paper", "container", "packaging", "glass", "construction materials"]):
+        return "Materials"
+    if any(keyword in description for keyword in ["railroad", "air freight", "airline", "trucking", "ship", "marine", "logistics", "courier", "transportation"]):
+        return "Transportation"
+    if any(keyword in description for keyword in ["consulting", "advertising", "employment", "staffing", "waste", "security service", "professional", "business services"]):
+        return "Commercial & Professional Services"
+    if any(keyword in description for keyword in ["machinery", "aerospace", "defense", "manufacturing", "construction", "electrical equipment", "industrial", "building product"]):
+        return "Capital Goods"
+    if any(keyword in description for keyword in ["motor vehicles", "passenger car", "automotive", "auto parts", "motorcycles", "truck trailer"]):
+        return "Automobiles & Components"
+    if any(keyword in description for keyword in ["apparel", "footwear", "textile", "furniture", "home furnishings", "sporting goods", "durable"]):
+        return "Consumer Durables & Apparel"
+    if any(keyword in description for keyword in ["restaurant", "hotel", "motel", "casino", "lodging", "leisure", "education service"]):
+        return "Consumer Services"
+    if any(keyword in description for keyword in ["mail-order", "catalog", "direct marketing", "electronic shopping", "e-commerce", "online retail"]):
+        return "E-Commerce & Direct-to-Consumer"
+    if any(keyword in description for keyword in ["grocery", "drug store", "food store", "wholesale", "warehouse club", "convenience store"]):
+        return "Consumer Staples Distribution & Retail"
+    if any(keyword in description for keyword in ["beverage", "food", "tobacco", "brew", "distill", "soft drink", "meat packing"]):
+        return "Food, Beverage & Tobacco"
+    if any(keyword in description for keyword in ["household", "personal", "cosmetic", "toiletries", "soap", "cleaning preparation"]):
+        return "Household & Personal Products"
+    if any(keyword in description for keyword in ["retail", "department store", "specialty store", "dealer", "shopping"]):
+        return "Brick-and-Mortar & Specialty Retail"
     return None
+
+
+def _derive_industry_from_sic(sic_code, sic_description):
+    sector = _derive_sector_from_sic(sic_code, sic_description)
+    if not sector:
+        return None
+    return SECTOR_TO_INDUSTRY.get(sector)
 
 
 def _html_to_text_preserve_lines(html):
@@ -663,8 +740,8 @@ def _get_yahoo_taxonomy_fallback(ticker):
             _clean_profile_field(info.get("longName"))
             or _clean_profile_field(info.get("shortName"))
         ),
-        "sector": _clean_profile_field(info.get("sector")),
-        "industry": _clean_profile_field(info.get("industry")),
+        "sector": _clean_profile_field(info.get("industry")),
+        "industry": _clean_profile_field(info.get("sector")),
     }
 
 
@@ -813,9 +890,9 @@ def _company_profile_from_filing_record(filing_record):
     return {
         "company_name": filing_record.get("company_name") or filing_record.get("ticker"),
         "sector": _derive_sector_from_sic(filing_record.get("sic"), sic_description),
-        "industry": sic_description,
+        "industry": _derive_industry_from_sic(filing_record.get("sic"), sic_description),
         "sector_source": "SEC SIC-derived sector" if sic_description else None,
-        "industry_source": "SEC SIC description" if sic_description else None,
+        "industry_source": "SEC SIC-derived industry" if sic_description else None,
         "peer_tickers": [],
         "peer_source": None,
     }
@@ -936,8 +1013,8 @@ def _narrative_section_payloads(ticker, company_profile, filing_record, section_
                 f"Fiscal Period: {filing_record.get('fiscal_period') or 'Unknown'}\n"
                 f"Retrieval Tier: {filing_record.get('retrieval_tier', 'archive')}\n"
                 f"Filing URL: {filing_record['filing_url']}\n"
-                f"Sector: {company_profile['sector'] or 'Unknown'}\n"
-                f"Industry: {company_profile['industry'] or 'Unknown'}\n\n"
+                f"Industry: {company_profile['industry'] or 'Unknown'}\n"
+                f"Sector: {company_profile['sector'] or 'Unknown'}\n\n"
                 f"{section_text}"
             ),
             "metadata": metadata,
@@ -1897,11 +1974,14 @@ def _build_company_profile_from_sec_archive(ticker, archive_payload):
         or yahoo_fallback.get("company_name")
         or ticker
     )
-    industry = latest_10k.get("sic_description") or archive_payload.get("sic_description") or yahoo_fallback.get("industry")
     sector = _derive_sector_from_sic(
         latest_10k.get("sic"),
         latest_10k.get("sic_description"),
     ) or yahoo_fallback.get("sector")
+    industry = _derive_industry_from_sic(
+        latest_10k.get("sic"),
+        latest_10k.get("sic_description"),
+    ) or yahoo_fallback.get("industry")
 
     item_1_text = (latest_10k.get("sections") or {}).get("item_1_business") or ""
     description = _truncate_text(item_1_text, max_chars=3200)
@@ -1912,7 +1992,7 @@ def _build_company_profile_from_sec_archive(ticker, archive_payload):
         "sector": sector,
         "industry": industry,
         "sector_source": "SEC SIC-derived sector" if sector else None,
-        "industry_source": "SEC SIC description" if industry else None,
+        "industry_source": "SEC SIC-derived industry" if industry else None,
         "peer_tickers": [],
         "peer_source": None,
         "description": description,
@@ -2020,7 +2100,7 @@ def _sync_sec_filing_archive(
     base_profile = {
         "company_name": company_name,
         "sector": _derive_sector_from_sic(sic, sic_description),
-        "industry": sic_description,
+        "industry": _derive_industry_from_sic(sic, sic_description),
     }
 
     filing_groups = {
@@ -2869,8 +2949,9 @@ def build_financial_docs(
     profile_lines = [
         f"Company: {company_profile['company_name']}",
         f"Ticker: {ticker}",
-        f"Sector: {company_profile['sector'] or 'Unknown'}",
         f"Industry: {company_profile['industry'] or 'Unknown'}",
+        f"Sector: {company_profile['sector'] or 'Unknown'}",
+        f"Industry Source: {company_profile.get('industry_source') or 'Unknown'}",
         f"Sector Source: {company_profile.get('sector_source') or 'Unknown'}",
         f"Source: {company_profile['source']}",
         f"Stored 10-K filings: {len(ten_k_filings)}",
@@ -2990,8 +3071,8 @@ def build_financial_docs(
         text = (
             f"**Latest {len(df)} {freq} Financial Indicators - {ticker}**\n\n"
             f"Company: {company_profile['company_name']}\n"
-            f"Sector: {company_profile['sector'] or 'Unknown'}\n"
             f"Industry: {company_profile['industry'] or 'Unknown'}\n"
+            f"Sector: {company_profile['sector'] or 'Unknown'}\n"
             f"Latest 10-K Next Release Date: {company_profile.get('latest_10k_next_release_date') or 'Unavailable'}\n"
             f"Latest 10-Q Next Release Date: {company_profile.get('latest_10q_next_release_date') or 'Unavailable'}\n\n"
             f"Current market price used for market-based ratios: {df['Current Market Price'].iloc[0] if 'Current Market Price' in df.columns else 'Unavailable'}\n"
@@ -3081,12 +3162,13 @@ def update_financial_records(ticker, db_path=DEFAULT_STOCK_DB_PATH):
     conn.close()
 
 def refresh_ticker_data_and_index(
-    ticker: str,
-    db_path=DEFAULT_STOCK_DB_PATH,
-    max_quarters=12,
-    max_annual=10,
-    filings_base_dir=DEFAULT_STOCK_FILINGS_BASE_DIR,
-    storage_base_dir=DEFAULT_STOCK_STORAGE_BASE_DIR):
+      ticker: str,
+      db_path=DEFAULT_STOCK_DB_PATH,
+      max_quarters=12,
+      max_annual=10,
+      filings_base_dir=DEFAULT_STOCK_FILINGS_BASE_DIR,
+      storage_base_dir=DEFAULT_STOCK_STORAGE_BASE_DIR,
+      refresh_graph=True):
     """
     End-to-end refresh for one ticker:
     1. Update structured data in SQLite
@@ -3125,21 +3207,22 @@ def refresh_ticker_data_and_index(
     import ingest_graph
     import ingest_macro
 
-    try:
-        ingest_graph.refresh_property_graph_for_ticker(
-            ticker,
-            stock_docs=docs,
-            stock_db_path=db_path,
-            macro_db_path=ingest_macro.DEFAULT_MACRO_DB_PATH,
-            filings_base_dir=filings_base_dir,
-        )
-    except Exception as exc:
-        print(f"Graph layer refresh skipped for {ticker}: {exc}")
+    if refresh_graph:
+        try:
+            ingest_graph.refresh_property_graph_for_ticker(
+                ticker,
+                stock_docs=docs,
+                stock_db_path=db_path,
+                macro_db_path=ingest_macro.DEFAULT_MACRO_DB_PATH,
+                filings_base_dir=filings_base_dir,
+            )
+        except Exception as exc:
+            print(f"Graph layer refresh skipped for {ticker}: {exc}")
 
     try:
         import analysis
 
-        analysis_result = analysis.analyze_ticker_sql_benchmarks(
+        analysis_result = analysis.get_or_create_daily_benchmark_analysis(
             ticker,
             generate_plots=False,
             persist_to_graph=True,

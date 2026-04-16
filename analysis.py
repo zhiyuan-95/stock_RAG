@@ -1,4 +1,64 @@
-def _fetch_sector_snapshot(ticker):
+import json
+import os
+from datetime import date, datetime
+
+
+DEFAULT_ANALYSIS_STORAGE_DIR = "./storage/analysis"
+
+
+def _today_iso():
+    return date.today().isoformat()
+
+
+def _analysis_cache_dir(ticker, storage_dir=DEFAULT_ANALYSIS_STORAGE_DIR):
+    return os.path.join(storage_dir, str(ticker).upper())
+
+
+def _analysis_cache_path(ticker, storage_dir=DEFAULT_ANALYSIS_STORAGE_DIR):
+    return os.path.join(_analysis_cache_dir(ticker, storage_dir=storage_dir), "daily_benchmark_analysis.json")
+
+
+def _result_has_required_plots(result):
+    for key in ("trend_plot_path", "ratio_plot_path"):
+        path = result.get(key)
+        if not path or not os.path.isfile(path):
+            return False
+    return True
+
+
+def _load_cached_daily_benchmark_analysis(ticker, require_plots=False, storage_dir=DEFAULT_ANALYSIS_STORAGE_DIR):
+    cache_path = _analysis_cache_path(ticker, storage_dir=storage_dir)
+    if not os.path.isfile(cache_path):
+        return None
+
+    try:
+        with open(cache_path, "r", encoding="utf-8") as cache_file:
+            cached = json.load(cache_file)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+    if cached.get("analysis_date") != _today_iso():
+        return None
+    if require_plots and not _result_has_required_plots(cached):
+        return None
+    return cached
+
+
+def _persist_daily_benchmark_analysis(result, storage_dir=DEFAULT_ANALYSIS_STORAGE_DIR):
+    cache_dir = _analysis_cache_dir(result["ticker"], storage_dir=storage_dir)
+    os.makedirs(cache_dir, exist_ok=True)
+    payload = {
+        **result,
+        "analysis_date": _today_iso(),
+        "analysis_generated_at": datetime.now().isoformat(timespec="seconds"),
+    }
+    cache_path = _analysis_cache_path(result["ticker"], storage_dir=storage_dir)
+    with open(cache_path, "w", encoding="utf-8") as cache_file:
+        json.dump(payload, cache_file, ensure_ascii=True, indent=2)
+    return payload
+
+
+def _fetch_industry_snapshot(ticker):
     import ingest_stock
 
     ticker_map = ingest_stock._load_sec_ticker_map()
@@ -6,6 +66,7 @@ def _fetch_sector_snapshot(ticker):
     if not sec_identity:
         return {
             "Ticker": ticker,
+            "Industry": None,
             "Sector": None,
             "SIC": None,
             "SIC Description": None,
@@ -17,6 +78,7 @@ def _fetch_sector_snapshot(ticker):
     sic_description = ingest_stock._clean_profile_field(submissions.get("sicDescription"))
     return {
         "Ticker": ticker,
+        "Industry": ingest_stock._derive_industry_from_sic(sic, sic_description),
         "Sector": ingest_stock._derive_sector_from_sic(sic, sic_description),
         "SIC": sic,
         "SIC Description": sic_description,
@@ -54,7 +116,7 @@ def _load_annual_financial_history_from_sql(ticker_filter=None):
     return df
 
 
-def _build_sql_sector_snapshot_frame(tickers, max_workers=8):
+def _build_sql_industry_snapshot_frame(tickers, max_workers=8):
     from concurrent.futures import ThreadPoolExecutor, as_completed
     import pandas as pd
 
@@ -62,7 +124,7 @@ def _build_sql_sector_snapshot_frame(tickers, max_workers=8):
     tickers = sorted({str(ticker).upper() for ticker in tickers if ticker})
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_map = {executor.submit(_fetch_sector_snapshot, ticker): ticker for ticker in tickers}
+        future_map = {executor.submit(_fetch_industry_snapshot, ticker): ticker for ticker in tickers}
         for future in as_completed(future_map):
             ticker = future_map[future]
             try:
@@ -70,6 +132,7 @@ def _build_sql_sector_snapshot_frame(tickers, max_workers=8):
             except Exception:
                 snapshot = {
                     "Ticker": ticker,
+                    "Industry": None,
                     "Sector": None,
                     "SIC": None,
                     "SIC Description": None,
@@ -163,7 +226,7 @@ def _benchmark_direction(target_value, peer_value, higher_is_better=True):
 
 def _build_benchmark_summary_payload(
     ticker,
-    sector,
+    industry,
     peer_tickers,
     latest_target_row,
     latest_peer_rows,
@@ -205,32 +268,32 @@ def _build_benchmark_summary_payload(
         score += delta
         if "margin" in label.lower() or label == "ROE" or "Revenue" in label:
             comparison_lines.append(
-                f"{label}: {ticker} {_format_percent(target_value)} vs {sector} peer average {_format_percent(peer_value)} ({direction})."
+                f"{label}: {ticker} {_format_percent(target_value)} vs {industry} peer average {_format_percent(peer_value)} ({direction})."
             )
         else:
             comparison_lines.append(
-                f"{label}: {ticker} {_format_ratio(target_value)} vs {sector} peer average {_format_ratio(peer_value)} ({direction})."
+                f"{label}: {ticker} {_format_ratio(target_value)} vs {industry} peer average {_format_ratio(peer_value)} ({direction})."
             )
 
     if score >= 3:
         conclusion = (
-            f"{ticker} screens as stronger than the current {sector} peer average on this benchmark set, "
+            f"{ticker} screens as stronger than the current {industry} peer average on this benchmark set, "
             "with more growth/profitability wins than leverage weaknesses."
         )
     elif score <= -3:
         conclusion = (
-            f"{ticker} screens weaker than the current {sector} peer average on this benchmark set, "
+            f"{ticker} screens weaker than the current {industry} peer average on this benchmark set, "
             "with more benchmark shortfalls than relative strengths."
         )
     else:
         conclusion = (
-            f"{ticker} looks mixed versus the current {sector} peer average, with the benchmark picture split "
+            f"{ticker} looks mixed versus the current {industry} peer average, with the benchmark picture split "
             "between strengths and weaker areas."
         )
 
     summary = "\n".join(
         [
-            f"SQL benchmark analysis for {ticker} in {sector}.",
+            f"SQL benchmark analysis for {ticker} in {industry}.",
             f"Peers used: {', '.join(peer_tickers)}.",
             f"Latest annual period: {latest_target_row.get('Period End Date')}.",
             *comparison_lines,
@@ -244,7 +307,7 @@ def _build_benchmark_summary_payload(
 
 def _analysis_graph_documents(
     ticker,
-    sector,
+    industry,
     peer_tickers,
     summary,
     conclusion,
@@ -255,10 +318,10 @@ def _analysis_graph_documents(
 
     shared_metadata = {
         "ticker": ticker,
-        "sector": sector,
+        "industry": industry,
         "peer_tickers": peer_tickers,
         "source": "SQL benchmark analysis",
-        "analysis_scope": "sector_peer_benchmark",
+        "analysis_scope": "industry_peer_benchmark",
         "trend_plot_path": trend_plot_path,
         "ratio_plot_path": ratio_plot_path,
     }
@@ -304,17 +367,17 @@ def analyze_ticker_sql_benchmarks(
         .copy()
     )
 
-    sector_frame = _build_sql_sector_snapshot_frame(latest_annual["Ticker"].tolist())
-    latest_annual = latest_annual.merge(sector_frame, on="Ticker", how="left")
-    latest_annual = latest_annual.dropna(subset=["Sector"]).copy()
+    industry_frame = _build_sql_industry_snapshot_frame(latest_annual["Ticker"].tolist())
+    latest_annual = latest_annual.merge(industry_frame, on="Ticker", how="left")
+    latest_annual = latest_annual.dropna(subset=["Industry"]).copy()
 
     target_latest = latest_annual[latest_annual["Ticker"] == ticker]
     if target_latest.empty:
-        raise ValueError(f"{ticker} does not have annual SQL data with a resolved sector yet.")
+        raise ValueError(f"{ticker} does not have annual SQL data with a resolved industry yet.")
 
-    target_sector = target_latest["Sector"].iloc[0]
+    target_industry = target_latest["Industry"].iloc[0]
     peer_latest = (
-        latest_annual[latest_annual["Sector"] == target_sector]
+        latest_annual[latest_annual["Industry"] == target_industry]
         .sort_values("Current Market Capitalization", ascending=False, kind="mergesort")
         .head(peer_count)
         .copy()
@@ -388,7 +451,7 @@ def analyze_ticker_sql_benchmarks(
             ratio_rows.append(
                 {
                     "Metric": label,
-                    "Series": f"{target_sector} average",
+                    "Series": f"{target_industry} average",
                     "Value": float(peer_average) * (100 if is_percent else 1),
                     "Category": "percent" if is_percent else "ratio",
                 }
@@ -415,8 +478,8 @@ def analyze_ticker_sql_benchmarks(
 
         fig, axes = plt.subplots(2, 1, figsize=(14, 11), sharex=True)
         metric_specs = [
-            ("Revenue Growth YoY Pct", "Revenue YoY Growth vs Same-Sector Peers", "Revenue YoY Growth (%)"),
-            ("Revenue CAGR 5-Year Pct", "Revenue CAGR 5-Year vs Same-Sector Peers", "Revenue CAGR 5-Year (%)"),
+            ("Revenue Growth YoY Pct", "Revenue YoY Growth vs Same-Industry Peers", "Revenue YoY Growth (%)"),
+            ("Revenue CAGR 5-Year Pct", "Revenue CAGR 5-Year vs Same-Industry Peers", "Revenue CAGR 5-Year (%)"),
         ]
 
         for axis, (metric_column, title, ylabel) in zip(axes, metric_specs):
@@ -440,7 +503,7 @@ def analyze_ticker_sql_benchmarks(
                     metric_peer["peer_p75"],
                     alpha=0.18,
                     color="#4c72b0",
-                    label=f"{target_sector} peer IQR",
+                    label=f"{target_industry} peer IQR",
                 )
                 sns.lineplot(
                     data=metric_peer,
@@ -449,7 +512,7 @@ def analyze_ticker_sql_benchmarks(
                     marker="o",
                     linewidth=2.5,
                     linestyle="--",
-                    label=f"{target_sector} peer average",
+                    label=f"{target_industry} peer average",
                     ax=axis,
                 )
 
@@ -459,7 +522,7 @@ def analyze_ticker_sql_benchmarks(
 
         axes[-1].set_xlabel("Fiscal Year")
         fig.suptitle(
-            f"{ticker} Revenue Trend Benchmarking vs {target_sector} Peers in SQL",
+            f"{ticker} Revenue Trend Benchmarking vs {target_industry} Peers in SQL",
             y=1.02,
             fontsize=18,
         )
@@ -475,7 +538,7 @@ def analyze_ticker_sql_benchmarks(
             axes[0].set_ylabel("Percent")
             axes[0].set_xlabel("")
             axes[0].tick_params(axis="x", rotation=25)
-            axes[0].set_title(f"{ticker} ROE and Margin Benchmark vs {target_sector} Average")
+            axes[0].set_title(f"{ticker} ROE and Margin Benchmark vs {target_industry} Average")
         else:
             axes[0].set_axis_off()
 
@@ -502,7 +565,7 @@ def analyze_ticker_sql_benchmarks(
 
     summary, conclusion = _build_benchmark_summary_payload(
         ticker=ticker,
-        sector=target_sector,
+        industry=target_industry,
         peer_tickers=peer_tickers,
         latest_target_row=latest_target_row,
         latest_peer_rows=latest_peer_rows,
@@ -517,7 +580,7 @@ def analyze_ticker_sql_benchmarks(
             ticker,
             _analysis_graph_documents(
                 ticker=ticker,
-                sector=target_sector,
+                industry=target_industry,
                 peer_tickers=peer_tickers,
                 summary=summary,
                 conclusion=conclusion,
@@ -528,7 +591,8 @@ def analyze_ticker_sql_benchmarks(
 
     return {
         "ticker": ticker,
-        "sector": target_sector,
+        "industry": target_industry,
+        "sector": target_latest["Sector"].iloc[0] if "Sector" in target_latest.columns else None,
         "peer_tickers": peer_tickers,
         "trend_plot_path": trend_path,
         "ratio_plot_path": ratio_path,
@@ -537,8 +601,34 @@ def analyze_ticker_sql_benchmarks(
     }
 
 
+def get_or_create_daily_benchmark_analysis(
+    ticker,
+    peer_count=10,
+    output_base_dir="plots",
+    generate_plots=False,
+    persist_to_graph=True,
+    storage_dir=DEFAULT_ANALYSIS_STORAGE_DIR,
+):
+    cached_result = _load_cached_daily_benchmark_analysis(
+        ticker,
+        require_plots=generate_plots,
+        storage_dir=storage_dir,
+    )
+    if cached_result is not None:
+        return cached_result
+
+    result = analyze_ticker_sql_benchmarks(
+        ticker=ticker,
+        peer_count=peer_count,
+        output_base_dir=output_base_dir,
+        generate_plots=generate_plots,
+        persist_to_graph=persist_to_graph,
+    )
+    return _persist_daily_benchmark_analysis(result, storage_dir=storage_dir)
+
+
 def plot_sql_trends_and_benchmarks(ticker, peer_count=10, output_base_dir="plots"):
-    return analyze_ticker_sql_benchmarks(
+    return get_or_create_daily_benchmark_analysis(
         ticker=ticker,
         peer_count=peer_count,
         output_base_dir=output_base_dir,

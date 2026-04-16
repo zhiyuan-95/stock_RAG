@@ -100,6 +100,7 @@ def _fetch_sector_and_market_cap_snapshot(ticker):
 
     return {
         "Ticker": ticker,
+        "Industry": ingest_stock._derive_industry_from_sic(sic, sic_description),
         "Sector": ingest_stock._derive_sector_from_sic(sic, sic_description),
         "SIC": sic,
         "SIC Description": sic_description,
@@ -132,7 +133,7 @@ def get_top_market_cap_companies_by_sector(index="sp500", top_n=5, max_workers=1
                 snapshot = future.result()
             except Exception:
                 snapshot = None
-            if not snapshot or snapshot.get("Market Capitalization") is None or not snapshot.get("Sector"):
+            if not snapshot or snapshot.get("Market Capitalization") is None or not snapshot.get("Industry"):
                 failures.append(ticker)
                 continue
             snapshots.append(snapshot)
@@ -143,12 +144,12 @@ def get_top_market_cap_companies_by_sector(index="sp500", top_n=5, max_workers=1
     snapshots_df = pd.DataFrame(snapshots)
     ranked = ranked.merge(snapshots_df, on="Ticker", how="inner")
     ranked = ranked.sort_values(
-        ["Sector", "Market Capitalization", "Ticker"],
+        ["Industry", "Market Capitalization", "Ticker"],
         ascending=[True, False, True],
         kind="mergesort",
     )
-    ranked = ranked.groupby("Sector", sort=True, group_keys=False).head(top_n).reset_index(drop=True)
-    ranked.attrs["sector_column"] = "Sector"
+    ranked = ranked.groupby("Industry", sort=True, group_keys=False).head(top_n).reset_index(drop=True)
+    ranked.attrs["industry_column"] = "Industry"
     ranked.attrs["missing_market_cap_tickers"] = failures
     return ranked
 
@@ -170,7 +171,7 @@ def ingest_companies_to_database(tickers):
         print(f"[{index}/{total}] Updating database for {ticker}...")
         try:
             ingest_stock.update_financial_records(ticker)
-            analysis_result = analysis.analyze_ticker_sql_benchmarks(
+            analysis_result = analysis.get_or_create_daily_benchmark_analysis(
                 ticker,
                 generate_plots=False,
                 persist_to_graph=True,
@@ -183,18 +184,18 @@ def ingest_companies_to_database(tickers):
 
 def ingest_top_market_cap_companies_by_sector(index="sp500", top_n=5):
     selection = get_top_market_cap_companies_by_sector(index=index, top_n=top_n)
-    sector_column = selection.attrs.get("sector_column", "Sector")
+    industry_column = selection.attrs.get("industry_column", "Industry")
 
     print(
         f"Ingesting {len(selection)} tickers from the top {top_n} by market cap in each "
-        f"{sector_column} bucket from {index.upper()}."
+        f"{industry_column} bucket from {index.upper()}."
     )
     print()
 
-    for sector, sector_df in selection.groupby(sector_column, sort=True):
-        tickers = sector_df["Ticker"].tolist()
+    for industry, industry_df in selection.groupby(industry_column, sort=True):
+        tickers = industry_df["Ticker"].tolist()
         ticker_line = ", ".join(tickers)
-        print(f"{sector}: {ticker_line}")
+        print(f"{industry}: {ticker_line}")
         print()
 
     ingest_companies_to_database(selection["Ticker"].tolist())
@@ -224,12 +225,36 @@ def _extract_plot_ticker(value):
     return ticker or None
 
 
+def _show_generated_plots(*plot_paths):
+    import os
+
+    shown_paths = []
+    for plot_path in plot_paths:
+        if not plot_path:
+            continue
+        absolute_plot_path = os.path.abspath(plot_path)
+        if not os.path.isfile(absolute_plot_path):
+            continue
+        if hasattr(os, "startfile"):
+            try:
+                os.startfile(absolute_plot_path)
+                shown_paths.append(absolute_plot_path)
+            except OSError as exc:
+                print(f"Could not open plot {absolute_plot_path}: {exc}")
+    return shown_paths
+
+
 def main():
+    import asyncio
+    import sys
     import time
+
+    if sys.platform.startswith("win") and hasattr(asyncio, "WindowsSelectorEventLoopPolicy"):
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     user_input = input(
         "which company do you want to know about, give me the ticker "
-        "(or type 'top5-by-sector' to ingest the S&P 500 top 5 by market cap in each SEC SIC-derived sector, "
+        "(or type 'top5-by-sector' to ingest the S&P 500 top 5 by market cap in each SEC SIC-derived industry, "
         "or 'plot AAPL' to generate SQL-based benchmark charts): "
     ).strip()
     normalized_input = _normalize_main_input(user_input)
@@ -239,7 +264,7 @@ def main():
         print()
         print(
             "Finished ingesting "
-            f"{len(selection)} selected tickers grouped by {selection.attrs.get('sector_column', 'Sector')}."
+            f"{len(selection)} selected tickers grouped by {selection.attrs.get('industry_column', 'Industry')}."
         )
         return
 
@@ -253,7 +278,7 @@ def main():
         print(f"Conclusion: {plot_result['conclusion']}")
         print()
         print(
-            f"Generated benchmark plots for {plot_result['ticker']} vs {plot_result['sector']} peers: "
+            f"Generated benchmark plots for {plot_result['ticker']} vs {plot_result['industry']} peers: "
             f"{plot_result['trend_plot_path']} and {plot_result['ratio_plot_path']}"
         )
         return
@@ -263,13 +288,44 @@ def main():
     import query
 
     start_time = time.perf_counter()
-    answer = query.analyze_company(
+    result = query.analyze_company_package(
         ticker,
         "Summarize the company's financial position and the current macro environment.",
+        include_plots=True,
     )
     elapsed_seconds = time.perf_counter() - start_time
 
+    answer = result["answer"]
+    analysis_result = result.get("analysis_result") or {}
     print(answer)
+    if analysis_result:
+        print()
+        print("Analysis summary:")
+        print(analysis_result.get("conclusion") or analysis_result.get("summary") or "No analysis summary was available.")
+
+        shown_plots = _show_generated_plots(
+            analysis_result.get("trend_plot_path"),
+            analysis_result.get("ratio_plot_path"),
+        )
+        if shown_plots:
+            print()
+            print("Opened benchmark plots:")
+            for plot_path in shown_plots:
+                print(plot_path)
+        else:
+            generated_paths = [
+                path
+                for path in (
+                    analysis_result.get("trend_plot_path"),
+                    analysis_result.get("ratio_plot_path"),
+                )
+                if path
+            ]
+            if generated_paths:
+                print()
+                print("Generated benchmark plots:")
+                for plot_path in generated_paths:
+                    print(plot_path)
     print(f"\nAnswer generation time: {elapsed_seconds:.2f} seconds")
 
 
