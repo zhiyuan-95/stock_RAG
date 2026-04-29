@@ -1,0 +1,199 @@
+NEWSAPI PROMPT A SCORE DEBUG REPORT
+Generated at: 2026-04-28T19:23:20
+Read-only check: NewsAPI fetch + Prompt A scoring only. No ingestion was performed.
+band_C is the report label for program score_band='drop'.
+Current file: band_C
+Articles in this file: 12
+Total scored articles: 100
+Counts: band_A=44 | band_B=19 | band_C=12 | band_f=25
+========================================================================================================================
+
+Program score_band: drop
+
+------------------------------------------------------------------------------------------------------------------------
+#003 | score=2 | program_band=drop | report_band=band_C
+Source: Associated Press
+Published: 2026-04-27T15:33:08Z
+URL: https://apnews.com/article/summer-movie-preview-2026-b09b6e9cd8c679a07b95ce5cc7512a74
+Title: Hollywood's summer lineup: Christopher Nolan's 'The Odyssey,' 'Toy Story 5,' 'Spider-Man'
+Market relevance reason: General entertainment news about upcoming movies, not directly relevant to stock
+    market, sector, or company financial performance.
+
+DESCRIPTION:
+Hollywood's summer movie season is packed with big names and franchises. Universal Pictures is releasing Christopher Nolan's “The Odyssey” and Steven Spielberg's “Disclosure Day.” Franchises like “Spider-Man,” “Minions,” “Star Wars,” and “Toy Story” are also …
+
+FULL CONTENT FROM NEWSAPI:
+The movies always feel bigger in the summer. The budgets. The ambition. The names. The stakes. This summer, Hollywood has many of the regulars on the lineup: Spider-Man, Minions, Star Wars and Toy St… [+8422 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#008 | score=3 | program_band=drop | report_band=band_C
+Source: Associated Press
+Published: 2026-04-27T06:07:24Z
+URL: https://apnews.com/press-release/ein-presswire-newsmatics/flowtriq-detects-48-3-gbps-multi-vector-ddos-attack-in-under-one-second-b4e14969206f90e8dc5d1a944b8261a8
+Title: Flowtriq Detects 48.3 Gbps Multi-Vector DDoS Attack in Under One Second
+Market relevance reason: Promotional news for a private cybersecurity startup, not directly relevant to public
+    stock market performance or broader sector trends.
+
+DESCRIPTION:
+Canadian cybersecurity startup stops multi-vector attack during live training event with zero service disruption
+
+FULL CONTENT FROM NEWSAPI:
+Canadian cybersecurity startup stops multi-vector attack during live training event with zero service disruption We had 240 people in a live cybersecurity event and took close to 50 gigabits of atta… [+4471 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#019 | score=2 | program_band=drop | report_band=band_C
+Source: Associated Press
+Published: 2026-04-26T04:43:18Z
+URL: https://apnews.com/press-release/ein-presswire-newsmatics/addressing-the-sedentary-health-crisis-nouhaus-unveils-restorative-massage-technology-at-high-point-market-2026-05df4bc3cc373e1f3c0e55858eecbe7a
+Title: Addressing the Sedentary Health Crisis: Nouhaus Unveils Restorative Massage Technology at High Point
+    Market 2026
+Market relevance reason: Niche product announcement at a trade show, lacking broad stock market, sector, or
+    macroeconomic relevance.
+
+DESCRIPTION:
+HIGH POINT, NC, UNITED STATES, April 25, 2026 / EINPresswire.com / -- [HIGH POINT, North Carolina, April 25, 2026] — As the furniture industry converges for High Point Market 2026, Nouhaus is shifting the conversation from interior aesthetics to restorative h…
+
+FULL CONTENT FROM NEWSAPI:
+HIGH POINT, NC, UNITED STATES, April 25, 2026 / EINPresswire.com / -- [HIGH POINT, North Carolina, April 25, 2026] As the furniture industry converges for High Point Market 2026, Nouhaus is shifting … [+5121 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#031 | score=3 | program_band=drop | report_band=band_C
+Source: Associated Press
+Published: 2026-04-24T14:24:27Z
+URL: https://apnews.com/press-release/business-wire/transcarent-expands-wayfinding-platform-with-smithrx-to-offer-more-options-for-pharmacy-pricing-transparency-and-lower-drug-costs-to-employers-c02351cb7c4141e3b3cd1108ffeb95ad
+Title: Transcarent Expands WayFinding™ Platform with SmithRx to Offer More Options for Pharmacy Pricing
+    Transparency and Lower Drug Costs to Employers
+Market relevance reason: This article discusses a partnership expansion between Transcarent and SmithRx, which
+    are private companies. While related to healthcare, it lacks direct impact on publicly traded companies,
+    specific sectors, or macroeconomic trends relevant to stock market RAG.
+
+DESCRIPTION:
+SAN FRANCISCO--(BUSINESS WIRE)--Apr 24, 2026-- Transcarent, the One Place for Health and Care™, today announced an expansion of its Pharmacy Care Experience with the addition of SmithRx, a next-generation pharmacy benefits management (PBM) company, as its new…
+
+FULL CONTENT FROM NEWSAPI:
+SAN FRANCISCO--(BUSINESS WIRE)--Apr 24, 2026-- Transcarent, the One Place for Health and Care, today announced an expansion of its Pharmacy Care Experience with the addition of SmithRx, a next-gener… [+8283 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#032 | score=2 | program_band=drop | report_band=band_C
+Source: Associated Press
+Published: 2026-04-24T14:22:01Z
+URL: https://apnews.com/press-release/ein-presswire-newsmatics/myanmars-ayeyarwady-farmers-development-bank-public-company-limited-selects-intellects-emach-ai-core-banking-75c59923d056cd1052985a29cfd22a56
+Title: Myanmar’s Ayeyarwady Farmers Development Bank Public Company Limited selects Intellect’s eMACH.ai Core
+    Banking
+Market relevance reason: The article reports on a bank in Myanmar selecting a core banking system. While
+    Intellect is a public company, the news is highly localized to Myanmar's banking sector and does not
+    indicate a significant impact on Intellect's global stock performance or broader market trends.
+
+DESCRIPTION:
+“A bank PCL’s transformation reflects a strong strategic intent to build a future-ready banking platform that can scale with Myanmar’s economic ambitions”— Rajesh Saxena, Chief Executive Officer, Intellect Consumer Banking
+
+FULL CONTENT FROM NEWSAPI:
+A bank PCLs transformation reflects a strong strategic intent to build a future-ready banking platform that can scale with Myanmars economic ambitions Rajesh Saxena, Chief Executive Officer, Intellec… [+8342 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#049 | score=2 | program_band=drop | report_band=band_C
+Source: Associated Press
+Published: 2026-04-23T23:03:38Z
+URL: https://apnews.com/article/trump-fake-math-drug-price-reductions-1c89714a4b60ead1485d1de31b27da92
+Title: Trump defends drug price claims by citing 'two ways of calculating'
+Market relevance reason: Primarily political commentary on past claims, with no direct or immediate financial
+    or market impact.
+
+DESCRIPTION:
+President Donald Trump, known for popularizing the term "fake news," seems to have shifted focus to a healthy dose of fake math in defending impossibly large cuts to prescription drug prices. During a Thursday event with drugmaker Regeneron, Trump argued that…
+
+FULL CONTENT FROM NEWSAPI:
+WASHINGTON (AP) President Donald Trump, who helped push the term fake news into the mainstream, now seems to have a new favorite subject: fake math. During a Thursday event announcing a deal with dr… [+3779 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#062 | score=3 | program_band=drop | report_band=band_C
+Source: Associated Press
+Published: 2026-04-23T05:17:20Z
+URL: https://apnews.com/article/petro-delcy-meeting-colombia-venezuela-trump-908c233c64b247845dc8efa89f2c167c
+Title: Colombia's leader to meet Venezuela's Delcy Rodríguez for first, key talks
+Market relevance reason: Primarily a political and diplomatic meeting between two countries, with only
+    indirect and minor implications for broader financial markets or specific sectors.
+
+DESCRIPTION:
+Colombian President Gustavo Petro is visiting Venezuela for key talks on border security and trade with the country's acting president, Delcy Rodríguez. They two will meet for the first time Friday in Caracas, Venezuela's capital. The meeting comes months aft…
+
+FULL CONTENT FROM NEWSAPI:
+CARACAS, Venezuela (AP) Colombian President Gustavo Petro is visiting Venezuela on Friday for key talks on border security and trade with the countrys acting president, Delcy Rodríguez. The meeting, … [+3691 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#067 | score=2 | program_band=drop | report_band=band_C
+Source: Associated Press
+Published: 2026-04-23T00:00:23Z
+URL: https://apnews.com/article/pentagon-navy-secretary-phelan-cao-3a871b87f1a31c1c7168f69e8fe4f7b5
+Title: NAVY SECRETARY OUT...
+Market relevance reason: This is a political personnel change within the government, with no direct or
+    immediate impact on financial markets, specific companies, or economic sectors.
+
+DESCRIPTION:
+The Pentagon has abruptly announced that Navy Secretary John Phelan is leaving his job. Phelan is the first head of a military service to depart during President Donald Trump’s second term but is just the latest top defense leader to step down or be ousted. N…
+
+FULL CONTENT FROM NEWSAPI:
+WASHINGTON (AP) Navy Secretary John Phelan is leaving his job, the Pentagon abruptly announced Wednesday, the first head of a military service to depart during President Donald Trumps second term but… [+5116 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#070 | score=4 | program_band=drop | report_band=band_C
+Source: Associated Press
+Published: 2026-04-22T18:42:46Z
+URL: https://apnews.com/article/west-virginia-chemical-leak-aa346adfcb6fecaad91f189b676c06bb
+Title: Chemical leak at a West Virginia plant has killed 2 people, sent 19 more to hospital, officials say
+Market relevance reason: A localized industrial accident with casualties, while tragic, does not have
+    significant direct implications for broader stock markets, major sectors, or macroeconomic conditions,
+    unless the affected company is a major publicly traded entity or the incident signals systemic industry
+    issues.
+
+DESCRIPTION:
+Authorities say a chemical leak at a West Virginia plant has killed two people and sent 19 others to the hospital. A Kanawha County emergency management official says the leak occurred Wednesday at the Catalyst Refiners plant in Institute, a silver recovery b…
+
+FULL CONTENT FROM NEWSAPI:
+INSTITUTE, W.Va. (AP) A chemical leak at a West Virginia silver recovery business killed two people and sent 19 others to the hospital, authorities said. The leak occurred at the Catalyst Refiners p… [+1893 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#083 | score=4 | program_band=drop | report_band=band_C
+Source: Associated Press
+Published: 2026-04-22T03:06:29Z
+URL: https://apnews.com/press-release/business-wire/ltm-wins-two-google-cloud-partner-of-the-year-awards-for-2026-93c606b3e52d40afaef5e231f07807ac
+Title: LTM Wins Two Google Cloud Partner of the Year Awards for 2026
+Market relevance reason: A specific company winning an award from a larger tech company, likely having minimal
+    direct impact on the broader market, sector, or even the larger partner company's stock.
+
+DESCRIPTION:
+MUMBAI, India--(BUSINESS WIRE)--Apr 21, 2026-- LTM, the Business Creativity partner to the world’s largest enterprises, announced today that it has received two Google Cloud Partner of the Year 2026 Awards.
+
+FULL CONTENT FROM NEWSAPI:
+MUMBAI, India--(BUSINESS WIRE)--Apr 21, 2026-- LTM, the Business Creativity partner to the worlds largest enterprises, announced today that it has received two Google Cloud Partner of the Year 2026 … [+3080 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#087 | score=2 | program_band=drop | report_band=band_C
+Source: Associated Press
+Published: 2026-04-21T18:03:36Z
+URL: https://apnews.com/press-release/globenewswire-mobile/a-new-way-to-city-launches-to-elevate-stories-and-perception-of-greater-phoenix-1509a97228e9b45c6bb6670843ee5ae4
+Title: A New Way to City launches to elevate stories and perception of Greater Phoenix
+Market relevance reason: Regional economic development and public relations campaign, lacking direct,
+    immediate financial market relevance.
+
+DESCRIPTION:
+PHOENIX (April 21, 2026), April 21, 2026 (GLOBE NEWSWIRE) -- The region of Greater Phoenix is in the midst of unprecedented growth, but a survey conducted by the Greater Phoenix Economic Council (GPEC) in 2025 displayed a discrepancy in activity compared to p…
+
+FULL CONTENT FROM NEWSAPI:
+PHOENIX (April 21, 2026), April 21, 2026 (GLOBE NEWSWIRE) -- The region of Greater Phoenix is in the midst of unprecedented growth, but a survey conducted by the Greater Phoenix Economic Council (GPE… [+6333 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#099 | score=4 | program_band=drop | report_band=band_C
+Source: Associated Press
+Published: 2026-04-21T06:15:34Z
+URL: https://apnews.com/press-release/business-wire/fruition-achieves-monday-com-advanced-delivery-partner-badge-with-monday-service-and-crm-specialist-partner-recognition-6f2e6fce95f5493fa0411b5fa42db9c2
+Title: Fruition Achieves monday.com Advanced Delivery Partner Badge with monday Service and CRM Specialist
+    Partner Recognition
+Market relevance reason: None
+
+DESCRIPTION:
+SYDNEY--(BUSINESS WIRE)--Apr 21, 2026-- Fruition, a certified monday.com Platinum Partner based in Sydney, Australia, just picked up the Advanced Delivery Partner Badge.
+
+FULL CONTENT FROM NEWSAPI:
+SYDNEY--(BUSINESS WIRE)--Apr 21, 2026-- Fruition, a certified monday.com Platinum Partner based in Sydney, Australia, just picked up the Advanced Delivery Partner Badge. On top of that, theyve been … [+4251 chars]
+

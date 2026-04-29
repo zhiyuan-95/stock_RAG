@@ -4,15 +4,40 @@ import os
 import re
 import shutil
 from datetime import date, datetime, timedelta, timezone
+from typing import Any, Dict, Iterable, List, Literal, Optional, Protocol, Sequence
 from urllib.parse import urlparse
 
-import requests
-from dotenv import load_dotenv
-from llama_index.core import Document, Settings, VectorStoreIndex
-from llama_index.core.node_parser import SentenceSplitter
+try:
+    import requests
+except ImportError:
+    requests = None
 
-import ingest_graph
-import ingest_stock
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    def load_dotenv(*_args, **_kwargs):
+        return False
+
+try:
+    from llama_index.core import Document, Settings, VectorStoreIndex
+    from llama_index.core.node_parser import SentenceSplitter
+except ImportError:
+    Document = None
+    Settings = None
+    VectorStoreIndex = None
+    SentenceSplitter = None
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+try:
+    import ingest_graph
+except ImportError:
+    ingest_graph = None
+
+try:
+    import ingest_stock
+except ImportError:
+    ingest_stock = None
 
 
 load_dotenv("config.env")
@@ -410,7 +435,843 @@ def _json_from_response(text):
     return json.loads(raw_text)
 
 
+SCORE_BAND_F = "band_f"
+SCORE_BAND_DROP = "drop"
+SCORE_BAND_B = "band_B"
+SCORE_BAND_A = "band_A"
+GRAPH_FACT_FIELDS = {
+    "subject",
+    "predicate",
+    "object",
+    "source_article_id",
+    "published_at",
+    "confidence",
+}
+TYPO_KEY_NORMALIZATIONS = {
+    "affacted_regions": "affected_regions",
+    "affact_regions": "affected_regions",
+    "artical_id": "article_id",
+    "netative_anchor_vector": "negative_anchor_vector",
+}
+NULL_TEXT_VALUES = {"", "nan", "none", "null", "n/a", "na"}
+ALLOWED_REGIONS = {
+    "United States",
+    "Canada",
+    "Europe",
+    "China",
+    "Japan_Korea",
+    "Asia_Pacific_ex_China_Japan_Korea",
+    "Middle_East",
+    "Latin_America",
+    "Africa",
+    "Global",
+}
+ALLOWED_MARKET_TRANSMISSION_CHANNELS = {
+    "monetary_policy",
+    "fiscal_policy",
+    "inflation",
+    "labor_market",
+    "consumer_demand",
+    "earnings_margin",
+    "supply_chain",
+    "commodities_energy",
+    "credit_liquidity",
+    "currency_fx",
+    "regulation_policy",
+    "trade_tariffs_sanctions",
+    "technology_infrastructure",
+    "market_sentiment",
+    "other",
+}
+ALLOWED_IMPACTS = {"positive", "negative", "mixed", "neutral", "uncertain"}
+
+PROMPT_A_TEMPLATE = """
+You are a financial-news relevance scoring model for a stock-market RAG system.
+
+Score each article from 0 to 10 for stock-market, sector, macroeconomic, or
+company-level usefulness.
+
+Score-band mapping:
+- score 0-1  => "band_f"
+- score 2-4  => "drop"
+- score 5-7  => "band_B"
+- score 8-10 => "band_A"
+
+Rules:
+- band_f articles need extracted_negative_text: a concise 3-7 word noun phrase.
+- drop articles get no further processing.
+- band_B articles are temporary vector memory only.
+- band_A articles are permanent vector memory and may have graph_facts later.
+- Use null, not NAN.
+- Return valid JSON only.
+
+Output format:
+{
+  "results": [
+    {
+      "article_id": "string",
+      "score": 0,
+      "score_band": "band_f | drop | band_B | band_A",
+      "market_relevance_reason": "string or null",
+      "extracted_negative_text": "string or null"
+    }
+  ]
+}
+
+Articles:
+{articles_json}
+""".strip()
+
+PROMPT_B_TEMPLATE = """
+You are a financial-news metadata extraction model for a stock-market RAG system.
+
+The current system does NOT create Event objects. The main object is Article.
+graph_facts belong to Article metadata for now.
+
+Only extract metadata supported by article text. Do not infer implied tickers.
+explicit_companies_mentioned must include only companies directly mentioned.
+
+Graph fact rules:
+- graph_facts can be extracted for score_band = "band_B" and score_band = "band_A".
+- score_band = "band_B" graph_facts stay on Article metadata only and are not
+  ingested into the property graph.
+- score_band = "band_A" graph_facts stay on Article metadata and are ingested
+  into the property graph.
+- graph_facts may contain only subject, predicate, object, source_article_id,
+  published_at, confidence.
+- Do not include event_id.
+- Include only graph facts with confidence >= 0.70.
+- Use null, not NAN.
+- Return valid JSON only.
+
+Output format:
+{
+  "articles": [
+    {
+      "article_id": "string",
+      "published_at": "string or null",
+      "source_name": "string or null",
+      "title": "string",
+      "url": "string or null",
+      "description": "string or null",
+      "content": "string or null",
+      "score": 0,
+      "score_band": "band_B | band_A",
+      "market_relevance_reason": "string",
+      "origin_regions": [],
+      "affected_regions": [],
+      "affected_industry_primary": null,
+      "affected_industry_secondary": [],
+      "market_transmission_channel": [],
+      "explicit_companies_mentioned": [],
+      "graph_facts": []
+    }
+  ]
+}
+
+Articles:
+{articles_json}
+""".strip()
+
+NEGATIVE_TEXTS = [
+    "Local high school basketball tournament",
+    "Professional sports team game recap",
+    "Athlete interview and trade rumors",
+    "Golf tournament leaderboard and scores",
+    "Fantasy football draft player rankings",
+    "Celebrity red carpet fashion event",
+    "Pop music album release gossip",
+    "Movie release and theater reviews",
+    "Television show episode recap commentary",
+    "Reality TV star drama updates",
+    "Local traffic accident and roadwork",
+    "Regional weather forecast and alerts",
+    "Local community crime report arrest",
+    "Community fundraising event and charity",
+    "School board meeting community minutes",
+    "Personal wellness and dietary tips",
+    "Daily horoscope and astrology reading",
+    "Home gardening and landscaping advice",
+    "Local restaurant opening and review",
+    "Fitness routine and workout advice",
+    "Consumer smartphone unboxing and review",
+    "Video game console release announcement",
+    "Esports tournament broadcast and results",
+    "Mobile app update bugfix patch",
+    "Partisan political campaign rally speech",
+    "Local mayoral election debate coverage",
+    "Politician personal scandal and gossip",
+]
+
+
+class LLMClient(Protocol):
+    def complete(self, prompt: str) -> str:
+        ...
+
+
+class EmbeddingClient(Protocol):
+    def embed_texts(self, texts: Sequence[str]) -> Sequence[Sequence[float]]:
+        ...
+
+
+class VectorStoreClient(Protocol):
+    def upsert_article(
+        self,
+        article: "Article",
+        text: str,
+        retention_months: Optional[int],
+        permanent: bool,
+    ) -> None:
+        ...
+
+
+class GraphStoreClient(Protocol):
+    def upsert_graph_facts(self, graph_facts: Sequence["GraphFact"]) -> None:
+        ...
+
+
+class QuarantineStoreClient(Protocol):
+    def append(self, text: str) -> None:
+        ...
+
+
+def score_to_band(score: int) -> str:
+    score = int(score)
+    if 0 <= score <= 1:
+        return SCORE_BAND_F
+    if 2 <= score <= 4:
+        return SCORE_BAND_DROP
+    if 5 <= score <= 7:
+        return SCORE_BAND_B
+    if 8 <= score <= 10:
+        return SCORE_BAND_A
+    raise ValueError(f"score must be between 0 and 10, got {score}")
+
+
+def _normalize_null_value(value):
+    if isinstance(value, float) and value != value:
+        return None
+    if isinstance(value, str) and value.strip().lower() in NULL_TEXT_VALUES:
+        return None
+    return value
+
+
+def normalize_ingest_payload(value):
+    value = _normalize_null_value(value)
+    if isinstance(value, list):
+        return [normalize_ingest_payload(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+
+    normalized = {}
+    for raw_key, raw_value in value.items():
+        key = TYPO_KEY_NORMALIZATIONS.get(str(raw_key), str(raw_key))
+        if key in {"event_id", "implied_ticker_candidates"}:
+            continue
+        normalized[key] = normalize_ingest_payload(raw_value)
+    return normalized
+
+
+def _stable_article_id(payload: Dict[str, Any]) -> str:
+    unique_value = payload.get("url") or (
+        f"{payload.get('source_name')}|{payload.get('title')}|{payload.get('published_at')}"
+    )
+    digest = hashlib.sha1(str(unique_value).encode("utf-8")).hexdigest()
+    return f"news::{digest}"
+
+
+def _clean_optional_text(value):
+    value = _normalize_null_value(value)
+    if value is None:
+        return None
+    cleaned = _normalize_whitespace(value)
+    return cleaned or None
+
+
+def _filter_allowed_strings(values, allowed_values):
+    if not values:
+        return []
+    if isinstance(values, str):
+        values = [values]
+    return [value for value in values if value in allowed_values]
+
+
+def _company_is_directly_mentioned(company: "CompanyMention", article_text: str) -> bool:
+    haystack = f" {_normalize_whitespace(article_text).lower()} "
+    company_name = _normalize_whitespace(company.name).lower()
+    simplified_name = re.sub(
+        r"\b(inc|inc\.|corp|corp\.|corporation|ltd|ltd\.|plc|co|co\.|company)\b",
+        "",
+        company_name,
+    )
+    simplified_name = _normalize_whitespace(simplified_name).lower()
+    ticker = str(company.ticker or "").upper().strip()
+
+    if company_name and f" {company_name} " in haystack:
+        return True
+    if simplified_name and f" {simplified_name} " in haystack:
+        return True
+    if ticker and re.search(rf"(?<![A-Z0-9]){re.escape(ticker)}(?![A-Z0-9])", article_text):
+        return True
+    return False
+
+
+class RawArticle(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    article_id: Optional[str] = None
+    published_at: Optional[str] = None
+    source_name: Optional[str] = None
+    title: str = ""
+    url: Optional[str] = None
+    description: Optional[str] = None
+    content: Optional[str] = None
+    bucket: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_input(cls, data):
+        data = normalize_ingest_payload(data or {})
+        if not isinstance(data, dict):
+            return data
+        if "publishedAt" in data and "published_at" not in data:
+            data["published_at"] = data["publishedAt"]
+        source = data.get("source")
+        if isinstance(source, dict) and "source_name" not in data:
+            data["source_name"] = source.get("name")
+        if not data.get("article_id"):
+            data["article_id"] = _stable_article_id(data)
+        return data
+
+    @field_validator("published_at", "source_name", "url", "description", "content", "bucket", mode="before")
+    @classmethod
+    def clean_optional_text_fields(cls, value):
+        return _clean_optional_text(value)
+
+    @field_validator("title", mode="before")
+    @classmethod
+    def clean_title(cls, value):
+        return _normalize_whitespace(value) or "Untitled"
+
+    def vector_text(self) -> str:
+        return "\n\n".join(
+            text
+            for text in [self.title, self.description, self.content]
+            if str(text or "").strip()
+        ).strip()
+
+    def scoring_payload(self) -> Dict[str, Any]:
+        return {
+            "article_id": self.article_id,
+            "title": self.title,
+            "description": self.description,
+            "content": self.content,
+            "source_name": self.source_name,
+            "published_at": self.published_at,
+            "url": self.url,
+        }
+
+
+class PromptAScoreResult(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    article_id: str
+    score: int = Field(ge=0, le=10)
+    score_band: str
+    market_relevance_reason: Optional[str] = None
+    extracted_negative_text: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_input(cls, data):
+        return normalize_ingest_payload(data or {})
+
+    @model_validator(mode="after")
+    def normalize_band(self):
+        self.score_band = score_to_band(self.score)
+        if self.score_band == SCORE_BAND_F:
+            self.market_relevance_reason = None
+        else:
+            self.extracted_negative_text = None
+        return self
+
+
+class PromptAResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    results: List[PromptAScoreResult] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_input(cls, data):
+        return normalize_ingest_payload(data or {})
+
+
+class IndustryImpact(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    industry: str
+    sector: str
+    impact: Literal["positive", "negative", "mixed", "neutral", "uncertain"] = "uncertain"
+    reason: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_input(cls, data):
+        return normalize_ingest_payload(data or {})
+
+    @field_validator("industry", "sector", "reason", mode="before")
+    @classmethod
+    def clean_required_text(cls, value):
+        return _normalize_whitespace(value)
+
+    @field_validator("impact", mode="before")
+    @classmethod
+    def normalize_impact(cls, value):
+        value = _clean_optional_text(value)
+        return value if value in ALLOWED_IMPACTS else "uncertain"
+
+
+class CompanyMention(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    name: str
+    ticker: Optional[str] = None
+    impact: Literal["positive", "negative", "mixed", "neutral", "uncertain"] = "uncertain"
+    reason: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_input(cls, data):
+        return normalize_ingest_payload(data or {})
+
+    @field_validator("name", "reason", mode="before")
+    @classmethod
+    def clean_required_text(cls, value):
+        return _normalize_whitespace(value)
+
+    @field_validator("ticker", mode="before")
+    @classmethod
+    def clean_ticker(cls, value):
+        value = _clean_optional_text(value)
+        return value.upper() if value else None
+
+    @field_validator("impact", mode="before")
+    @classmethod
+    def normalize_impact(cls, value):
+        value = _clean_optional_text(value)
+        return value if value in ALLOWED_IMPACTS else "uncertain"
+
+
+class GraphFact(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    subject: str
+    predicate: str
+    object: str
+    source_article_id: str
+    published_at: Optional[str] = None
+    confidence: float = Field(ge=0.0, le=1.0)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_input(cls, data):
+        return normalize_ingest_payload(data or {})
+
+    @field_validator("subject", "predicate", "object", "source_article_id", mode="before")
+    @classmethod
+    def clean_required_text(cls, value):
+        return _normalize_whitespace(value)
+
+    @field_validator("published_at", mode="before")
+    @classmethod
+    def clean_published_at(cls, value):
+        return _clean_optional_text(value)
+
+
+class ArticleMetadata(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    origin_regions: List[str] = Field(default_factory=list)
+    affected_regions: List[str] = Field(default_factory=list)
+    affected_industry_primary: Optional[IndustryImpact] = None
+    affected_industry_secondary: List[IndustryImpact] = Field(default_factory=list)
+    market_transmission_channel: List[str] = Field(default_factory=list)
+    explicit_companies_mentioned: List[CompanyMention] = Field(default_factory=list)
+    graph_facts: List[GraphFact] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_input(cls, data):
+        return normalize_ingest_payload(data or {})
+
+    @field_validator("origin_regions", "affected_regions", mode="before")
+    @classmethod
+    def normalize_regions(cls, value):
+        return _filter_allowed_strings(value, ALLOWED_REGIONS)
+
+    @field_validator("market_transmission_channel", mode="before")
+    @classmethod
+    def normalize_channels(cls, value):
+        return _filter_allowed_strings(value, ALLOWED_MARKET_TRANSMISSION_CHANNELS)
+
+    @field_validator("graph_facts", mode="before")
+    @classmethod
+    def normalize_graph_facts(cls, value):
+        facts = normalize_ingest_payload(value or [])
+        if not isinstance(facts, list):
+            return []
+        return [
+            {key: fact.get(key) for key in GRAPH_FACT_FIELDS if key in fact}
+            for fact in facts
+            if isinstance(fact, dict) and float(fact.get("confidence") or 0) >= 0.70
+        ]
+
+
+class Article(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    article_id: str
+    published_at: Optional[str] = None
+    source_name: Optional[str] = None
+    title: str
+    url: Optional[str] = None
+    description: Optional[str] = None
+    content: Optional[str] = None
+    score: int = Field(ge=5, le=10)
+    score_band: Literal["band_B", "band_A"]
+    market_relevance_reason: str
+    metadata: ArticleMetadata = Field(default_factory=ArticleMetadata)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_input(cls, data):
+        data = normalize_ingest_payload(data or {})
+        if not isinstance(data, dict):
+            return data
+        metadata = dict(data.get("metadata") or {})
+        for key in list(ArticleMetadata.model_fields):
+            if key in data:
+                metadata[key] = data.pop(key)
+        data["metadata"] = metadata
+        return data
+
+    @field_validator(
+        "published_at",
+        "source_name",
+        "url",
+        "description",
+        "content",
+        mode="before",
+    )
+    @classmethod
+    def clean_optional_text_fields(cls, value):
+        return _clean_optional_text(value)
+
+    @field_validator("article_id", "title", "market_relevance_reason", mode="before")
+    @classmethod
+    def clean_required_text(cls, value):
+        return _normalize_whitespace(value)
+
+    @model_validator(mode="after")
+    def enforce_score_band_and_graph_rules(self):
+        expected_band = score_to_band(self.score)
+        if expected_band not in {SCORE_BAND_B, SCORE_BAND_A}:
+            raise ValueError("Article can only represent band_B or band_A items")
+        self.score_band = expected_band
+        article_text = self.vector_text()
+        self.metadata.explicit_companies_mentioned = [
+            company
+            for company in self.metadata.explicit_companies_mentioned
+            if _company_is_directly_mentioned(company, article_text)
+        ]
+        return self
+
+    @property
+    def graph_facts(self) -> List[GraphFact]:
+        return self.metadata.graph_facts
+
+    def vector_text(self) -> str:
+        return "\n\n".join(
+            text
+            for text in [self.title, self.description, self.content]
+            if str(text or "").strip()
+        ).strip()
+
+
+class PromptBResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    articles: List[Article] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_input(cls, data):
+        return normalize_ingest_payload(data or {})
+
+
+class NegativeAnchorDecision(BaseModel):
+    article_id: Optional[str] = None
+    passed: bool
+    max_similarity: float
+    matched_negative_text: Optional[str] = None
+
+
+class IngestionResult(BaseModel):
+    fast_filtered: List[NegativeAnchorDecision] = Field(default_factory=list)
+    scored: List[PromptAScoreResult] = Field(default_factory=list)
+    extracted_articles: List[Article] = Field(default_factory=list)
+    vector_count: int = 0
+    graph_fact_count: int = 0
+    quarantined_count: int = 0
+    dropped_count: int = 0
+
+
+def cosine_similarity(left: Sequence[float], right: Sequence[float]) -> float:
+    pairs = list(zip(left or [], right or []))
+    if not pairs:
+        return 0.0
+    dot = sum(float(a) * float(b) for a, b in pairs)
+    left_norm = sum(float(a) * float(a) for a, _ in pairs) ** 0.5
+    right_norm = sum(float(b) * float(b) for _, b in pairs) ** 0.5
+    if left_norm == 0 or right_norm == 0:
+        return 0.0
+    return dot / (left_norm * right_norm)
+
+
+class NegativeAnchorFilter:
+    def __init__(
+        self,
+        embedding_client: EmbeddingClient,
+        negative_texts: Sequence[str] = NEGATIVE_TEXTS,
+        threshold: float = 0.85,
+        negative_anchor_vectors: Optional[Sequence[Sequence[float]]] = None,
+    ):
+        self.embedding_client = embedding_client
+        self.negative_texts = [_normalize_whitespace(text) for text in negative_texts if text]
+        self.threshold = threshold
+        if negative_anchor_vectors is None and self.negative_texts:
+            self.negative_anchor_vectors = list(self.embedding_client.embed_texts(self.negative_texts))
+        elif negative_anchor_vectors is not None:
+            self.negative_anchor_vectors = [list(vector) for vector in negative_anchor_vectors]
+        else:
+            self.negative_anchor_vectors = []
+
+    def decision_for_article(self, article: RawArticle) -> NegativeAnchorDecision:
+        text = article.description or article.title or ""
+        if not text or not self.negative_anchor_vectors:
+            return NegativeAnchorDecision(
+                article_id=article.article_id,
+                passed=True,
+                max_similarity=0.0,
+                matched_negative_text=None,
+            )
+
+        vector = list(self.embedding_client.embed_texts([text])[0])
+        similarities = [
+            cosine_similarity(vector, anchor_vector)
+            for anchor_vector in self.negative_anchor_vectors
+        ]
+        max_similarity = max(similarities) if similarities else 0.0
+        match_index = similarities.index(max_similarity) if similarities else -1
+        matched_text = self.negative_texts[match_index] if match_index >= 0 else None
+        return NegativeAnchorDecision(
+            article_id=article.article_id,
+            passed=max_similarity < self.threshold,
+            max_similarity=max_similarity,
+            matched_negative_text=matched_text,
+        )
+
+    def filter_articles(self, articles: Sequence[RawArticle]):
+        passed_articles = []
+        decisions = []
+        for article in articles:
+            decision = self.decision_for_article(article)
+            decisions.append(decision)
+            if decision.passed:
+                passed_articles.append(article)
+        return passed_articles, decisions
+
+
+def _articles_json(articles: Sequence[RawArticle]) -> str:
+    return json.dumps(
+        [article.scoring_payload() for article in articles],
+        ensure_ascii=False,
+        sort_keys=True,
+    )
+
+
+def build_prompt_a(articles: Sequence[RawArticle]) -> str:
+    return PROMPT_A_TEMPLATE.replace("{articles_json}", _articles_json(articles))
+
+
+def run_prompt_a_scoring(
+    articles: Sequence[RawArticle],
+    llm_client: LLMClient,
+    batch_size: int = NEWS_BATCH_SIZE,
+) -> Dict[str, PromptAScoreResult]:
+    results = {}
+    for batch_start in range(0, len(articles), batch_size):
+        batch = articles[batch_start: batch_start + batch_size]
+        response = PromptAResponse.model_validate(
+            _json_from_response(llm_client.complete(build_prompt_a(batch)))
+        )
+        for score_result in response.results:
+            results[score_result.article_id] = score_result
+    return results
+
+
+def _merge_article_and_score(article: RawArticle, score_result: PromptAScoreResult) -> Dict[str, Any]:
+    payload = article.scoring_payload()
+    payload.update(
+        {
+            "score": score_result.score,
+            "score_band": score_result.score_band,
+            "market_relevance_reason": score_result.market_relevance_reason,
+        }
+    )
+    return payload
+
+
+def build_prompt_b(scored_articles: Sequence[Dict[str, Any]]) -> str:
+    return PROMPT_B_TEMPLATE.replace(
+        "{articles_json}",
+        json.dumps(scored_articles, ensure_ascii=False, sort_keys=True),
+    )
+
+
+def run_prompt_b_extraction(
+    scored_articles: Sequence[Dict[str, Any]],
+    llm_client: LLMClient,
+) -> Dict[str, Article]:
+    if not scored_articles:
+        return {}
+    response = PromptBResponse.model_validate(
+        _json_from_response(llm_client.complete(build_prompt_b(scored_articles)))
+    )
+    return {article.article_id: article for article in response.articles}
+
+
+def apply_ingestion_policy(
+    raw_article: RawArticle,
+    score_result: PromptAScoreResult,
+    vector_store: VectorStoreClient,
+    graph_store: GraphStoreClient,
+    quarantine_store: QuarantineStoreClient,
+    article: Optional[Article] = None,
+) -> Dict[str, int]:
+    counts = {"vector": 0, "graph_facts": 0, "quarantine": 0, "dropped": 0}
+
+    if score_result.score_band == SCORE_BAND_F:
+        if score_result.extracted_negative_text:
+            quarantine_store.append(score_result.extracted_negative_text)
+            counts["quarantine"] = 1
+        counts["dropped"] = 1
+        return counts
+
+    if score_result.score_band == SCORE_BAND_DROP:
+        counts["dropped"] = 1
+        return counts
+
+    if article is None:
+        raise ValueError("band_B and band_A articles require extracted Article metadata")
+
+    if article.score_band == SCORE_BAND_B:
+        vector_store.upsert_article(
+            article=article,
+            text=article.vector_text(),
+            retention_months=RETENTION_MONTHS,
+            permanent=False,
+        )
+        counts["vector"] = 1
+        return counts
+
+    if article.score_band == SCORE_BAND_A:
+        vector_store.upsert_article(
+            article=article,
+            text=article.vector_text(),
+            retention_months=None,
+            permanent=True,
+        )
+        graph_store.upsert_graph_facts(article.graph_facts)
+        counts["vector"] = 1
+        counts["graph_facts"] = len(article.graph_facts)
+        return counts
+
+    counts["dropped"] = 1
+    return counts
+
+
+class NewsIngestionPipeline:
+    def __init__(
+        self,
+        llm_client: LLMClient,
+        embedding_client: EmbeddingClient,
+        vector_store: VectorStoreClient,
+        graph_store: GraphStoreClient,
+        quarantine_store: QuarantineStoreClient,
+        negative_texts: Sequence[str] = NEGATIVE_TEXTS,
+        negative_similarity_threshold: float = 0.85,
+    ):
+        self.llm_client = llm_client
+        self.vector_store = vector_store
+        self.graph_store = graph_store
+        self.quarantine_store = quarantine_store
+        self.negative_filter = NegativeAnchorFilter(
+            embedding_client=embedding_client,
+            negative_texts=negative_texts,
+            threshold=negative_similarity_threshold,
+        )
+
+    def ingest_batch(self, raw_articles: Sequence[Dict[str, Any]]) -> IngestionResult:
+        articles = [RawArticle.model_validate(raw_article) for raw_article in raw_articles]
+        passed_articles, filter_decisions = self.negative_filter.filter_articles(articles)
+        result = IngestionResult(
+            fast_filtered=[decision for decision in filter_decisions if not decision.passed],
+        )
+        result.dropped_count += len(result.fast_filtered)
+
+        score_results = run_prompt_a_scoring(passed_articles, self.llm_client)
+        result.scored = list(score_results.values())
+
+        surviving_payloads = []
+        surviving_article_ids = set()
+        raw_by_id = {article.article_id: article for article in passed_articles}
+        for score_result in result.scored:
+            if score_result.score_band in {SCORE_BAND_A, SCORE_BAND_B}:
+                raw_article = raw_by_id[score_result.article_id]
+                surviving_payloads.append(_merge_article_and_score(raw_article, score_result))
+                surviving_article_ids.add(score_result.article_id)
+
+        extracted_by_id = run_prompt_b_extraction(surviving_payloads, self.llm_client)
+        result.extracted_articles = [
+            extracted_by_id[article_id]
+            for article_id in surviving_article_ids
+            if article_id in extracted_by_id
+        ]
+
+        for score_result in result.scored:
+            raw_article = raw_by_id[score_result.article_id]
+            article = extracted_by_id.get(score_result.article_id)
+            counts = apply_ingestion_policy(
+                raw_article=raw_article,
+                score_result=score_result,
+                vector_store=self.vector_store,
+                graph_store=self.graph_store,
+                quarantine_store=self.quarantine_store,
+                article=article,
+            )
+            result.vector_count += counts["vector"]
+            result.graph_fact_count += counts["graph_facts"]
+            result.quarantined_count += counts["quarantine"]
+            result.dropped_count += counts["dropped"]
+
+        return result
+
+
 def _llm_complete(prompt):
+    if Settings is None:
+        raise ImportError("llama_index is required for the legacy news ingestion LLM client.")
     response = Settings.llm.complete(prompt)
     return str(response)
 
@@ -595,14 +1456,15 @@ def extract_news_metadata(article, summary_text, article_text, company_aliases):
 
 
 def _retention_mode(score, published_dt, now_dt):
+    score_band = score_to_band(score)
     age_days = max((now_dt - published_dt).days, 0)
     within_retention = age_days <= RETENTION_MONTHS * 30
-    if score < 5:
+    if score_band in {SCORE_BAND_F, SCORE_BAND_DROP}:
         return None, False
-    if score >= 8:
-        return ("full" if within_retention else "summary"), True
-    if within_retention:
-        return "summary", False
+    if score_band == SCORE_BAND_A:
+        return "full", True
+    if score_band == SCORE_BAND_B and within_retention:
+        return "full", False
     return None, False
 
 

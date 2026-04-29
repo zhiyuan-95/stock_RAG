@@ -1,0 +1,362 @@
+NEWSAPI PROMPT A SCORE DEBUG REPORT
+Generated at: 2026-04-28T19:23:20
+Read-only check: NewsAPI fetch + Prompt A scoring only. No ingestion was performed.
+band_C is the report label for program score_band='drop'.
+Current file: band_f
+Articles in this file: 25
+Total scored articles: 100
+Counts: band_A=44 | band_B=19 | band_C=12 | band_f=25
+========================================================================================================================
+
+------------------------------------------------------------------------------------------------------------------------
+#004 | score=1 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-27T14:53:41Z
+URL: https://apnews.com/article/argentina-javier-milei-trump-casa-rosada-press-access-freedom-cpj-9c0478222865d18378b9b304694293f0
+Title: Argentine president's journalist ban raises concerns about press freedom
+Extracted negative text: press freedom concerns
+
+DESCRIPTION:
+Argentine President Javier Milei has blocked journalists from the government headquarters and insulted the media on social media. On Thursday, he expelled the press corps from the Casa Rosada, marking a significant escalation in his administration's attacks o…
+
+FULL CONTENT FROM NEWSAPI:
+BUENOS AIRES, Argentina (AP) The president blocked accredited reporters from entering the governments headquarters. He took to social media, in all caps, to furiously insult the countrys news media a… [+7686 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#006 | score=0 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-27T11:00:13Z
+URL: https://apnews.com/article/trump-correspondents-dinner-shooter-cole-tomas-allen-ea98b14e839217985bd7cf5ab169fb65
+Title: Who is Cole Tomas Allen?
+Extracted negative text: White House shooting incident
+
+DESCRIPTION:
+The California man arrested in the shooting incident at the media dinner in Washington is a highly educated tutor and amateur video game developer who's opposed to the policies of President Donald Trump. In writings sent to family members shortly before the S…
+
+FULL CONTENT FROM NEWSAPI:
+TORRANCE, Calif. (AP) The California man arrested in the shooting at the White House Correspondents Association dinner is a highly educated tutor and amateur video game developer opposed to the polic… [+5416 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#020 | score=1 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-25T21:03:12Z
+URL: https://apnews.com/press-release/ein-presswire-newsmatics/healing-hands-clinic-spotlights-a-decade-of-patented-innovations-and-global-surgical-firsts-23498454307a4f18133276ecf2ada1ac
+Title: Healing Hands Clinic Spotlights a Decade of Patented Innovations and Global Surgical Firsts
+Extracted negative text: Localized clinic achievements
+
+DESCRIPTION:
+India's #1 ranked proctology chain unveils its portfolio of patents, global certifications, and surgical firsts that put Maharashtra on the world medical map.
+
+FULL CONTENT FROM NEWSAPI:
+Indias #1 ranked proctology chain unveils its portfolio of patents, global certifications, and surgical firsts that put Maharashtra on the world medical map. The woods are lovely, dark and deep, But… [+7649 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#021 | score=0 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-25T13:57:45Z
+URL: https://apnews.com/article/supreme-court-geofence-warrants-unreasonable-searches-constitution-a61c200a806cba89ded43685279eccae
+Title: A bank robber's cellphone gave him away. His case is at the Supreme Court
+Extracted negative text: Criminal case, geofence warrants
+
+DESCRIPTION:
+Okello Chatrie’s cellphone gave him away. Chatrie made off with $195,000 from the bank he robbed in suburban Richmond, Virginia, and he eluded the police. But then they turned to a powerful technological tool that erected a virtual fence and allowed them coll…
+
+FULL CONTENT FROM NEWSAPI:
+WASHINGTON (AP) Okello Chatries cellphone gave him away. Chatrie made off with $195,000 from the bank he robbed in suburban Richmond, Virginia, and eluded the police until they turned to a powerful … [+4803 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#022 | score=0 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-25T13:23:20Z
+URL: https://apnews.com/article/white-house-correspondents-dinner-trump-first-amendment-a0a2446832e8596e66c6fccb8426c8aa
+Title: Close watch on how Trump and journalists get along at correspondents' gala
+Extracted negative text: Political event security incident
+
+DESCRIPTION:
+President Donald Trump and other top leaders of the United States were evacuated from an annual dinner of White House correspondents on Saturday night after an unspecified threat. There did not immediately appear to be any injuries. The Secret Service and oth…
+
+FULL CONTENT FROM NEWSAPI:
+President Donald Trump and other top leaders of the United States were evacuated from an annual dinner of White House correspondents on Saturday night after an unspecified threat. There did not immed… [+5690 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#023 | score=0 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-25T08:20:38Z
+URL: https://apnews.com/article/radio-taiso-c4faaf9abb045b3f25d3fda2779943bb
+Title: Japan awakens to radio exercise tradition
+Extracted negative text: Cultural exercise tradition
+
+DESCRIPTION:
+Radio Taiso is an exercise program in Japan that comes on the air every morning at 6:30. The program includes 10 minutes of basic calisthenics that people of all ages can do. Light piano music helps participants follow the basic choreography. Radio Taiso has …
+
+FULL CONTENT FROM NEWSAPI:
+TOKYO (AP) This is how Japan wakes up. Its called Radio Taiso Exercise Radio in English a simple yet dynamic way to start the day. Japanese radio plays music every morning at 6:30 to accompany basic… [+4769 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#028 | score=0 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-24T17:31:03Z
+URL: https://apnews.com/article/kenya-abortion-court-appeal-constitution-penal-code-dfd15213299aa4185e2012365aeae10e
+Title: Abortion rights in Kenya: Court of appeal reverses key ruling
+Extracted negative text: Kenyan abortion rights ruling
+
+DESCRIPTION:
+A court of appeal in Kenya has overturned a ruling that affirmed the right to access abortion. The case involved a teenager and a health care worker who were charged and later acquitted of accessing an abortion. In 2022, the high court ruled that access to ab…
+
+FULL CONTENT FROM NEWSAPI:
+NAIROBI, Kenya (AP) A court of appeal in Kenya Friday overturned a ruling that affirmed the right to access abortion, setting up a legal clash that is likely to be appealed again to the Kenyan Suprem… [+2356 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#029 | score=1 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-24T15:36:05Z
+URL: https://apnews.com/press-release/ein-presswire-newsmatics/boca-raton-championship-wrestling-to-unveil-new-logo-during-wrestlemania-week-in-las-vegas-at-brcw-vegas-vacation-e9ba7813a17e1fb6fc38909208a62a70
+Title: Boca Raton Championship Wrestling to Unveil New Logo During WrestleMania Week in Las Vegas at “BRCW
+    Vegas Vacation”
+Extracted negative text: Niche wrestling event news
+
+DESCRIPTION:
+Boca Raton Championship Wrestling to Unveil New Logo During WrestleMania Week in Las Vegas at “BRCW Vegas Vacation” — Celebration Continues at WrestleLit
+
+FULL CONTENT FROM NEWSAPI:
+Boca Raton Championship Wrestling to Unveil New Logo During WrestleMania Week in Las Vegas at BRCW Vegas Vacation Celebration Continues at WrestleLit When we decided to continue BRCW as an ongoing c… [+5943 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#034 | score=1 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-24T13:53:41Z
+URL: https://apnews.com/article/soldier-charged-polymarket-maduro-raid-3924aed69e6d6efdda7127cf82364990
+Title: Soldier charged with using intel to win big Polymarket trades on Maduro raid appears in court
+Extracted negative text: soldier's classified information misuse
+
+DESCRIPTION:
+A U.S. soldier involved with the capture of Venezuelan President Nicolás Maduro is being released on bond, a day after being charged with using classified information about the operation to win more than $400,000 in an online prediction market. Federal prosec…
+
+FULL CONTENT FROM NEWSAPI:
+RALEIGH, N.C. (AP) A U.S. special forces soldier who took part in the capture of Venezuelan President Nicolás Maduro will be released on bond on charges accusing him of using classified information a… [+3030 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#047 | score=1 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-24T01:30:01Z
+URL: https://apnews.com/press-release/pr-newswire/eva-air-was-recognized-with-six-inflight-amenity-awards-by-travelplus-pax-international-and-pax-tech-565f91fd4831cb8950c2cd3ec703033e
+Title: EVA Air was Recognized with Six Inflight Amenity Awards by TravelPlus, PAX International, and PAX Tech
+Extracted negative text: negligible financial market impact
+
+DESCRIPTION:
+TAIPEI, April 23, 2026 /PRNewswire/ -- EVA Air received six prestigious awards through the TravelPlus Airline Amenity Awards and the PAX International Readership Awards 2026 at the World Travel Catering & Onboard Services Expo (WTCE), recently held in Hamburg…
+
+FULL CONTENT FROM NEWSAPI:
+TAIPEI, April 23, 2026 /PRNewswire/ -- EVA Air received six prestigious awards through the TravelPlus Airline Amenity Awards and the PAX International Readership Awards 2026 at the World Travel Cater… [+3529 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#051 | score=0 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-23T22:23:15Z
+URL: https://apnews.com/article/solider-justice-department-polymarmet-74047663d9ae104127948896fdfb59d9
+Title: Federal officials charge US soldier with using inside info to win $400K bet on Maduro’s capture
+Extracted negative text: soldier's classified information betting
+
+DESCRIPTION:
+A U.S. soldier involved in the military operation to capture Venezuelan President Nicolas Maduro has been charged with using classified information about the mission to win more than $400,000 in an online betting market. Federal officials unsealed the indictm…
+
+FULL CONTENT FROM NEWSAPI:
+WASHINGTON (AP) A U.S. soldier involved in the military operation to capture Venezuelan President Nicolas Maduro has been charged with using classified information about the mission to win more than … [+2865 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#053 | score=0 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-23T19:02:00Z
+URL: https://apnews.com/article/sara-mearns-nyc-ballet-hearing-loss-aids-30eb0e15724ca2feb8b58189208fb7e9
+Title: NYC Ballet Star Takes A Big Leap: Wearing Hearing Aids Onstage
+Extracted negative text: ballet dancer's hearing aid experience
+
+DESCRIPTION:
+Many adults who could benefit from hearing aids don't use them. Sara Mearns, a principal dancer with the New York City Ballet took the leap and wants people to know how helpful it has been. She finally overcame her own reluctance and sought help after startin…
+
+FULL CONTENT FROM NEWSAPI:
+NEW YORK (AP) Sara Mearns was missing her cues. She couldnt hear what her dance partner was saying from across the studio. She was late for her entrances because the music sounded too soft. Without… [+4390 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#054 | score=0 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-23T15:03:00Z
+URL: https://apnews.com/article/france-algeria-writer-kamel-daoud-sentenced-28832ad67d766894153294e9877b12a1
+Title: Algeria’s Leading Author Says He’s Been Sentenced To Prison For His Prize-Winning Novel
+Extracted negative text: author's prison sentence in Algeria
+
+DESCRIPTION:
+French-Algerian author Kamel Daoud says he has been sentenced to three years in prison in Algeria for his book “Houris.” The novel won France’s top literary award in 2024. It focuses on victims of Algeria’s “black decade.” This conflict began in 1991 when the…
+
+FULL CONTENT FROM NEWSAPI:
+PARIS (AP) French-Algerian author Kamel Daoud said Wednesday that he has been sentenced to three years in prison in Algeria for his book Houris, a recipient of Frances most prestigious literary award… [+2701 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#055 | score=0 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-23T15:00:17Z
+URL: https://apnews.com/article/canadian-citizenship-americans-new-law-5b8f7da8ce6cfea759b85a3577150407
+Title: Millions of Americans may now also be considered Canadian under new law...
+Extracted negative text: Canadian citizenship for Americans
+
+DESCRIPTION:
+Potentially millions of Americans suddenly have a much easier path to Canadian citizenship. A change in the country's laws has prompted a rush of Americans to explore their ancestry and file paperwork seeking dual citizenship. Since the new law took effect De…
+
+FULL CONTENT FROM NEWSAPI:
+SIOUX FALLS, S.D. (AP) Potentially millions of Americans suddenly have a much easier path to Canadian citizenship, prompting a rush of people to explore their ancestry and file paperwork seeking dual… [+5892 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#063 | score=0 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-23T04:23:27Z
+URL: https://apnews.com/article/andre-giant-marker-north-carolina-50f72416176238154f5b652a833e814b
+Title: Andre The Giant honored with roadside marker in tiny North Carolina town
+Extracted negative text: Andre The Giant roadside marker
+
+DESCRIPTION:
+Wrestler and actor Andre The Giant is being honored with a roadside marker in a small town in North Carolina that was once his home. Officials plan to unveil the marker Thursday. The wrestler, whose real name was Andre Rene Roussimoff, lived on a ranch near E…
+
+FULL CONTENT FROM NEWSAPI:
+ELLERBE, N.C.. (AP) Andre The Giant, a towering menace in the wrestling ring but a gentle giant on the movie screen, is being honored with a roadside marker in his beloved adopted small town in North… [+1595 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#069 | score=1 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-22T19:00:12Z
+URL: https://apnews.com/article/immigration-agents-identification-california-appeals-court-2b60941111adb2c82a929570e594f56d
+Title: SECRET POLICE: Federal appeals court blocks California law requiring federal agents to wear
+    identification...
+Extracted negative text: Federal agent identification law
+
+DESCRIPTION:
+An appeals court has blocked a California law passed in 2025 requiring federal immigration agents to wear a badge or some form of identification. The Trump administration filed a lawsuit in November challenging the law, arguing that it would threaten the safe…
+
+FULL CONTENT FROM NEWSAPI:
+LOS ANGELES (AP) An appeals court has blocked a California law passed in 2025 requiring federal immigration agents to wear a badge or some form of identification. The Trump administration filed a la… [+2600 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#071 | score=0 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-22T18:00:15Z
+URL: https://apnews.com/article/texas-ten-commandments-law-public-schools-scotus-43e679cf473e6b98b091d575578824eb
+Title: Texas can require public schools to display Ten Commandments in classrooms, court rules...
+Extracted negative text: religious legal ruling
+
+DESCRIPTION:
+A U.S. appeals court says Texas can require the Ten Commandments to be displayed in public school classrooms. The ruling Tuesday by the 5th Circuit Court of Appeals was a victory for conservatives who have long sought to incorporate more religion into schools…
+
+FULL CONTENT FROM NEWSAPI:
+DALLAS (AP) Texas can require the Ten Commandments to be displayed in public schools, a U.S. appeals court ruled Tuesday in a victory for conservatives who have long sought to incorporate more religi… [+4153 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#072 | score=1 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-22T18:00:15Z
+URL: https://apnews.com/article/ai-table-tennis-robot-ping-pong-sony-995b239945e0dc8d7bea918a850969dc
+Title: Milestone for machines: Robot beating human pros at table tennis...
+Extracted negative text: sports robotics milestone
+
+DESCRIPTION:
+A paddle-wielding robot is so adept at playing table tennis that it is posing a tough challenge to elite human players and sometimes defeating them, according to a new study in the journal Nature that shows how advances in artificial intelligence are making r…
+
+FULL CONTENT FROM NEWSAPI:
+A paddle-wielding robot is so adept at playing table tennis that it is posing a tough challenge to elite human players and sometimes defeating them, according to a new study that shows how advances i… [+5733 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#073 | score=0 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-22T15:04:00Z
+URL: https://apnews.com/article/dave-mason-dead-obit-traffic-rock-244eb6fd1ca3a213db899b196e8538c2
+Title: Dave Mason, co-founder of Traffic known for 'We Just Disagree' and 'Feelin’ Alright,' dies at 79
+Extracted negative text: famous musician's passing
+
+DESCRIPTION:
+Dave Mason, co-founder of the psychedelic British band Traffic and songwriter behind “Feelin’ Alright” and “Hole in My Shoe,” died Sunday at his home in Gardnerville, Nevada. He was 79. A cause was not immediately revealed. Mason canceled his remaining…
+
+FULL CONTENT FROM NEWSAPI:
+NEW YORK (AP) Dave Mason the co-founder of the psychedelic British band Traffic, songwriter behind classic rock hits Feelin Alright and Hole in My Shoe," and Rock &amp; Roll Hall of Famer died Sunday… [+3144 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#085 | score=1 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-21T21:51:37Z
+URL: https://apnews.com/press-release/ein-presswire-newsmatics/boca-raton-plastic-surgeon-dr-gregory-albert-pioneers-ai-driven-body-sculpting-at-optimization-centre-590b11da6d9d2e660764fc82127ff040
+Title: Boca Raton Plastic Surgeon Dr. Gregory Albert Pioneers AI-Driven Body Sculpting at Optimization Centre
+Extracted negative text: local private medical practice
+
+DESCRIPTION:
+Optimization Centre in Boca Raton introduces AI-guided liposuction, led by Dr. Gregory Albert, delivering enhanced precision, results, and faster recovery.
+
+FULL CONTENT FROM NEWSAPI:
+Optimization Centre in Boca Raton introduces AI-guided liposuction, led by Dr. Gregory Albert, delivering enhanced precision, results, and faster recovery. Optimization is about aligning a patients … [+3195 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#086 | score=0 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-21T21:18:47Z
+URL: https://apnews.com/article/mike-tomlin-nbc-6adf95ffbab6f11777be14a9c2bd7e67
+Title: Former Steelers coach Mike Tomlin joining NBC's pregame show, AP sources say
+Extracted negative text: sports entertainment personnel change
+
+DESCRIPTION:
+Mike Tomlin is going from the glare of an NFL sideline to the glare of television lights. The former Pittsburgh Steelers coach will join NBC’s “Sunday Night Football” coverage as a pregame analyst, two people briefed on the move tell The Associated Press. The…
+
+FULL CONTENT FROM NEWSAPI:
+Mike Tomlin is going from the glare of an NFL sideline to the glare of television lights. The former Pittsburgh Steelers coach will join NBCs Sunday Night Football coverage as a pregame analyst, two… [+2178 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#089 | score=1 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-21T14:31:49Z
+URL: https://apnews.com/press-release/business-wire/n-lorem-foundation-announces-the-50th-nano-rare-patient-receives-personalized-aso-medicine-a49cc0bb378a4048a44e606553325caa
+Title: n-Lorem Foundation Announces the 50th Nano-rare Patient Receives Personalized ASO Medicine
+Extracted negative text: nonprofit foundation patient milestone
+
+DESCRIPTION:
+SAN DIEGO--(BUSINESS WIRE)--Apr 21, 2026-- n-Lorem, a nonprofit foundation, announced today that the 50 th nano-rare patient has been treated with a personalized, experimental antisense oligonucleotide (ASO) medicine discovered, developed and provided by n-Lo…
+
+FULL CONTENT FROM NEWSAPI:
+SAN DIEGO--(BUSINESS WIRE)--Apr 21, 2026-- n-Lorem, a nonprofit foundation, announced today that the 50 th nano-rare patient has been treated with a personalized, experimental antisense oligonucleot… [+5485 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#091 | score=0 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-21T14:00:13Z
+URL: https://apnews.com/article/southern-poverty-law-center-criminal-investigation-db7fdcf9baa0d1b24b8f1e1f2cebc0be
+Title: SOUTHERN POVERTY LAW CENTER says it faces criminal investigation by DOJ...
+Extracted negative text: non-profit criminal investigation
+
+DESCRIPTION:
+The Southern Poverty Law Center says it’s the subject of a Justice Department criminal investigation and faces possible charges over its use of paid informants to infiltrate extremist groups. The Alabama-based civil rights organization made the announcement T…
+
+FULL CONTENT FROM NEWSAPI:
+WASHINGTON (AP) The Southern Poverty Law Center says its the subject of a criminal investigation by the Justice Department and faces possible charges over its past use of paid informants to infiltrat… [+3158 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#092 | score=1 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-21T13:23:51Z
+URL: https://apnews.com/press-release/ein-presswire-newsmatics/additive-manufacturing-users-group-presents-dino-awards-to-six-members-2015087866c26a7e619016f30ac2d838
+Title: Additive Manufacturing Users Group Presents DINO Awards to Six Members
+Extracted negative text: industry group awards
+
+DESCRIPTION:
+Olga Ivanova, Daniel Landgraf, Brian Post, Chris Prue, John Thiell and Annie Wang were presented with the coveted award at the 2026 AMUG Conference.
+
+FULL CONTENT FROM NEWSAPI:
+Olga Ivanova, Daniel Landgraf, Brian Post, Chris Prue, John Thiell and Annie Wang were presented with the coveted award at the 2026 AMUG Conference. Those who are ultimately selected for a DINO Awar… [+5938 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#094 | score=0 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-04-21T13:00:13Z
+URL: https://apnews.com/article/mexico-sheinbaum-chihuahua-us-officials-deaths-646664d05452ddbad7b39b9d480fd46e
+Title: Sheinbaum demands explanation...
+Extracted negative text: political incident Mexico
+
+DESCRIPTION:
+Mexican President Claudia Sheinbaum says she was unaware of any collaboration between the U.S. and local authorities in Chihuahua after four officials died in an accident over the weekend. Sheinbaum said Monday she plans to demand explanations from both count…
+
+FULL CONTENT FROM NEWSAPI:
+MEXICO CITY (AP) Mexican President Claudia Sheinbaum said Monday she would demand explanations over what U.S. and Mexican officials were doing in northern Chihuahua when they died in an accident over… [+4954 chars]
+

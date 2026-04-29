@@ -1,0 +1,302 @@
+NEWSAPI PROMPT A SCORE DEBUG REPORT
+Generated at: 2026-04-28T19:23:20
+Read-only check: NewsAPI fetch + Prompt A scoring only. No ingestion was performed.
+band_C is the report label for program score_band='drop'.
+Current file: band_B
+Articles in this file: 19
+Total scored articles: 100
+Counts: band_A=44 | band_B=19 | band_C=12 | band_f=25
+========================================================================================================================
+
+------------------------------------------------------------------------------------------------------------------------
+#001 | score=6 | program_band=band_B | report_band=band_B
+Source: Associated Press
+Published: 2026-04-27T21:23:00Z
+URL: https://apnews.com/press-release/business-wire/encoded-therapeutics-to-present-etx101-data-in-dravet-syndrome-at-the-2026-asgct-presidential-symposium-1031d4705d2c4f2085d108f5844d486a
+Title: Encoded Therapeutics to Present ETX101 Data in Dravet Syndrome at the 2026 ASGCT Presidential Symposium
+Market relevance reason: Encoded Therapeutics is presenting clinical data, which is relevant to the company's
+    R&D progress and future prospects.
+
+DESCRIPTION:
+SOUTH SAN FRANCISCO, Calif.--(BUSINESS WIRE)--Apr 27, 2026-- Encoded Therapeutics Inc., a clinical-stage genetic medicines company, today announced its participation in the 29 th Annual Meeting of the American Society of Gene & Cell Therapy (ASGCT), taking pl…
+
+FULL CONTENT FROM NEWSAPI:
+SOUTH SAN FRANCISCO, Calif.--(BUSINESS WIRE)--Apr 27, 2026-- Encoded Therapeutics Inc., a clinical-stage genetic medicines company, today announced its participation in the 29 th Annual Meeting of t… [+3828 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#007 | score=7 | program_band=band_B | report_band=band_B
+Source: Bloomberg
+Published: 2026-04-27T07:43:09Z
+URL: https://www.bloomberg.com/news/articles/2026-04-27/jsw-motors-plans-its-own-showrooms-to-debut-its-india-car-brand
+Title: JSW Motors plans to open own showrooms before India car debut
+Market relevance reason: JSW Motors' strategic move to open showrooms before its vehicle launch indicates
+    market entry and investment, relevant for company and sector analysis.
+
+DESCRIPTION:
+JSW Motors plans to establish four experience centers in major Indian cities like Mumbai, New Delhi, and Ahmedabad before launching its first product in the second half of the year
+
+FULL CONTENT FROM NEWSAPI:
+JSW Groups automotive business is preparing to open a clutch of company-owned showrooms in India ahead of its first vehicle launch later this year, a bid by the conglomerate to firmly establish the n… [+2908 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#011 | score=6 | program_band=band_B | report_band=band_B
+Source: Bloomberg
+Published: 2026-04-27T04:45:03Z
+URL: https://www.bloomberg.com/news/articles/2026-04-27/bitcoin-reaches-12-week-high-on-iran-deal-optimism
+Title: Bitcoin reaches 12-week high on Iran deal optimism
+Market relevance reason: Reports on significant cryptocurrency price movements and geopolitical influences,
+    which can reflect broader market sentiment.
+
+DESCRIPTION:
+The original cryptocurrency was up as much as 1.6% to $79,488, its highest level since Jan. 31, the last time it was above $80,000
+
+FULL CONTENT FROM NEWSAPI:
+Bitcoin continued a slow ascent toward $80,000 on Monday as investors weighed the latest developments in the US-Iran standoff over the Strait of Hormuz. The original cryptocurrency was up as much as… [+1699 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#025 | score=7 | program_band=band_B | report_band=band_B
+Source: Associated Press
+Published: 2026-04-24T23:04:59Z
+URL: https://apnews.com/article/writers-guild-contract-approved-wga-sag-d46bf8ff282fe68f214bcc9e8bdd4631
+Title: Screenwriters union ratifies 4-year agreement with Hollywood studios
+Market relevance reason: This article reports on a ratified labor agreement in the entertainment industry,
+    which directly impacts the operational costs and stability of Hollywood studios and streaming companies
+    within the sector.
+
+DESCRIPTION:
+Members of the screenwriters union have ratified a four-year agreement with Hollywood studios. Union leaders said Friday that 90% voted to approve the deal. This move ends a surprisingly smooth process compared with the prolonged strike of 2023. The agreement…
+
+FULL CONTENT FROM NEWSAPI:
+LOS ANGELES (AP) Members of the screenwriters union overwhelmingly ratified a four-year agreement with Hollywood studios and streamers on Friday, bringing an end to a surprisingly smooth and quick pr… [+1757 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#037 | score=7 | program_band=band_B | report_band=band_B
+Source: Bloomberg
+Published: 2026-04-24T09:59:58Z
+URL: https://www.bloomberg.com/news/articles/2026-04-24/india-s-shapoorji-gets-nod-to-delay-bond-days-before-maturity
+Title: Shapoorji gets nod to delay bond days before maturity
+Market relevance reason: An infrastructure conglomerate securing approval to delay bond payments is
+    significant company-level and potentially sector-level news for the Indian credit market. It reflects on
+    the company's financial health and broader market liquidity/risk perception.
+
+DESCRIPTION:
+As of March 31, about ₹13,583 crore was outstanding on the bond, including interest, says company statement from April 14
+
+FULL CONTENT FROM NEWSAPI:
+Infrastructure conglomerate Shapoorji Pallonji Group has secured creditor approval to delay payment on one of the nations biggest high-yield bonds, just days ahead of the April 30 maturity, according… [+2049 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#042 | score=6 | program_band=band_B | report_band=band_B
+Source: Bloomberg
+Published: 2026-04-24T06:09:52Z
+URL: https://www.bloomberg.com/news/articles/2026-04-24/warburg-pincus-backed-pdg-is-said-to-tap-goldman-for-stake-sale
+Title: Warburg Pincus-backed PDG is said to tap Goldman for stake sale
+Market relevance reason: Reports on a potential stake sale for a private company, indicating M&A activity in
+    the data center sector, which has some indirect sector relevance.
+
+DESCRIPTION:
+The process is preliminary, and no final decision has been made regarding new equity partners or other deal aspects, according to unnamed sources due to the private nature of the discussions
+
+FULL CONTENT FROM NEWSAPI:
+Asian data center operator Princeton Digital Group has tapped Goldman Sachs Group Inc. to work on a strategic review that may result in a stake sale, according to people familiar with the matter. Th… [+2076 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#044 | score=5 | program_band=band_B | report_band=band_B
+Source: Associated Press
+Published: 2026-04-24T04:36:01Z
+URL: https://apnews.com/press-release/business-wire/ant-international-launches-payto-payment-solution-for-australian-smes-dc5f2bd2593a48089d3080b373209ea5
+Title: Ant International launches PayTo payment solution for Australian SMEs
+Market relevance reason: Product launch by a private fintech company, offering some insight into the
+    competitive landscape but not directly impacting a publicly traded stock or broader market.
+
+DESCRIPTION:
+SYDNEY--(BUSINESS WIRE)--Apr 24, 2026-- Ant International today announced an exclusive move to integrate PayTo into its Global Account Service in Australi
+
+FULL CONTENT FROM NEWSAPI:
+SYDNEY--(BUSINESS WIRE)--Apr 24, 2026-- Ant International today announced an exclusive move to integrate PayTo into its Global Account Service in Australia. This solution enables Australian export S… [+4701 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#045 | score=6 | program_band=band_B | report_band=band_B
+Source: Bloomberg
+Published: 2026-04-24T04:09:49Z
+URL: https://www.bloomberg.com/news/articles/2026-04-24/deepseek-unveils-newest-flagship-a-year-after-ai-breakthrough
+Title: DeepSeek unveils new flagship AI model a year after breakthrough
+Market relevance reason: Announcement of a new AI model by a private startup, relevant for understanding
+    technological advancements and competitive landscape in the AI sector.
+
+DESCRIPTION:
+The Hangzhou-based AI startup ignited a trillion-dollar stock market selloff in 2025 with the release of the R1, an open source model that mimics the process of human reasoning
+
+FULL CONTENT FROM NEWSAPI:
+DeepSeek rolled out preview versions of a new flagship artificial intelligence model Friday, introducing its biggest upgrades a year after upending Silicon Valley with a groundbreaking platform. The… [+870 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#050 | score=7 | program_band=band_B | report_band=band_B
+Source: Associated Press
+Published: 2026-04-23T22:42:02Z
+URL: https://apnews.com/article/ai-china-us-model-distillation-kratsios-a5c40346394ef5fa9ae710c5aabdc62c
+Title: Trump administration targets foreign exploitation of US AI models
+Market relevance reason: Policy-related news with potential geopolitical and sector-level implications for the
+    AI industry and US-China tech relations.
+
+DESCRIPTION:
+The Trump administration is vowing to crack down on foreign tech companies’ exploitation of U.S. artificial intelligence models, singling out China at a time that country is narrowing the gap with the U.S. in the AI race. In a Thursday memo, Michael Kratsios,…
+
+FULL CONTENT FROM NEWSAPI:
+WASHINGTON (AP) The Trump administration is vowing to crack down on foreign tech companies exploitation of U.S. artificial intelligence models, singling out China at a time that country is narrowing … [+4812 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#056 | score=6 | program_band=band_B | report_band=band_B
+Source: Associated Press
+Published: 2026-04-23T14:24:48Z
+URL: https://apnews.com/press-release/ez-newswire/vivazen-team-red-white-blue-announce-partnership-to-support-veteran-health-and-wellness-d46550114f10a32c8d0d1c553be0852a
+Title: VIVAZEN, Team Red, White & Blue Announce Partnership to Support Veteran Health and Wellness
+Market relevance reason: This is a company-level announcement regarding a partnership between VIVAZEN and Team
+    Red, White & Blue. While not a major financial event, it pertains to a specific company's activities and
+    corporate social responsibility efforts.
+
+DESCRIPTION:
+Collaboration will support Memorial Minutes campaign and strengthen programs serving more than 320,000 veterans and supporters
+
+FULL CONTENT FROM NEWSAPI:
+Collaboration will support Memorial Minutes campaign and strengthen programs serving more than 320,000 veterans and supporters PHOENIX, AZ, April 23, 2026 (EZ Newswire) -- VIVAZEN®, a leader in high… [+4033 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#058 | score=7 | program_band=band_B | report_band=band_B
+Source: Associated Press
+Published: 2026-04-23T12:42:04Z
+URL: https://apnews.com/article/prediction-markets-trump-iran-war-ceasefire-polymarket-kalshi-15946a9ab492e679437d58a2f9ceb35c
+Title: Trump threats against Iran are a boon for prediction markets, including some backed by his son
+Market relevance reason: This article discusses how political uncertainty (Trump's threats against Iran) is
+    boosting 'prediction markets' and the companies operating within this niche. It highlights a specific
+    segment of the financial technology and betting industry.
+
+DESCRIPTION:
+President Donald Trump loves to keep people guessing about his next policy moves, a reality TV, cliffhanger governing style that is helping “events” wagering companies, including some backed by one of his sons. Traders flocked to Polymarket this month to bet …
+
+FULL CONTENT FROM NEWSAPI:
+NEW YORK (AP) Will President Donald Trump send troops into Iran? Will he rename the Strait of Hormuz after himself? Will he post again praising Allah? No one knows the answers, but online betting c… [+5827 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#066 | score=6 | program_band=band_B | report_band=band_B
+Source: Associated Press
+Published: 2026-04-23T00:19:02Z
+URL: https://apnews.com/article/ai-anthropic-trump-security-risk-f9e693ea9954e6a8ac75750f1089f768
+Title: Anthropic seeks to debunk Pentagon's claims about its control over AI technology in military systems
+Market relevance reason: Discusses regulatory and control issues for a major AI company (Anthropic) regarding
+    its technology's use in government systems, impacting its reputation, potential government contracts, and
+    the broader regulatory outlook for the AI sector.
+
+DESCRIPTION:
+Anthropic on Wednesday told an appeals court that it can’t manipulate its artificial intelligence tool Claude once it is deployed in classified Pentagon military networks. The assertion aims to debunk the Trump administration’s attempt to brand the rapidly gr…
+
+FULL CONTENT FROM NEWSAPI:
+WASHINGTON (AP) Anthropic on Wednesday told an appeals court that it cant manipulate its artificial intelligence tool Claude once it is deployed in classified Pentagon military networks an assertion … [+1745 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#068 | score=5 | program_band=band_B | report_band=band_B
+Source: Associated Press
+Published: 2026-04-22T21:47:54Z
+URL: https://apnews.com/article/cdc-covid19-vaccine-study-ea3a8e56d0dcdb7428f060b395b5ff23
+Title: CDC COVID-19 vaccine study won't be published
+Market relevance reason: The halting of a COVID-19 vaccine study could indirectly influence public health
+    policy, vaccine sentiment, and potentially the market for pharmaceutical companies involved in vaccine
+    development and distribution.
+
+DESCRIPTION:
+U.S. health officials have stopped the publication of a study on the COVID-19 vaccine's effectiveness in preventing hospitalizations. A spokesman for the Department of Health and Human Services confirmed the decision on Wednesday, citing concerns about the st…
+
+FULL CONTENT FROM NEWSAPI:
+NEW YORK (AP) U.S. health officials stopped the publication of a study on whether the COVID-19 vaccine was keeping adults from becoming sick enough to have to go to the hospital. A U.S. Department o… [+2985 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#078 | score=7 | program_band=band_B | report_band=band_B
+Source: Associated Press
+Published: 2026-04-22T08:15:12Z
+URL: https://apnews.com/press-release/business-wire/94-of-enterprises-dont-trust-ai-to-get-culture-right-theyre-using-it-anyway-44e0d9eb04984f97a4228c50e746286f
+Title: 94% of Enterprises Don't Trust AI to Get Culture Right. They're Using It Anyway.
+Market relevance reason: Research report providing insights into enterprise AI adoption challenges and trust,
+    relevant for the AI sector and potentially for companies like RWS.
+
+DESCRIPTION:
+MAIDENHEAD, England--(BUSINESS WIRE)--Apr 22, 2026-- New research from RWS (RWS.L) has exposed a critical fault line in enterprise AI deployment: the vast majority of content leaders have little to no confidence that AI can handle cultural and emotional nuanc…
+
+FULL CONTENT FROM NEWSAPI:
+MAIDENHEAD, England--(BUSINESS WIRE)--Apr 22, 2026-- New research from RWS (RWS.L) has exposed a critical fault line in enterprise AI deployment: the vast majority of content leaders have little to … [+4559 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#081 | score=7 | program_band=band_B | report_band=band_B
+Source: Bloomberg
+Published: 2026-04-22T04:21:57Z
+URL: https://www.bloomberg.com/news/articles/2026-04-21/openai-unveils-image-model-that-s-better-at-charts-and-diagrams
+Title: OpenAI unveils new image model that’s better at charts and diagrams
+Market relevance reason: Significant product update from a leading private AI company, impacting the broader
+    AI and software sectors with potential for increased productivity.
+
+DESCRIPTION:
+OpenAI's ChatGPT Images 2.0 enhances AI-generated visuals, focusing on accurate charts and diagrams for professional use.
+
+FULL CONTENT FROM NEWSAPI:
+OpenAI is releasing an update to its artificial intelligence image-generating software that it says will let users create accurate, complex charts and scientific diagrams, part of a bid by the compan… [+1791 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#088 | score=7 | program_band=band_B | report_band=band_B
+Source: Associated Press
+Published: 2026-04-21T17:23:16Z
+URL: https://apnews.com/press-release/pr-newswire/insilico-medicine-announces-industrys-first-longevity-board-to-accelerate-ai-driven-aging-research-for-drug-discovery-14af7ee520af523b030bfe46f676d0b4
+Title: Insilico Medicine Announces Industry's First Longevity Board to Accelerate AI-Driven Aging Research for
+    Drug Discovery
+Market relevance reason: Public biotechnology company (Insilico Medicine) forming a strategic board to advance
+    AI-driven drug discovery in aging research, relevant for the biotech sector.
+
+DESCRIPTION:
+CAMBRIDGE, Mass., April 21, 2026 /PRNewswire/ -- Insilico Medicine ("Insilico", 3696.HK), a clinical-stage generative artificial intelligence (AI)-driven biotechnology company, today announced the strategic formation of the industry's first Longevity Board (B…
+
+FULL CONTENT FROM NEWSAPI:
+CAMBRIDGE, Mass., April 21, 2026 /PRNewswire/ -- Insilico Medicine (Insilico, 3696.HK), a clinical-stage generative artificial intelligence (AI)-driven biotechnology company, today announced the stra… [+6119 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#090 | score=6 | program_band=band_B | report_band=band_B
+Source: Associated Press
+Published: 2026-04-21T14:26:15Z
+URL: https://apnews.com/press-release/business-wire/masco-corporation-announces-leadership-changes-7171894f19524c1c944b73866572850c
+Title: Masco Corporation Announces Leadership Changes
+Market relevance reason: Publicly traded home improvement company (Masco Corporation) announcing leadership
+    changes, relevant for company-specific analysis.
+
+DESCRIPTION:
+LIVONIA, Mich.--(BUSINESS WIRE)--Apr 21, 2026-- Masco Corporation (NYSE: MAS), a global leader in the design, manufacture and distribution of branded home improvement and building products, today announced the upcoming retirements from Masco of longstanding e…
+
+FULL CONTENT FROM NEWSAPI:
+LIVONIA, Mich.--(BUSINESS WIRE)--Apr 21, 2026-- Masco Corporation (NYSE: MAS), a global leader in the design, manufacture and distribution of branded home improvement and building products, today an… [+7392 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#095 | score=6 | program_band=band_B | report_band=band_B
+Source: Associated Press
+Published: 2026-04-21T12:18:49Z
+URL: https://apnews.com/press-release/business-wire/phinia-to-participate-in-oppenheimers-21st-annual-industrial-growth-conference-e379f8b537354d1db4bf63df701a897a
+Title: PHINIA to Participate in Oppenheimer’s 21st Annual Industrial Growth Conference
+Market relevance reason: This is company-specific news about an investor relations event, which is relevant
+    for tracking company activity and potential investor sentiment.
+
+DESCRIPTION:
+AUBURN HILLS, Mich.--(BUSINESS WIRE)--Apr 21, 2026-- PHINIA Inc. (NYSE: PHIN), a leader in premium fuel systems, electrical systems and aftermarket solutions, announced today that it will participate in Oppenheimer’s 21 st Annual Industrial Growth Conference …
+
+FULL CONTENT FROM NEWSAPI:
+AUBURN HILLS, Mich.--(BUSINESS WIRE)--Apr 21, 2026-- PHINIA Inc. (NYSE: PHIN), a leader in premium fuel systems, electrical systems and aftermarket solutions, announced today that it will participat… [+8238 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#096 | score=5 | program_band=band_B | report_band=band_B
+Source: Associated Press
+Published: 2026-04-21T10:22:08Z
+URL: https://apnews.com/press-release/ein-presswire-newsmatics/travel-saga-holidays-launches-international-vacation-packages-for-indian-families-and-couples-306c0ccc3a3751920fa4c99cb8f3af6b
+Title: Travel Saga Holidays Launches International Vacation Packages for Indian Families and Couples
+Market relevance reason: This is company-specific news about a business expansion in the travel sector for
+    Indian consumers, which could be relevant for tracking sector activity or smaller company performance.
+
+DESCRIPTION:
+Expanded outbound travel packages include Europe, Dubai, Bali and more with itinerary planning, hotel bookings and visa guidance for Indian travelers.
+
+FULL CONTENT FROM NEWSAPI:
+Expanded outbound travel packages include Europe, Dubai, Bali and more with itinerary planning, hotel bookings and visa guidance for Indian travelers. The expanded package portfolio has been develop… [+7305 chars]
+

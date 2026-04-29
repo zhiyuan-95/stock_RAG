@@ -1,0 +1,691 @@
+NEWSAPI PROMPT A SCORE DEBUG REPORT
+Generated at: 2026-04-28T19:23:20
+Read-only check: NewsAPI fetch + Prompt A scoring only. No ingestion was performed.
+band_C is the report label for program score_band='drop'.
+Current file: band_A
+Articles in this file: 44
+Total scored articles: 100
+Counts: band_A=44 | band_B=19 | band_C=12 | band_f=25
+========================================================================================================================
+
+------------------------------------------------------------------------------------------------------------------------
+#002 | score=9 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-27T20:45:22Z
+URL: https://apnews.com/article/trump-offshore-wind-energy-climate-interior-02a1fa04b750809bbe035a70256c734d
+Title: Trump again pays offshore wind operators to walk away from leases
+Market relevance reason: Government policy directly impacting the offshore wind sector and specific energy
+    companies through payouts and project cancellations.
+
+DESCRIPTION:
+The Trump administration has announced two more payouts for energy companies to walk away from U.S. offshore wind projects under development. Bluepoint Wind and Golden State Wind have agreed to end their offshore wind leases in exchange for reimbursements tot…
+
+FULL CONTENT FROM NEWSAPI:
+WASHINGTON (AP) The Trump administration announced two more payouts Monday for energy companies to walk away from U.S. offshore wind projects under development. Bluepoint Wind and Golden State Wind … [+4988 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#005 | score=8 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-27T11:00:13Z
+URL: https://apnews.com/article/musk-altman-artificial-intelligence-trial-openai-eb854fa682675f70267abd8a7b9a6a43
+Title: Musk vs. Altman: High-stakes showdown over AI...
+Market relevance reason: High-stakes legal dispute between prominent AI figures, potentially impacting major
+    tech companies and the AI sector's competitive landscape.
+
+DESCRIPTION:
+Technology tycoons Elon Musk and Sam Altman are poised to face off in a high-stakes trial revolving around the alleged betrayal, deceit and unbridled ambition that blurred the bickering billionaires’ once-shared vision for the development of artificial intell…
+
+FULL CONTENT FROM NEWSAPI:
+OAKLAND, Calif. (AP) Technology tycoons Elon Musk and Sam Altman are poised to face off in a high-stakes trial revolving around the alleged betrayal, deceit and unbridled ambition that blurred the bi… [+5869 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#009 | score=9 | program_band=band_A | report_band=band_A
+Source: Bloomberg
+Published: 2026-04-27T05:49:39Z
+URL: https://www.bloomberg.com/news/articles/2026-04-27/india-revamps-trade-reporting-system-including-offshore-rupee
+Title: Clearing Corporation revamps trade reporting system, including offshore rupee
+Market relevance reason: Major regulatory and infrastructure changes in India's financial markets, impacting
+    financial institutions, trading, and transparency.
+
+DESCRIPTION:
+The revamp is aimed at reporting more details of trades and to create a more uniform format aligned with standards used elsewhere
+
+FULL CONTENT FROM NEWSAPI:
+The central bank-supervised clearinghouse is making changes to its trade reporting system to bring it more in line with global standards and to make it easier for lenders to disclose their offshore r… [+1541 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#010 | score=8 | program_band=band_A | report_band=band_A
+Source: Bloomberg
+Published: 2026-04-27T05:02:18Z
+URL: https://www.bloomberg.com/news/articles/2026-04-27/deepseek-slashes-fees-for-new-ai-model-in-chinese-price-war
+Title: DeepSeek slashes fees for new AI model in Chinese price war
+Market relevance reason: Significant competitive pricing strategy in the Chinese AI sector, impacting market
+    dynamics and profitability for companies in the space.
+
+DESCRIPTION:
+The Hangzhou-headquartered AI lab is offering a 75 per cent discount to developers using the DeepSeek-V4-Pro, released last week
+
+FULL CONTENT FROM NEWSAPI:
+DeepSeek is aggressively pitching low-priced plans for its just-released flagship model, intensifying competition across a Chinese artificial intelligence industry trying to take on Silicon Valleys b… [+1826 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#012 | score=9 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-27T04:30:45Z
+URL: https://apnews.com/press-release/pr-newswire/ascletis-completes-enrollment-in-u-s-phase-ii-study-of-asc30-an-oral-small-molecule-glp-1r-agonist-for-the-treatment-of-diabetes-98dd1e7fd44dbb88f478ac5ceffdd69f
+Title: Ascletis Completes Enrollment in U.S. Phase II Study of ASC30, an Oral Small Molecule GLP-1R Agonist,
+    for the Treatment of Diabetes
+Market relevance reason: Direct company-level news regarding a significant clinical trial milestone for a
+    pharmaceutical company, impacting its future prospects and the diabetes treatment sector.
+
+DESCRIPTION:
+- 13-week U.S. Phase II study is evaluating the efficacy, safety and tolerability of oral small molecule GLP-1R agonist ASC30, a once-daily tablet, in 100 participants with diabetes.
+
+FULL CONTENT FROM NEWSAPI:
+- 13-week U.S. Phase II study is evaluating the efficacy, safety and tolerability of oral small molecule GLP-1R agonist ASC30, a once-daily tablet, in 100 participants with diabetes. - Topline data … [+4655 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#013 | score=10 | program_band=band_A | report_band=band_A
+Source: Bloomberg
+Published: 2026-04-27T04:05:43Z
+URL: https://www.bloomberg.com/news/articles/2026-04-27/emerging-stocks-rise-to-record-high-on-ai-iran-offer
+Title: Emerging stocks rise to record high on AI, Iran’s Hormuz offer
+Market relevance reason: Reports on record highs in emerging markets, driven by major themes like AI and
+    geopolitical developments, directly impacting global stock market sentiment and sector performance.
+
+DESCRIPTION:
+Easing West Asia tensions have bolstered sentiment thanks to an extended US-Iran ceasefire, while a developing-market currency gauge rose around 0.3%
+
+FULL CONTENT FROM NEWSAPI:
+Emerging-market equities rose to a record high, buoyed by optimism over the artificial intelligence trade and a report that Iran offered a new proposal to reopen the Strait of Hormuz. The MSCI EM In… [+2243 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#014 | score=9 | program_band=band_A | report_band=band_A
+Source: Bloomberg
+Published: 2026-04-27T03:42:14Z
+URL: https://www.bloomberg.com/news/articles/2026-04-24/byd-geely-see-more-ev-demand-as-oil-prices-climb-from-iran-war
+Title: BYD, Geely see more EV demand as oil prices climb from Iran War
+Market relevance reason: Connects geopolitical events and rising oil prices to increased demand for electric
+    vehicles, directly impacting specific automotive companies and the EV sector.
+
+DESCRIPTION:
+Cambricon Technologies Corp. and Foxconn Industrial Internet Co. will also continue to offer a glimpse of how China’s hardware players are responding to the artificial intelligence boom
+
+FULL CONTENT FROM NEWSAPI:
+Chinas BYD Co. and Geely Automobile Holdings Ltd. are poised to benefit from higher demand for electric vehicles as the Iran war drives up oil prices. Overseas sales growth will become a bigger pri… [+1587 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#015 | score=10 | program_band=band_A | report_band=band_A
+Source: Bloomberg
+Published: 2026-04-27T01:28:40Z
+URL: https://www.bloomberg.com/news/articles/2026-04-27/sun-pharma-to-acquire-us-listed-organon-in-12-billion-deal
+Title: Sun Pharma inks agreement to buy US-based Organon for $11.75 billion
+Market relevance reason: Reports a significant acquisition deal between two pharmaceutical companies, directly
+    impacting their valuations and the sector.
+
+DESCRIPTION:
+The transaction has been approved by the boards of both Sun Pharma and Organon, and is expected to close in early 2027, pending closing conditions such as regulatory and Organon shareholder approvals
+
+FULL CONTENT FROM NEWSAPI:
+Sun Pharmaceutical Industries and US-based Organon &amp; Co have entered into an agreement under which Sun will acquire all outstanding shares of Organon for $14 per share in an all-cash transaction … [+4721 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#016 | score=9 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-26T14:04:27Z
+URL: https://apnews.com/article/tillis-powell-federal-reserve-warsh-justice-department-3867248f5664b14e6f545724e6ed085a
+Title: Tillis says he's ready to move ahead with confirming Warsh as Fed chair
+Market relevance reason: News regarding the confirmation of a Federal Reserve chair, which has significant
+    implications for monetary policy and the broader economy.
+
+DESCRIPTION:
+The Republican senator who had effectively blocked confirmation of President Donald Trump’s pick to lead the Federal Reserve says he's dropping his opposition after the Department of Justice ended its investigation of the current central bank chair. The annou…
+
+FULL CONTENT FROM NEWSAPI:
+WASHINGTON (AP) The Republican senator who had effectively blocked confirmation of President Donald Trumps pick to lead the Federal Reserve said Sunday he was dropping his opposition after the Depart… [+5388 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#017 | score=8 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-26T13:17:43Z
+URL: https://apnews.com/press-release/newsfile/duol-shareholder-reminder-faruqi-faruqi-llp-investigates-claims-on-behalf-of-investors-of-duolingo-983a419c699bf0fb12f1f8cb96c940e2
+Title: DUOL SHAREHOLDER REMINDER: Faruqi & Faruqi, LLP Investigates Claims on Behalf of Investors of Duolingo
+Market relevance reason: Reports a legal investigation into a publicly traded company, signaling potential
+    negative financial and reputational impacts for investors.
+
+DESCRIPTION:
+Faruqi & Faruqi, LLP Securities Litigation Partner James (Josh) Wilson Encourages Investors Who Suffered Significant Losses In Duolingo To Contact Him Directly To Discuss Their Options
+
+FULL CONTENT FROM NEWSAPI:
+Faruqi &amp; Faruqi, LLP Securities Litigation Partner James (Josh) Wilson Encourages Investors Who Suffered Significant Losses In Duolingo To Contact Him Directly To Discuss Their Options If you su… [+2395 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#018 | score=9 | program_band=band_A | report_band=band_A
+Source: Bloomberg
+Published: 2026-04-26T05:31:41Z
+URL: https://www.bloomberg.com/news/articles/2026-04-24/reliance-s-profit-meets-estimate-on-steady-telecom-retail-units
+Title: Ambani flags ‘unprecedented dislocation’ as Reliance net slips
+Market relevance reason: Reports on a major company's quarterly profit and its chairman's comments on
+    macroeconomic dislocations, directly impacting company valuation and broader market sentiment.
+
+DESCRIPTION:
+Billionaire Mukesh Ambani flagged the “unprecedented dislocation” unleashed by the US-Iran war after Reliance Industries Ltd.’s quarterly profit slipped but managed to meet analyst expectations due to a strong show by its consumer units.
+
+FULL CONTENT FROM NEWSAPI:
+Billionaire Mukesh Ambani flagged the unprecedented dislocation unleashed by the US-Iran war after Reliance Industries Ltd.s quarterly profit slipped but managed to meet analyst expectations due to a… [+4722 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#024 | score=10 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-25T00:58:54Z
+URL: https://apnews.com/press-release/pr-newswire/related-digital-announces-financing-for-16-billion-oracle-data-center-project-in-saline-township-michigan-87559d51a8799afee7cf9bc90d009a01
+Title: Related Digital Announces Financing for $16 Billion Oracle Data Center Project in Saline Township,
+    Michigan
+Market relevance reason: This article details a $16 billion financing deal for a major data center project,
+    involving key players like Oracle, Blackstone, and PIMCO. This is highly relevant for company-level
+    analysis, the technology sector, and infrastructure investment.
+
+DESCRIPTION:
+Related Digital and Funds Affiliated with Blackstone Commit Equity to Fund Project; Fixed Rate, Long-Term Debt Financing Anchored by PIMCO-Managed Funds and Accounts
+
+FULL CONTENT FROM NEWSAPI:
+Related Digital and Funds Affiliated with Blackstone Commit Equity to Fund Project; Fixed Rate, Long-Term Debt Financing Anchored by PIMCO-Managed Funds and Accounts Campus Creates Thousands of Unio… [+8412 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#026 | score=9 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-24T18:12:53Z
+URL: https://apnews.com/article/treasury-bessent-sanctions-china-iran-oil-12a02b5ba394cbcab355d645bfe9cdf7
+Title: US sanctions China-based oil refinery and 40 shippers over Iranian oil
+Market relevance reason: This article details significant US economic sanctions against a China-based oil
+    refinery and shipping companies over Iranian oil. This has direct macroeconomic, sector-level (oil & gas,
+    shipping), and company-level implications due to geopolitical tensions and trade restrictions.
+
+DESCRIPTION:
+The Trump administration is sanctioning a major China-based oil refinery and about 40 shipping companies. The move announced Friday is part of a campaign to cut off Iran’s oil exports, a key revenue source. The U.S. has also imposed a blockade of the Strait o…
+
+FULL CONTENT FROM NEWSAPI:
+WASHINGTON (AP) President Donald Trumps administration is placing economic sanctions on a major China-based oil refinery and roughly 40 shipping companies and tankers involved in transporting Iranian… [+3445 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#027 | score=8 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-24T17:42:03Z
+URL: https://apnews.com/press-release/business-wire/frankfurt-higher-regional-court-upholds-besremi-arbitral-award-in-favor-of-aop-health-41d25c52881f48f8a6c70ae39698ec98
+Title: Frankfurt Higher Regional Court upholds BESREMi® arbitral award in favor of AOP Health
+Market relevance reason: This article reports on a significant legal victory for AOP Health regarding an
+    arbitral award for its drug BESREMi®. This has direct company-level financial implications for AOP Health
+    and PharmaEssentia Corp.
+
+DESCRIPTION:
+VIENNA--(BUSINESS WIRE)--Apr 24, 2026-- Today, the Higher Regional Court of Frankfurt upheld the February 2025 1 partial final ICC arbitral award in favor of AOP Orphan Pharmaceuticals GmbH (“AOP Health”) in its dispute with PharmaEssentia Corp.
+
+FULL CONTENT FROM NEWSAPI:
+VIENNA--(BUSINESS WIRE)--Apr 24, 2026-- Today, the Higher Regional Court of Frankfurt upheld the February 2025 1 partial final ICC arbitral award in favor of AOP Orphan Pharmaceuticals GmbH (AOP Hea… [+5872 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#030 | score=10 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-24T14:32:11Z
+URL: https://apnews.com/article/federal-reserve-investigation-powell-justice-department-28d04cc0d99cda25cea69931f65e25d3
+Title: Justice Department drops criminal probe of Fed chair Powell
+Market relevance reason: This article reports on the Justice Department dropping its probe into the Federal
+    Reserve chair, which is highly significant for macroeconomic policy, market stability, and the
+    confirmation process for a key financial leader.
+
+DESCRIPTION:
+The Justice Department has ended its probe into Federal Reserve chair Jerome Powell, clearing a major roadblock to the confirmation of his successor, Kevin Warsh. U.S. Attorney for the District of Columbia Jeannine Pirro said on X on Friday that her office wa…
+
+FULL CONTENT FROM NEWSAPI:
+WASHINGTON (AP) The Justice Department has ended its probe into Federal Reserve chair Jerome Powell, clearing a major roadblock to the confirmation of his successor, Kevin Warsh. U.S. Attorney for … [+2100 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#033 | score=9 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-24T14:13:30Z
+URL: https://apnews.com/article/psychedelics-trump-fda-kennedy-drugs-mdma-afd00baa39f4300e4631d1f3eed27b7f
+Title: FDA: Three psychedelic drugs to get review following Trump directive
+Market relevance reason: FDA's decision for 'ultra-fast review' of psychedelic drugs for mental health is a
+    significant regulatory development. This has strong sector-level implications for the pharmaceutical and
+    biotech industries, potentially impacting companies involved in developing these treatments.
+
+DESCRIPTION:
+The Food and Drug Administration says it will offer ultra-fast review to three psychedelic drugs being studied for hard-to-treat mental health conditions, including major depression. The agency announced the move Friday, following an executive order by Presid…
+
+FULL CONTENT FROM NEWSAPI:
+WASHINGTON (AP) The Food and Drug Administration said Friday it will offer ultra-fast review to three psychedelic drugs being developed to treat mental health conditions, including depression, the la… [+4765 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#035 | score=9 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-24T13:41:12Z
+URL: https://apnews.com/press-release/access-newswire/alt5-sigma-corporation-alts-and-nano-labs-na-announce-memorandum-of-understanding-to-explore-ai-infrastructure-and-financial-systems-for-the-agentic-economy-e57ba9736a7fbaf7787e9a54e903443f
+Title: ALT5 Sigma Corporation (ALTS) and Nano Labs (NA) Announce Memorandum of Understanding to Explore AI
+    Infrastructure and Financial Systems for the Agentic Economy
+Market relevance reason: This article explicitly states that two NASDAQ-listed companies (ALT5 Sigma and Nano
+    Labs) are exploring collaboration on AI infrastructure and financial systems. This is direct, material
+    company-level news for publicly traded entities, with sector implications for AI and fintech.
+
+DESCRIPTION:
+Two NASDAQ-Listed Companies Enter Into a Structured, Non-Binding Memorandum of Understanding to Evaluate Collaboration Across AI Data Centers, Agent Cloud and AI-Native Payments, Supported by Defined Workstreams and Joint Leadership
+
+FULL CONTENT FROM NEWSAPI:
+Two NASDAQ-Listed Companies Enter Into a Structured, Non-Binding Memorandum of Understanding to Evaluate Collaboration Across AI Data Centers, Agent Cloud and AI-Native Payments, Supported by Defined… [+7994 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#036 | score=10 | program_band=band_A | report_band=band_A
+Source: Bloomberg
+Published: 2026-04-24T10:15:59Z
+URL: https://www.bloomberg.com/news/articles/2026-04-24/musk-says-tesla-has-begun-production-of-its-cybercab-robotaxi
+Title: Musk Says Tesla Has Begun Producing Its Cybercab Robotaxi
+Market relevance reason: Elon Musk's announcement that Tesla has started manufacturing its Cybercab robotaxi
+    is highly significant company-level news for a major publicly traded company (Tesla). This impacts future
+    revenue streams, production capabilities, and investor sentiment.
+
+DESCRIPTION:
+The two-door, two-seat sedan was unveiled two years ago without a steering wheel or pedals — something which would require certain exemptions from US regulators for mass production
+
+FULL CONTENT FROM NEWSAPI:
+Tesla Inc. has started manufacturing its Cybercab robotaxi, Chief Executive Officer Elon Musk said Friday in a post on his social media site X, fulfilling a long-promised launch at a time when the co… [+1419 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#038 | score=9 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-24T08:06:16Z
+URL: https://apnews.com/press-release/pr-newswire/southstate-bank-corporation-reports-first-quarter-2026-results-declares-quarterly-cash-dividend-ebf539c01ae2d84e152cf3a326efa320
+Title: SouthState Bank Corporation Reports First Quarter 2026 Results, Declares Quarterly Cash Dividend
+Market relevance reason: SouthState Bank Corporation (NYSE: SSB) reporting its first-quarter results and
+    declaring a dividend is direct, material company-level financial news for a publicly traded entity. This
+    is crucial for investors and analysts tracking the company's performance.
+
+DESCRIPTION:
+WINTER HAVEN, Fla., April 23, 2026 /PRNewswire/ -- SouthState Bank Corporation ("SouthState" or the "Company") (NYSE: SSB) today released its unaudited results of operations and other financial information for the three-month period ended March 31, 2026.
+
+FULL CONTENT FROM NEWSAPI:
+WINTER HAVEN, Fla., April 23, 2026 /PRNewswire/ -- SouthState Bank Corporation (SouthState or the Company) (NYSE: SSB) today released its unaudited results of operations and other financial informati… [+101169 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#039 | score=8 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-24T07:43:59Z
+URL: https://apnews.com/article/iran-strait-hormuz-closed-us-military-analysis-5df204d8321e76cfad30c4329eb8d1ac
+Title: Analysis: Iran war recalls US Navy's experience in 1980s 'Tanker war'
+Market relevance reason: Analysis of geopolitical tensions in the Persian Gulf and potential threats to oil
+    tankers in the Strait of Hormuz has significant macroeconomic implications, particularly for global oil
+    prices, shipping costs, and related energy sector stocks.
+
+DESCRIPTION:
+The United States once protected ships from Iranian attacks in the Strait of Hormuz in the 1980s. That came during Iran's long war with Iraq. The U.S. could follow that model now and become more aggressive to protect ships passing through the strait as the ce…
+
+FULL CONTENT FROM NEWSAPI:
+DUBAI, United Arab Emirates (AP) Naval mines bobbing in the waters of the Persian Gulf, threatening oil tankers. Iranian speed boats raking ships with machine-gun fire in the Strait of Hormuz. And th… [+5780 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#040 | score=8 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-24T07:43:42Z
+URL: https://apnews.com/article/deepseek-ai-china-gpt-v4-d2ed33f2521917193616e061674d5f92
+Title: China's DeepSeek launches an update of its AI model
+Market relevance reason: DeepSeek, a Chinese AI startup, launching a major update to its AI model is
+    significant sector-level news. It highlights the ongoing global AI rivalry and can impact investor
+    sentiment and valuations for publicly traded AI companies and the broader tech sector.
+
+DESCRIPTION:
+DeepSeek, the Chinese artificial intelligence startup that shook up world markets last year, has launched preview versions of its latest major update. DeepSeek’s V4 will be tested to see how it compares with U.S. competitors like OpenAI’s ChatGPT, Anthropic’s…
+
+FULL CONTENT FROM NEWSAPI:
+HONG KONG (AP) DeepSeek, the Chinese artificial intelligence startup that shook world markets last year, launched preview versions of its latest major update Friday as the AI rivalry between China an… [+4595 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#041 | score=9 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-24T07:26:50Z
+URL: https://apnews.com/press-release/business-wire/baycom-corp-reports-2026-first-quarter-earnings-of-8-2-million-48aefd15bf7e4e87a51f1194ad05752b
+Title: BayCom Corp Reports 2026 First Quarter Earnings of $8.2 Million
+Market relevance reason: Direct company-level earnings report for a publicly traded company (NASDAQ: BCML),
+    highly relevant for investors and sector analysis.
+
+DESCRIPTION:
+WALNUT CREEK, Calif.--(BUSINESS WIRE)--Apr 23, 2026-- BayCom Corp (“BayCom” or the “Company”) (NASDAQ: BCML), the holding company for United Business Bank (the “Bank” or “UBB”), announced earnings of $8.2 million, or $0.75 per diluted common share, for the fi…
+
+FULL CONTENT FROM NEWSAPI:
+WALNUT CREEK, Calif.--(BUSINESS WIRE)--Apr 23, 2026-- BayCom Corp (BayCom or the Company) (NASDAQ: BCML), the holding company for United Business Bank (the Bank or UBB), announced earnings of $8.2 m… [+64337 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#043 | score=8 | program_band=band_A | report_band=band_A
+Source: Bloomberg
+Published: 2026-04-24T04:36:11Z
+URL: https://www.bloomberg.com/news/articles/2026-04-23/adp-is-said-planning-to-reduce-stake-in-india-s-gmr-airports
+Title: ADP cuts stake in India’s GMR Airports in $1 billion deal
+Market relevance reason: A publicly traded company (ADP) is divesting a significant stake in another publicly
+    traded company (GMR Airports), impacting both companies and the airport sector.
+
+DESCRIPTION:
+ADP sells up to 7.3% of GMR Airports for $1 billion, maintaining governance rights in a multistage deal with GMR's founding family.
+
+FULL CONTENT FROM NEWSAPI:
+ADP, the operator of the main Paris airports, agreed to sell up to 7.3 per cent of Indias GMR Airports Ltd as part of a deal worth as much as 924 million ($1.08 billion). The French group agreed to … [+1811 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#046 | score=8 | program_band=band_A | report_band=band_A
+Source: Bloomberg
+Published: 2026-04-24T03:22:59Z
+URL: https://www.bloomberg.com/news/articles/2026-04-24/india-s-currency-is-undervalued-top-economic-official-says
+Title: Rupee is fundamentally undervalued, says chief economic adviser
+Market relevance reason: Macroeconomic statement on a major emerging market currency's valuation and its
+    potential impact on investor flows, highly relevant for market and sector analysis.
+
+DESCRIPTION:
+The currency has come under pressure due to rising crude oil prices, geopolitical tensions in West Asia, and strong foreign portfolio outflows, making it Asia’s worst-performing currency in 2026 so far
+
+FULL CONTENT FROM NEWSAPI:
+Indias rupee is fundamentally undervalued, the countrys chief economic adviser said, adding that current levels could draw investors. For long-term investors, the rupees current valuation provides a… [+1240 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#048 | score=9 | program_band=band_A | report_band=band_A
+Source: Bloomberg
+Published: 2026-04-24T00:59:43Z
+URL: https://www.bloomberg.com/news/articles/2026-04-23/meta-microsoft-look-to-trim-workforces-amid-heavy-ai-spending
+Title: Meta cuts 8,000 jobs, Microsoft offers buyouts amid AI spending push
+Market relevance reason: Significant company-level news for major tech companies (Meta, Microsoft) regarding
+    workforce reductions and strategic spending on AI, impacting profitability and sector trends.
+
+DESCRIPTION:
+Meta will cut about 8,000 jobs, or 10% of staff, while Microsoft is offering voluntary buyouts to thousands of US employees, reflecting broader cost optimisation in Big Tech.
+
+FULL CONTENT FROM NEWSAPI:
+Meta Platforms Inc. and Microsoft Corp. have both taken drastic actions to trim their workforces in an effort to streamline their operations and offset heavy spending on artificial intelligence. Me… [+2763 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#052 | score=9 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-23T21:00:38Z
+URL: https://apnews.com/article/trump-offshore-wind-energy-climate-62211c03d8c617161ffffe3d8393908f
+Title: Up close with the wind farms taking shape on U.S. East Coast
+Market relevance reason: This article discusses the development and operation of offshore wind farms, which is
+    highly relevant to the renewable energy sector, infrastructure investment, and the performance of
+    companies involved in clean energy generation and technology.
+
+DESCRIPTION:
+Offshore wind turbines roughly three times the height of the Statue of Liberty were spinning far off the coast of Rhode Island on Thursday, sending clean electricity to the region. Wind farms are taking shape and operating along the East Coast, even as Presid…
+
+FULL CONTENT FROM NEWSAPI:
+OFF THE COAST OF RHODE ISLAND (AP) Offshore wind turbines roughly three times the height of the Statue of Liberty were spinning far off the coast of Rhode Island on Thursday, sending clean electricit… [+6729 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#057 | score=9 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-23T14:23:31Z
+URL: https://apnews.com/press-release/pr-newswire/cipla-receives-u-s-fda-approval-for-first-ab-rated-generic-of-ventolin-hfa-5e9f980b571fa5abf0db0eae133bc589
+Title: Cipla Receives U.S. FDA Approval for First AB-Rated Generic of Ventolin® HFA
+Market relevance reason: This article reports on Cipla receiving U.S. FDA approval for a generic drug. This is
+    significant company-level news for a pharmaceutical firm, directly impacting its product portfolio,
+    revenue potential, and market share in the healthcare sector.
+
+DESCRIPTION:
+MUMBAI, India and WARREN, N.J., April 23, 2026 /PRNewswire/ -- Cipla Limited (BSE: 500087) (NSE: CIPLA-EQ) (hereafter referred to as 'Cipla') and its wholly owned subsidiary Cipla USA Inc., (hereafter referred to as 'Cipla'), today announced that it has recei…
+
+FULL CONTENT FROM NEWSAPI:
+MUMBAI, India and WARREN, N.J., April 23, 2026 /PRNewswire/ -- Cipla Limited (BSE: 500087) (NSE: CIPLA-EQ) (hereafter referred to as Cipla) and its wholly owned subsidiary Cipla USA Inc., (hereafter … [+3751 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#059 | score=9 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-23T12:40:07Z
+URL: https://apnews.com/press-release/pr-newswire/canadian-gdp-to-rebound-in-the-first-two-quarters-of-2026-d09ddff6bcd75219a12b664cbff8b745
+Title: Canadian GDP to rebound in the first two quarters of 2026
+Market relevance reason: This article provides a macroeconomic forecast for Canadian GDP growth. GDP is a
+    fundamental economic indicator that influences investment decisions, market sentiment, and the performance
+    of various sectors and companies within the Canadian economy.
+
+DESCRIPTION:
+TORONTO, April 23, 2026 /CNW/ - The Canadian economy is expected to show modest growth in the first half of 2026, finds the latest Main Street Quarterly report by the Canadian Federation of Independent Business (CFIB
+
+FULL CONTENT FROM NEWSAPI:
+TORONTO, April 23, 2026 /CNW/ - The Canadian economy is expected to show modest growth in the first half of 2026, finds the latest Main Street Quarterly report by the Canadian Federation of Independe… [+3169 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#060 | score=10 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-23T12:16:37Z
+URL: https://apnews.com/article/medical-marijuana-rescheduling-justice-department-trump-cannabis-1d6722d3aae122b1a91f8e4b6c690268
+Title: Trump reclassifies state-licensed medical marijuana in historic shift
+Market relevance reason: This article reports on a historic policy shift reclassifying medical marijuana. This
+    regulatory change has significant implications for the cannabis industry, potentially impacting companies'
+    operations, legal status, investment opportunities, and market valuations.
+
+DESCRIPTION:
+President Donald Trump’s acting attorney general has signed an order reclassifying state-licensed medical marijuana as a less-dangerous drug. It's a major policy shift long sought by advocates who say cannabis should never have been treated like heroin by the…
+
+FULL CONTENT FROM NEWSAPI:
+WASHINGTON (AP) President Donald Trumps acting attorney general on Thursday signed an order reclassifying state-licensed medical marijuana as a less-dangerous drug, a major policy shift long sought b… [+5668 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#061 | score=8 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-23T06:39:40Z
+URL: https://apnews.com/article/slovakia-russia-oil-pipeline-ukraine-8ddc0f83e41d4be65b141c833f885eff
+Title: Russian oil to Slovakia resumes flowing through pipeline that crosses Ukraine
+Market relevance reason: Resumption of Russian oil flow impacts global oil supply, energy prices, and
+    geopolitical stability in Europe, affecting the energy sector and related companies.
+
+DESCRIPTION:
+Slovak Economy Minister Denisa Saková says the flow of Russian oil to Slovakia through the Druzhba pipeline that crosses Ukraine has resumed. Hungary and Slovakia have been locked in an escalating feud with Ukraine since Russian oil deliveries to Hungary and …
+
+FULL CONTENT FROM NEWSAPI:
+BRATISLAVA, Slovakia (AP) The flow of Russian oil to Slovakia through the Druzhba pipeline that crosses Ukraine has resumed, Slovak Economy Minister Denisa Saková said Thursday. Hungary and Slovakia… [+519 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#064 | score=9 | program_band=band_A | report_band=band_A
+Source: Bloomberg
+Published: 2026-04-23T04:18:42Z
+URL: https://www.bloomberg.com/news/articles/2026-04-22/deepseek-in-talks-to-raise-at-20-billion-value-the-information
+Title: Tencent, Alibaba in talks to join DeepSeek’s first funding round
+Market relevance reason: Major tech companies (Tencent, Alibaba) investing in an AI pioneer (DeepSeek) signals
+    significant sector trends, competitive dynamics, and strategic moves within the artificial intelligence
+    and technology markets.
+
+DESCRIPTION:
+DeepSeek is owned by hedge fund Zhejiang High-Flyer Asset Management, whose cofounder Liang Wenfeng formed the startup in 2023
+
+FULL CONTENT FROM NEWSAPI:
+Tencent Holdings Ltd. and Alibaba Group Holding Ltd. are in discussions to join a maiden round of financing for Chinese AI pioneer DeepSeek, marking a milestone for the countrys artificial intelligen… [+2902 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#065 | score=10 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-23T04:01:06Z
+URL: https://apnews.com/article/warner-brothers-paramount-skydance-netflix-david-ellison-d52e8730ba894adf2ebb9a69646d323b
+Title: Paramount edges closer to a Warner Bros takeover as shareholders vote on the deal
+Market relevance reason: A proposed $81 billion merger between major media companies (Warner Bros. Discovery,
+    Paramount) has direct and substantial implications for the involved companies' valuations, the competitive
+    landscape of the media sector, and investor sentiment.
+
+DESCRIPTION:
+Warner Bros. Discovery shareholders are set to vote Thursday on a $81 billion proposed sale of the company to Skydance-owned Paramount, in a mega merger that could vastly reshape Hollywood and the wider media landscape. Paramount wants to buy all of Warner. T…
+
+FULL CONTENT FROM NEWSAPI:
+NEW YORK (AP) Warner Bros. Discovery shareholders are set to vote Thursday on the companys proposed $81 billion sale to Skydance-owned Paramount, in a mega merger that could vastly reshape Hollywood … [+4802 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#074 | score=8 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-22T14:55:27Z
+URL: https://apnews.com/press-release/pr-newswire/lumeris-introduces-native-audio-for-tom-transforming-real-time-patient-conversations-acb413d3c8eaf113673d5fb061589b6c
+Title: Lumeris Introduces Native Audio for Tom, Transforming Real-Time Patient Conversations
+Market relevance reason: Company-specific news about a new product launch in healthcare technology,
+    potentially impacting its market position and sector.
+
+DESCRIPTION:
+Built with Gemini's native audio capabilities, the new functionality enables more natural patient interactions.
+
+FULL CONTENT FROM NEWSAPI:
+Built with Geminis native audio capabilities, the new functionality enables more natural patient interactions. CAMBRIDGE, Mass., April 22, 2026 /PRNewswire/ -- Lumeris, a leader in healthcare techno… [+4513 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#075 | score=9 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-22T14:17:22Z
+URL: https://apnews.com/article/uk-smoking-ban-vape-vaping-cigarettes-ade338fc91f6a7dc73d4996acb64ca5d
+Title: UK passes bill to ban cigarette purchases for anyone born after 2008
+Market relevance reason: Major regulatory change impacting the tobacco sector in the UK, with long-term
+    financial implications for companies in that market.
+
+DESCRIPTION:
+Parliament has passed a bill to make cigarettes inaccessible to future generations in the U.K. Children born after Dec. 31, 2008, will never be able to buy cigarettes under the new Tobacco and Vapes Bill. The legislation, approved Tuesday, awaits formal appro…
+
+FULL CONTENT FROM NEWSAPI:
+LONDON (AP) Opponents of smoking got a breath of fresh air as Parliament passed a bill that will put cigarettes out of reach for future generations. The end of smoking, and the devastating harm it c… [+1606 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#076 | score=10 | program_band=band_A | report_band=band_A
+Source: The Wall Street Journal
+Published: 2026-04-22T13:58:00Z
+URL: https://www.wsj.com/business/earnings/boeing-ba-q1-earnings-report-stock-2026-e9c2aa35
+Title: Boeing’s Commercial Jet Business Improves, Reducing Quarterly Loss
+Market relevance reason: Direct company earnings report showing improved performance, highly relevant for
+    company-specific and aerospace sector analysis.
+
+DESCRIPTION:
+The plane maker reported brisk first-quarter commercial sales, despite wiring flaws that delayed some deliveries.
+
+FULL CONTENT FROM NEWSAPI:
+Boeings results beat analysts estimates. - Genna Martin/Reuters Boeings commercial jet production lines continued to gain steam in the first quarter, helping reduce the companys quarterly loss. The… [+2187 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#077 | score=9 | program_band=band_A | report_band=band_A
+Source: Bloomberg
+Published: 2026-04-22T08:56:26Z
+URL: https://www.bloomberg.com/news/articles/2026-04-22/microsoft-to-face-uk-class-action-over-cloud-computing-licencing
+Title: Microsoft to face UK class action over cloud computing licencing
+Market relevance reason: Company-specific legal challenge for Microsoft regarding cloud computing licensing,
+    with potential financial and regulatory implications for the company and the tech sector.
+
+DESCRIPTION:
+The ruling comes weeks after the UK’s antitrust watchdog started an investigation into Microsoft’s business software ecosystem to decide whether licensing practices for products such as Word, Excel and Copilot need tighter regulation
+
+FULL CONTENT FROM NEWSAPI:
+Microsoft Corp. must face a UK class action trial over allegations it abused its dominant position in the market to overcharge businesses that used the Windows Server operating system and Azure, an a… [+1317 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#079 | score=8 | program_band=band_A | report_band=band_A
+Source: Bloomberg
+Published: 2026-04-22T06:46:33Z
+URL: https://www.bloomberg.com/news/articles/2026-04-22/bitcoin-rises-on-optimism-over-trump-s-extended-iran-ceasefire
+Title: Bitcoin rises on optimism over Trump’s extended Iran ceasefire
+Market relevance reason: Reports on Bitcoin's price movement in response to a geopolitical event, relevant for
+    the cryptocurrency market and macroeconomic sentiment.
+
+DESCRIPTION:
+Bitcoin rises 2.7% to $77,500 amid optimism from Trump's Iran ceasefire, boosting market confidence in cryptocurrencies.
+
+FULL CONTENT FROM NEWSAPI:
+Bitcoin jumped along with equities on Wednesday after President Donald Trump said he would extend a ceasefire with Iran, bolstering market confidence. The original cryptocurrency rose as much as 2.7… [+1976 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#080 | score=9 | program_band=band_A | report_band=band_A
+Source: Bloomberg
+Published: 2026-04-22T04:48:34Z
+URL: https://www.bloomberg.com/news/articles/2026-04-21/iran-war-has-boosted-costs-of-energy-food-and-now-condoms
+Title: Pricier condoms show war is impacting cost of nearly everything
+Market relevance reason: Highlights broad macroeconomic impacts of geopolitical events on supply chains and
+    consumer prices, with a specific company example (Karex Bhd) and sector implications.
+
+DESCRIPTION:
+The surge in condom costs underscores how the West Asia war, which has already upended energy markets and raised prices for food to fertilizers, is disrupting virtually every aspect of life for consumers
+
+FULL CONTENT FROM NEWSAPI:
+The fallout across industries from the Iran war has now hit condoms. Karex Bhd, which makes one out of every five condoms worldwide, is preparing to raise its prices by as much as 30 per cent as the… [+3121 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#082 | score=9 | program_band=band_A | report_band=band_A
+Source: Bloomberg
+Published: 2026-04-22T04:06:23Z
+URL: https://www.bloomberg.com/news/articles/2026-04-21/china-s-catl-debuts-ev-battery-with-speedy-six-minute-recharge
+Title: China’s CATL debuts EV battery with speedy six minute recharge
+Market relevance reason: Major technological breakthrough from the world's largest EV battery manufacturer
+    (CATL), with significant implications for the electric vehicle sector and related industries globally.
+
+DESCRIPTION:
+CATL’s newest LFP battery is capable of recharging from 10% power to 35% as quickly as one minute, but it said those time frames assume moderate temperature environments
+
+FULL CONTENT FROM NEWSAPI:
+Contemporary Amperex Technology Co. Ltd., the worlds largest electric vehicle battery manufacturer, unveiled a new fast-charging technology ahead of the Beijing auto show in a bid to stay ahead of BY… [+1814 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#084 | score=8 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-22T00:23:26Z
+URL: https://apnews.com/article/trump-media-truth-social-nunes-ceo-don-jr-f528dc294683c7f132c063b4a21dd68e
+Title: Truth Social leadership shake-up: Kevin McGurn steps in amid stock collapse
+Market relevance reason: Significant leadership change at a publicly traded social media company (Trump Media
+    & Technology Group), directly impacting its stock performance and investor sentiment.
+
+DESCRIPTION:
+The Trump business behind Truth Social is replacing a former congressman and big supporter of the U.S. president as leader of the social media platform after a stock collapse in the past year. Devin Nunes, a former California congressmen in Donald Trump’s fir…
+
+FULL CONTENT FROM NEWSAPI:
+NEW YORK (AP) The Trump business behind Truth Social is replacing a former congressman and big supporter of the U.S. president as the leader of the social media platform after a stock collapse that w… [+2677 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#093 | score=8 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-21T13:19:13Z
+URL: https://apnews.com/press-release/pr-newswire/lasix-onyu-now-available-from-walmart-specialty-pharmacy-for-home-delivery-889e7d766ff7c936dff50b0c193738de
+Title: Lasix® ONYU Now Available from Walmart Specialty Pharmacy for Home Delivery
+Market relevance reason: This is company-specific news for Walmart, indicating an expansion of its specialty
+    pharmacy services and market reach, which could impact its revenue and competitive position.
+
+DESCRIPTION:
+Nationwide overnight delivery from Walmart improves access to novel at-home prescription treatment, with particular benefit for rural communities where transportation and distance are often barriers to timely treatment.
+
+FULL CONTENT FROM NEWSAPI:
+Nationwide overnight delivery from Walmart improves access to novel at-home prescription treatment, with particular benefit for rural communities where transportation and distance are often barriers … [+7241 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#097 | score=9 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-04-21T07:15:48Z
+URL: https://apnews.com/press-release/business-wire/circus-reports-strong-q1-2026-operational-progress-accelerates-defence-growth-and-expands-product-portfolio-ee96ffa58d2e4dc3a8de5591dc170044
+Title: Circus Reports Strong Q1 2026 Operational Progress, Accelerates Defence Growth and Expands Product
+    Portfolio
+Market relevance reason: This is company-specific news for a publicly traded company reporting strong
+    operational progress and growth, directly impacting its financial outlook and investor sentiment.
+
+DESCRIPTION:
+MUNICH--(BUSINESS WIRE)--Apr 21, 2026-- Circus SE (ISIN:DE000A2YN355/ XETRA:CA1), a global AI-robotics company developing autonomous sustainment systems, published key highlights from its Q1 Quarterly Operational Update Call, outlining significant progress ac…
+
+FULL CONTENT FROM NEWSAPI:
+MUNICH--(BUSINESS WIRE)--Apr 21, 2026-- Circus SE (ISIN:DE000A2YN355/ XETRA:CA1), a global AI-robotics company developing autonomous sustainment systems, published key highlights from its Q1 Quarter… [+5187 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#098 | score=9 | program_band=band_A | report_band=band_A
+Source: Bloomberg
+Published: 2026-04-21T06:47:20Z
+URL: https://www.bloomberg.com/news/articles/2026-04-21/inox-clean-is-said-to-revive-plan-for-up-to-1-billion-india-ipo
+Title: Inox Clean Energy eyes reviving IPO plan to raise $1 billion
+Market relevance reason: This is significant company-level news about a potential $1 billion IPO, indicating
+    capital raising and market entry, which is highly relevant for the company and the clean energy sector.
+
+DESCRIPTION:
+Inox Clean Energy Ltd. has revived plans for an initial public offering that could raise as much as $1 billion, according to people familiar with the matter.
+
+FULL CONTENT FROM NEWSAPI:
+Inox Clean Energy Ltd. has revived plans for an initial public offering that could raise as much as $1 billion, according to people familiar with the matter. The company is in discussions with banke… [+1970 chars]
+
+------------------------------------------------------------------------------------------------------------------------
+#100 | score=10 | program_band=band_A | report_band=band_A
+Source: Bloomberg
+Published: 2026-04-21T05:53:59Z
+URL: https://www.bloomberg.com/news/articles/2026-04-21/indian-debt-funds-cut-hedges-as-oil-risks-inflate-rate-hike-bets
+Title: Indian debt funds cut hedges as oil risks inflate rate-hike bets
+Market relevance reason: This is highly relevant macroeconomic and sector-level news for India, discussing
+    interest rate expectations, oil price impact, and investment strategies of debt funds, directly affecting
+    the financial markets.
+
+DESCRIPTION:
+The two-year swap rate is still trading near 6%, about 40 basis points above levels before the Iran conflict, showing markets continue to price in higher-for-longer interest rates
+
+FULL CONTENT FROM NEWSAPI:
+Some Indian debt fund managers are cutting back on interest-rate hedges against their bond holdings, saying markets have already priced in an excessive rise in borrowing costs driven by a surge in oi… [+1926 chars]
+
