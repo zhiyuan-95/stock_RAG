@@ -1,362 +1,417 @@
-NEWSAPI PROMPT A SCORE DEBUG REPORT
-Generated at: 2026-04-28T19:23:20
-Read-only check: NewsAPI fetch + Prompt A scoring only. No ingestion was performed.
+WORLD NEWS API FAST FILTER + PROMPT A SCORE DEBUG REPORT
+Generated at: 2026-05-01T18:51:50
+Read-only check: World News API fetch + fast filter + Prompt A scoring only. No ingestion was performed.
 band_C is the report label for program score_band='drop'.
 Current file: band_f
-Articles in this file: 25
-Total scored articles: 100
-Counts: band_A=44 | band_B=19 | band_C=12 | band_f=25
+Articles in this file: 29
+Fast-filtered articles: 0
+Prompt A scored articles: 100
+Counts: fast_filtered=0 | band_A=13 | band_B=32 | band_C=26 | band_f=29
 ========================================================================================================================
 
 ------------------------------------------------------------------------------------------------------------------------
-#004 | score=1 | program_band=band_f | report_band=band_f
+#005 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-27T14:53:41Z
-URL: https://apnews.com/article/argentina-javier-milei-trump-casa-rosada-press-access-freedom-cpj-9c0478222865d18378b9b304694293f0
-Title: Argentine president's journalist ban raises concerns about press freedom
-Extracted negative text: press freedom concerns
+Published: 2026-05-01 21:54:47
+URL: https://apnews.com/article/magic-jamahl-mosley-nba-playoffs-alarm-5a669e2f121dd0ed9800b0379fa93f99
+Title: Magic coach Jamahl Mosley's media session interrupted by false alarms
+Extracted negative text: Sports team media event
 
 DESCRIPTION:
-Argentine President Javier Milei has blocked journalists from the government headquarters and insulted the media on social media. On Thursday, he expelled the press corps from the Casa Rosada, marking a significant escalation in his administration's attacks o…
+ORLANDO, Fla. (AP) — Evidently, the alarm system at Orlando’s Kia Center did not want to hear any talk about the Magic potentially going to a Game 7 against the Detroit Pistons. The alarms began blaring in the arena during Magic coach Jamahl Mosley’s pregame media availability in advance of Game 6 of the series on Friday night, doing so while he was being asked if injured forward Franz Wagner might be able to play in a Game 7. And as that question was being asked, the horns started. “That’s not a good sign,” Mosley said.
 
-FULL CONTENT FROM NEWSAPI:
-BUENOS AIRES, Argentina (AP) The president blocked accredited reporters from entering the governments headquarters. He took to social media, in all caps, to furiously insult the countrys news media a… [+7686 chars]
+FULL CONTENT FROM WORLD NEWS API:
+ORLANDO, Fla. (AP) — Evidently, the alarm system at Orlando’s Kia Center did not want to hear any talk about the Magic potentially going to a Game 7 against the Detroit Pistons. The alarms began blaring in the arena during Magic coach Jamahl Mosley’s pregame media availability in advance of Game 6 of the series on Friday night, doing so while he was being asked if injured forward Franz Wagner might be able to play in a Game 7. And as that question was being asked, the horns started. “That’s not a good sign,” Mosley said. Mosley went on to answer the question, explaining that it all hinges on how Wagner responds to treatment. He did that while a computerized voice gave instructions on what people who were in the building should have been doing at that moment. The alarms returned again a few seconds later, and Mosley decided that was his cue to end the talk. “All right, that’s good, thank you, appreciate it,” Mosley said. For the record, a team official confirmed that the alarms were false. And Detroit coach J.B. Bickerstaff’s pregame media session, which started about 10 minutes after Mosley’s ended, went off without any alarms. The Magic took a 3-2 lead into Game 6 of the series on Friday. AP NBA: https://apnews.com/NBA
 
 ------------------------------------------------------------------------------------------------------------------------
-#006 | score=0 | program_band=band_f | report_band=band_f
+#006 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-27T11:00:13Z
-URL: https://apnews.com/article/trump-correspondents-dinner-shooter-cole-tomas-allen-ea98b14e839217985bd7cf5ab169fb65
-Title: Who is Cole Tomas Allen?
-Extracted negative text: White House shooting incident
+Published: 2026-05-01 21:28:53
+URL: https://apnews.com/article/gerry-conway-obituary-spider-man-punisher-3d87f405983e4ac5a25b7b3d8d5fe140
+Title: Marvel and DC comic book writer Gerry Conway dies at 73
+Extracted negative text: Comic book writer obituary
 
 DESCRIPTION:
-The California man arrested in the shooting incident at the media dinner in Washington is a highly educated tutor and amateur video game developer who's opposed to the policies of President Donald Trump. In writings sent to family members shortly before the S…
+Gerry Conway, a renowned comic book writer who helped create characters and stories for Marvel and DC, including the Punisher character in the Spider-Man comics, has died. He was 73. In a Monday statement announcing his death, Marvel described Conway as a legendary comic book writer with a prolific career.
 
-FULL CONTENT FROM NEWSAPI:
-TORRANCE, Calif. (AP) The California man arrested in the shooting at the White House Correspondents Association dinner is a highly educated tutor and amateur video game developer opposed to the polic… [+5416 chars]
+FULL CONTENT FROM WORLD NEWS API:
+Gerry Conway, a renowned comic book writer who helped create characters and stories for Marvel and DC, including the Punisher character in the Spider-Man comics, has died. He was 73. In a Monday statement announcing his death, Marvel described Conway as a legendary comic book writer with a prolific career. He died Sunday at his home in Thousand Oaks, California, the New York Times reported. His wife told the news outlet the cause was pancreatic cancer. “From Spider-Man to the Avengers, Iron Man to Captain Marvel, Gerry Conway has deftly written almost every character in the Marvel Universe,” Marvel Comics Editor-in-Chief C.B. Cebulski said. “Gerry Conway’s legacy has made an undeniable and indelible impact on the Super Hero stories we know and love. He will be dearly missed.” Tributes were also shared on social media. “While many know his Marvel accomplishments ... Gerry’s contributions to DC were equally impactful and significant: shaping Batman, Superman, the Justice League of America, and co-creating Firestorm, Jason Todd and Power Girl and so many more,” Jim Lee, chief creative officer and president of DC Comics, said in an Instagram post. “Thank you, Gerry, for the worlds imagined and the heroes created.” Conway was born in Brooklyn on Sept. 10, 1952. A lifelong fan of comic books, he started writing comic book stories as a teenager, and by the age of 19 he landed work on “The Amazing Spider-Man” — which Marvel’s statement described as “the job that would change his life — and the comic book industry at large — forever.” Conway’s writing featured “pivotal moments” that redefined the series, Marvel said, such as the death of Gwen Stacy, Peter Parker’s girlfriend. He also co-created the Punisher, a vigilante antihero known for the skull logo on his chest. The skull imagery has been used by law enforcement in recent years, sparking controversy at times. Nearly a decade ago, Conway objected to police departments putting Punisher decals on their vehicles, saying in a social media post that the character was “a complex morally compromised anti-hero, not to be emulated by cops,” as reported the Syracuse Post-Standard. Conway had a way of imbuing characters with nuance and emotional depth, Marvel said in its statement. “Gerry Conway brought real stakes to his writing, able to weave together sensational super heroics with the human and relatable, and in doing so created some of the most memorable stories and characters of all time,” Marvel Studios President Kevin Feige said. Beyond the Spider-Man comics, Conway wrote for several other major Marvel titles, including “Fantastic Four,” “Thor” and “The Incredible Hulk.” In a 1981 interview with The Comics Journal, Conway noted how comic books can appeal to both younger and older audiences. “I’m writing for the youthful part of myself, the primitive part of myself,” he told the magazine. “If an adult likes the books it’s because of a nostalgic feeling for that primitive, easy conceptualization of heroic purpose.” Conway is survived by his wife, Laura Conway, and two daughters from previous marriages.
 
 ------------------------------------------------------------------------------------------------------------------------
-#020 | score=1 | program_band=band_f | report_band=band_f
+#010 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-25T21:03:12Z
-URL: https://apnews.com/press-release/ein-presswire-newsmatics/healing-hands-clinic-spotlights-a-decade-of-patented-innovations-and-global-surgical-firsts-23498454307a4f18133276ecf2ada1ac
-Title: Healing Hands Clinic Spotlights a Decade of Patented Innovations and Global Surgical Firsts
-Extracted negative text: Localized clinic achievements
+Published: 2026-05-01 20:06:30
+URL: https://apnews.com/article/west-virginia-catholic-bishop-trump-immigration-cdd4554bde6fac45df2a0246e23c7d84
+Title: Trump critic who fled El Salvador as a teen named West Virginia Roman Catholic bishop
+Extracted negative text: Religious leadership appointment
 
 DESCRIPTION:
-India's #1 ranked proctology chain unveils its portfolio of patents, global certifications, and surgical firsts that put Maharashtra on the world medical map.
+CHARLESTON, W.Va. (AP) — The next bishop for West Virginia Catholics will be an El Salvador-born advocate for immigrants who has opposed U.S. President Donald Trump’s immigration crackdown policies. Pope Leo XIV announced Friday the appointment of the Most Rev.
 
-FULL CONTENT FROM NEWSAPI:
-Indias #1 ranked proctology chain unveils its portfolio of patents, global certifications, and surgical firsts that put Maharashtra on the world medical map. The woods are lovely, dark and deep, But… [+7649 chars]
+FULL CONTENT FROM WORLD NEWS API:
+CHARLESTON, W.Va. (AP) — The next bishop for West Virginia Catholics will be an El Salvador-born advocate for immigrants who has opposed U.S. President Donald Trump’s immigration crackdown policies. Pope Leo XIV announced Friday the appointment of the Most Rev. Evelio Menjivar-Ayala, an auxiliary bishop in Washington, D.C., as the new leader of the Diocese of Wheeling-Charleston, which comprises West Virginia, one of the nation’s least racially diverse states. Menjivar-Ayala, 55, fled El Salvador’s civil war as a teen in the late 1980s, eventually crossing illegally into the United States in 1990, he told The Associated Press in an interview last year. But within “a couple of weeks” he gained humanitarian protection, later was granted a visa as a religious worker, and became a U.S. citizen two decades ago. Nonetheless, he feels close to immigrants who have been caught up by raids, including last year’s federal law enforcement surge in Washington, because “that could have been me,” he said in 2025. The Catholic Church has long advocated for humane treatment of migrants and refugees in the United States and around the world. Menjivar-Ayala and other U.S. church leaders have strongly condemned the Trump administration’s mass deportation policies while also affirming a nation’s right to control its borders and urging reconciliation. New bishop to prioritize those on the margins Menjivar-Ayala did not mention immigration policies nor Trump is his speech Friday, instead focusing on his desire to be accepted by West Virginians and his willingness to listen to the community. A portion of his speech was in Spanish. “I have much to learn, but my heart is ready and wide-open,” he said. “Above all, I want to listen to the poor. Those in the margins of the church and society. To workers, to the immigrants, because as Matthew 25 says, the way we treat the least is the way we treat Jesus.” In the Washington archdiocese, which includes the District of Columbia and parts of Maryland, more than 40% of parishioners are Latino. In West Virginia — all of which is covered by the Wheeling-Charleston diocese — only 2.4% of the population is Latino and 92.6% of its 1.77 million residents identify as white, according to the U.S. Census. Menjivar-Ayala replaces the Most Rev. Mark Brennan, 79, who has served as West Virginia’s bishop since 2019. Brennan had taken over after a scandal over a former bishop’s sexual harassment of adults and lavish spending of church money. In a shared news conference in Wheeling on Friday, Brennan reminded West Virginians that many in America come from somewhere else. “But he loves all the people here. He’s not going to be bishop just for one group within the diocese. He’ll be bishop for all the people. I can assure you of that.” The new bishop, who has spent his ministerial career in the nation’s capital and surrounding communities, will work in a less Catholic and more rural region, overseeing the diocese’s 61,000 Catholics and 92 parishes throughout West Virginia. While acknowledging the beauty of West Virginia mountains and natural resources, he said many people in one of the nation’s poorest states “continue to endure hardship, marginalization and inequality.” Lauded for his immigration advocacy Cardinal Robert McElroy of Washington praised Menjivar-Ayala’s advocacy for migrants during his tenure in the capital, saying in a statement that “his passion for justice and sensitive care for the Hispanic and immigrant communities of our Archdiocese have planted seeds of grace that will yield a harvest here for decades to come.” In an article he wrote last year for the Catholic Standard, the official newspaper of the Washington archdiocese, Menjivar-Ayala spoke out against the treatment of immigrants by Trump’s administration. “Each day this situation is getting worse and more ominous,” Menjivar-Ayala wrote. “For weeks now, the federal government has pursued a ‘shock and awe’ campaign of aggressive threats and highly visible operations of questionable legality that go far beyond mere immigration ‘enforcement.’” Menjivar-Ayala, whose appointment comes a few weeks after the pope’s disagreement with Trump over the U.S. war against Iran, will be installed as bishop at a ceremony on July 2. The White House didn’t immediately respond to a request for comment on Menjivar-Ayala’s appointment. Another Latin America-born priest was also named a U.S. bishop on Friday. The Rev. John Gomez will start his tenure in the Diocese of Laredo, Texas, on June 30. Gomez was born in Colombia, came to the United States on a student visa in 2002 and became a U.S. citizen in 2021, according to his current diocese in Tyler, Texas. In a statement, Bishop Gregory Kelly of Tyler praised his “commitment to Hispanic Ministry.” Pope Leo’s first American bishop appointment, two weeks after his own election in May 2025, was a former refugee: Michael Pham, who was born in Vietnam and became bishop of San Diego, California. The number of priestly ordinations in the United States has been declining for decades, making foreign-born clergy essential to many parishes nationwide. Dell’Orto reported from Minneapolis. Associated Press religion coverage receives support through the AP’s collaboration with The Conversation US, with funding from Lilly Endowment Inc. The AP is solely responsible for this content.
 
 ------------------------------------------------------------------------------------------------------------------------
-#021 | score=0 | program_band=band_f | report_band=band_f
+#011 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-25T13:57:45Z
-URL: https://apnews.com/article/supreme-court-geofence-warrants-unreasonable-searches-constitution-a61c200a806cba89ded43685279eccae
-Title: A bank robber's cellphone gave him away. His case is at the Supreme Court
-Extracted negative text: Criminal case, geofence warrants
+Published: 2026-05-01 20:02:22
+URL: https://apnews.com/article/flyers-cam-york-nhl-playoffs-e9c1df27272e692ce00a570e9bafab42
+Title: Cam York has stick returned to him from happy Flyers fan
+Extracted negative text: Sports playoff fan story
 
 DESCRIPTION:
-Okello Chatrie’s cellphone gave him away. Chatrie made off with $195,000 from the bank he robbed in suburban Richmond, Virginia, and he eluded the police. But then they turned to a powerful technological tool that erected a virtual fence and allowed them coll…
+VOORHEES, N.J. (AP) — Cam York threw his stick into the stands after he scored a playoff winner for the Flyers and, almost like a boomerang, it came back to him at practice. York’s overtime goal beat the Pittsburgh Penguins 1-0 in Game 6 of their first-round series and helped the Flyers advance in the playoffs for the first time since 2020. York was caught up in the moment — “definitely don’t want a lawsuit,” he cracked after the long toss — and hoped the Flyers fan who retrieved the valuable piece of equipment would return the souvenir. “I figured even if it did hit him, that he was going to still enjoy the moment and be happy,” York said Friday.
 
-FULL CONTENT FROM NEWSAPI:
-WASHINGTON (AP) Okello Chatries cellphone gave him away. Chatrie made off with $195,000 from the bank he robbed in suburban Richmond, Virginia, and eluded the police until they turned to a powerful … [+4803 chars]
+FULL CONTENT FROM WORLD NEWS API:
+VOORHEES, N.J. (AP) — Cam York threw his stick into the stands after he scored a playoff winner for the Flyers and, almost like a boomerang, it came back to him at practice. York’s overtime goal beat the Pittsburgh Penguins 1-0 in Game 6 of their first-round series and helped the Flyers advance in the playoffs for the first time since 2020. York was caught up in the moment — “definitely don’t want a lawsuit,” he cracked after the long toss — and hoped the Flyers fan who retrieved the valuable piece of equipment would return the souvenir. “I figured even if it did hit him, that he was going to still enjoy the moment and be happy,” York said Friday. Longtime Flyers fan Jack Brod, who grabbed the stick around Section 113 in the lower level, had planned to gift the stick to a family friend. Once he learned that York wanted the stick back, Brod graciously returned it. Wearing the same Flyers sweatshirt he did in Game 6, Brod was a guest Friday at Flyers practice and got to meet York. York said right after the game he thought, “why did I do that?” “When my career is done and over with, I want to have some things to look back on, remember and cherish,” York said on Friday. “This was obviously a special moment for me. Super nice guy. Just met him. For me to just give it back for kind of nothing, I really appreciate that. That’s one of the best things about Philly fans is, they love their players and they want their players to perform at the highest level they can.” Brod didn’t go home empty-handed. He received a new stick and a signed York No. 8 jersey. York hoped to frame the stick. The Flyers open their second-round series Saturday at Carolina. AP NHL playoffs: https://apnews.com/hub/stanley-cup and https://apnews.com/hub/nhl
 
 ------------------------------------------------------------------------------------------------------------------------
-#022 | score=0 | program_band=band_f | report_band=band_f
+#016 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-25T13:23:20Z
-URL: https://apnews.com/article/white-house-correspondents-dinner-trump-first-amendment-a0a2446832e8596e66c6fccb8426c8aa
-Title: Close watch on how Trump and journalists get along at correspondents' gala
-Extracted negative text: Political event security incident
+Published: 2026-05-01 19:22:10
+URL: https://apnews.com/article/harvey-weinstein-rape-retrial-jessica-mann-metoo-9a2b1b0fd963c5da855e6291ef1feb88
+Title: Weinstein accuser returns to the witness stand
+Extracted negative text: Celebrity legal trial coverage
 
 DESCRIPTION:
-President Donald Trump and other top leaders of the United States were evacuated from an annual dinner of White House correspondents on Saturday night after an unspecified threat. There did not immediately appear to be any injuries. The Secret Service and oth…
+NEW YORK (AP) — The accuser at Harvey Weinstein ′s rape retrial resumed testifying Friday, a day after she said she was having difficulty focusing on the witness stand. Jessica Mann returned to court for further questioning from the former movie magnate’s lawyers, who spent the morning scrutinizing her communications and get-togethers with him after the alleged rape in March 2013. “I’m not doing too good right now, so I’m really trying to remember,” Mann said. She soon added: “I feel like I said a lot, and I’m trying to get through this.” But she went on to respond to hours of questions, at times seeming exhausted or asking for queries to be repeated.
 
-FULL CONTENT FROM NEWSAPI:
-President Donald Trump and other top leaders of the United States were evacuated from an annual dinner of White House correspondents on Saturday night after an unspecified threat. There did not immed… [+5690 chars]
+FULL CONTENT FROM WORLD NEWS API:
+NEW YORK (AP) — The accuser at Harvey Weinstein ′s rape retrial resumed testifying Friday, a day after she said she was having difficulty focusing on the witness stand. Jessica Mann returned to court for further questioning from the former movie magnate’s lawyers, who spent the morning scrutinizing her communications and get-togethers with him after the alleged rape in March 2013. “I’m not doing too good right now, so I’m really trying to remember,” Mann said. She soon added: “I feel like I said a lot, and I’m trying to get through this.” But she went on to respond to hours of questions, at times seeming exhausted or asking for queries to be repeated. Mann, 40, and Weinstein, 73, are in the midst of the third trial about her accusation that he forced himself on her in a New York hotel room. Weinstein’s lawyers say everything that happened between the two was consensual and part of a four-year, caring relationship. He was initially convicted in 2020, but an appeals court overturned that verdict, and jurors at a retrial last year stopped deliberating on the rape charge when the foreperson refused to participate further. That left the case unresolved and led to the ongoing re-retrial. Weinstein was a high-flying film producer until allegations about him fueled the #MeToo movement against sexual misconduct in 2017. He has said he “acted wrongly, but I never assaulted anyone.” He and Mann met in early 2013, when he was a studio boss and she was a 27-year-old hairstylist and actor trying to build a movie career. She has testified that he soon started making advances, and although she was taken aback, she decided to embark on a relationship with the then-married Weinstein. She alleges that a few weeks later, he trapped her in a midtown Manhattan hotel room, angrily ordered her to undress as he loomed over her, ignored her protests and raped her. Their relationship continued, on and off, for years afterward. Mann has testified that she loved “a part of him” and “always tried to see the good in him,” and that she was wary of crossing a well-connected man who flexed his power. He boasted that his “enemies don’t step a foot in this town,” she said. On Friday, Weinstein lawyer Teny Geragos took Mann back through various friendly and complimentary emails that she sent to or about Weinstein over the years. In one May 2013 text, she told a friend that “I like the Harvey we know. I feel some sense of protection.” Mann told jurors he helped her navigate the movie industry and “there was a time when I felt he did protect me.” The Associated Press does not identify people who say they have been sexually assaulted unless they agree to be named, as Mann has done.
 
 ------------------------------------------------------------------------------------------------------------------------
-#023 | score=0 | program_band=band_f | report_band=band_f
+#024 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-25T08:20:38Z
-URL: https://apnews.com/article/radio-taiso-c4faaf9abb045b3f25d3fda2779943bb
-Title: Japan awakens to radio exercise tradition
-Extracted negative text: Cultural exercise tradition
+Published: 2026-05-01 17:52:41
+URL: https://apnews.com/article/syria-damascus-shiites-sayyida-zeinab-cleric-killed-grenade-ecd55b94ab0bf04c1d2bcabe11ba3007
+Title: Shiite cleric killed in grenade attack near Damascus
+Extracted negative text: Middle East local violence
 
 DESCRIPTION:
-Radio Taiso is an exercise program in Japan that comes on the air every morning at 6:30. The program includes 10 minutes of basic calisthenics that people of all ages can do. Light piano music helps participants follow the basic choreography. Radio Taiso has …
+DAMASCUS, Syria (AP) — Assailants killed a Shiite cleric Friday near the Syrian capital by hurling a grenade into his car, state media reported. It was not immediately clear who was behind the attack that killed Farhan al-Mansour, the main preacher at a Shiite shrine in the Damascus suburb of Sayyida Zeinab. State news agency SANA and state TV said that security was boosted in the southern suburb of Damascus, adding that security forces have launched an investigation to find the suspects behind the attack.
 
-FULL CONTENT FROM NEWSAPI:
-TOKYO (AP) This is how Japan wakes up. Its called Radio Taiso Exercise Radio in English a simple yet dynamic way to start the day. Japanese radio plays music every morning at 6:30 to accompany basic… [+4769 chars]
+FULL CONTENT FROM WORLD NEWS API:
+DAMASCUS, Syria (AP) — Assailants killed a Shiite cleric Friday near the Syrian capital by hurling a grenade into his car, state media reported. It was not immediately clear who was behind the attack that killed Farhan al-Mansour, the main preacher at a Shiite shrine in the Damascus suburb of Sayyida Zeinab. State news agency SANA and state TV said that security was boosted in the southern suburb of Damascus, adding that security forces have launched an investigation to find the suspects behind the attack. The area was the scene of intense clashes during the early years of Syria’s conflict that broke out in March 2011. Tens of thousands of Shiite Muslims used to visit the Sayyida Zeinab Shrine where they believe the granddaughter of Prophet Muhammad is entombed. Since the fall of President Bashar Assad’s government in December 2024, the numbers have dropped sharply. Zeinab is a daughter of the first Shiite imam, Ali, cousin and son-in-law of Prophet Muhammad. She’s especially revered among Shiites as a symbol of steadfastness, patience and courage. Sayyida Zeinab has been the site of past attacks on Shiite pilgrims by the Islamic State group, which takes an extreme interpretation of Sunni Islam and considers Shiites to be infidels.
 
 ------------------------------------------------------------------------------------------------------------------------
-#028 | score=0 | program_band=band_f | report_band=band_f
+#025 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-24T17:31:03Z
-URL: https://apnews.com/article/kenya-abortion-court-appeal-constitution-penal-code-dfd15213299aa4185e2012365aeae10e
-Title: Abortion rights in Kenya: Court of appeal reverses key ruling
-Extracted negative text: Kenyan abortion rights ruling
+Published: 2026-05-01 17:51:45
+URL: https://apnews.com/article/narges-mohammadi-hospitalized-iran-304524aaf3158ea4e28cf2ed684752a6
+Title: Iranian Nobel laureate Narges Mohammadi hospitalized
+Extracted negative text: Human rights activist health crisis
 
 DESCRIPTION:
-A court of appeal in Kenya has overturned a ruling that affirmed the right to access abortion. The case involved a teenager and a health care worker who were charged and later acquitted of accessing an abortion. In 2022, the high court ruled that access to ab…
+BEIRUT (AP) — Iran’s imprisoned Nobel Peace Prize laureate Narges Mohammadi has been urgently transferred from prison to a hospital in northwestern Iran after a “catastrophic deterioration” of her health, her foundation said Friday. The Narges Mohammadi Foundation said the Nobel Prize laureate had two episodes of complete loss of consciousness and a severe cardiac crisis. Earlier Friday, Mohammadi had fainted twice in prison in Zanjan in northwestern Iran, according to the foundation.
 
-FULL CONTENT FROM NEWSAPI:
-NAIROBI, Kenya (AP) A court of appeal in Kenya Friday overturned a ruling that affirmed the right to access abortion, setting up a legal clash that is likely to be appealed again to the Kenyan Suprem… [+2356 chars]
+FULL CONTENT FROM WORLD NEWS API:
+BEIRUT (AP) — Iran’s imprisoned Nobel Peace Prize laureate Narges Mohammadi has been urgently transferred from prison to a hospital in northwestern Iran after a “catastrophic deterioration” of her health, her foundation said Friday. The Narges Mohammadi Foundation said the Nobel Prize laureate had two episodes of complete loss of consciousness and a severe cardiac crisis. Earlier Friday, Mohammadi had fainted twice in prison in Zanjan in northwestern Iran, according to the foundation. She was believed to have suffered a heart attack in late March, according to her lawyers who visited her a few days after the incident. At the time, she appeared pale, underweight and needed a nurse to help her walk. The hospital transfer comes “after 140 days of systematic medical neglect,” since her arrest on Dec. 12, the foundation said. “This transfer was done as an unavoidable necessity after prison doctors determined her condition could not be managed on-site, despite standing medical recommendations that she be treated by her specialized team in Tehran,” the foundation said. Mohammadi’s family had advocated for her transfer to adequate medical facilities for weeks. The foundation, quoting her family, said her transfer Friday to a hospital in Zanjan was “a desperate, ‘last-minute’ action that may be too late to address her critical needs.” On March 24, Mohammadi’s fellow inmates found her unconscious, her lawyers said she told them during the visit a few days later. Upon later examination at the prison’s clinic, a doctor told her that she probably had had a heart attack. She had chest pain and breathing difficulties since. Her legal representative in France, Chirinne Ardakani, said at the time that Mohammadi had been denied transfer to the hospital or to visit her cardiologist. A prison official was present throughout the brief visit by Mohammadi’s lawyers. Mohammadi, 53, a rights lawyer who won the Nobel Peace Prize in 2023 while in prison, was arrested in December during a visit to the eastern Iranian city of Mashhad and sentenced to seven more years in prison. Her family said in February that her health was worsening in prison, in part because of a beating she endured during her arrest in December. He said multiple men hit and kicked her in her side, head and neck. The Nobel committee condemned the “ongoing life-threatening mistreatment” of Mohammadi in a statement in February. “In recent days, her blood pressure has experienced severe fluctuations, going very high and low, and today she suddenly fainted due to a sudden drop in blood pressure,” her lawyer Mostafa Nili posted on X. At first, the prison doctor injected Mohammadi with drugs but she refused to be transferred to a hospital, demanding to see her cardiologist. A few hours later, Mohammadi fainted again. This time a neurologist ordered her immediate transfer to a hospital, the lawyer added. Mohammadi was urgently transferred to the hospital and admitted to the cardiac care unit, “but her blood pressure continues to fluctuate severely,” Nili wrote. He said a medical official in Zanjan recommended a one-month suspension of her sentence for treatment, but the public prosecutor in Zanjan referred the matter to his counterpart in Tehran. Prior to her arrest Dec. 12, Mohammadi had already been serving a sentence of 13 years and nine months on charges of collusion against state security and propaganda against Iran’s government, but had been released on furlough since late 2024 over medical concerns. During that furlough, Mohammadi kept up her activism with public protests and international media appearances, including demonstrating in front of Tehran’s notorious Evin Prison, where she had been held. In February, a Revolutionary Court in Mashhad sentenced Mohammadi to an additional seven years. Such courts typically issue verdicts with little or no opportunity for defendants to contest their charges. Mohammadi suffered multiple heart attacks while imprisoned before undergoing emergency surgery in 2022, her supporters say. In 2023, Mohammadi became the fifth laureate to be awarded the Nobel Peace Prize while in prison, further amplifying her voice in support of widespread protests that swept Iran after the death the year before of Mahsa Amini, who was arrested by the country’s morality police for not properly wearing the mandatory headscarf. Her selection enraged Iran’s hard-line Shiite theocracy, which increased her prison time and later sent guards to rough her up along with other prisoners who were protesting inside Evin Prison. Yet Mohammadi remained defiant, even issuing boycott calls for the 2024 election that President Masoud Pezeshkian won. She maintained that one day Iran’s government would change due to popular pressure.
 
 ------------------------------------------------------------------------------------------------------------------------
-#029 | score=1 | program_band=band_f | report_band=band_f
+#026 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-24T15:36:05Z
-URL: https://apnews.com/press-release/ein-presswire-newsmatics/boca-raton-championship-wrestling-to-unveil-new-logo-during-wrestlemania-week-in-las-vegas-at-brcw-vegas-vacation-e9ba7813a17e1fb6fc38909208a62a70
-Title: Boca Raton Championship Wrestling to Unveil New Logo During WrestleMania Week in Las Vegas at “BRCW
-    Vegas Vacation”
-Extracted negative text: Niche wrestling event news
+Published: 2026-05-01 17:40:25
+URL: https://apnews.com/article/kentucky-derby-women-cherie-devaux-5fb28bae12768b1a6012eaf720617047
+Title: Women make the Kentucky Derby happen on the track and behind the scenes
+Extracted negative text: Horse racing gender diversity
 
 DESCRIPTION:
-Boca Raton Championship Wrestling to Unveil New Logo During WrestleMania Week in Las Vegas at “BRCW Vegas Vacation” — Celebration Continues at WrestleLit
+LOUISVILLE, Ky. (AP) — Just 17 women have trained a horse that ran in one of the first 151 renditions of the Kentucky Derby. Only six women have ridden in the race. Far more have a hand in making the opening jewel of the Triple Crown happen.
 
-FULL CONTENT FROM NEWSAPI:
-Boca Raton Championship Wrestling to Unveil New Logo During WrestleMania Week in Las Vegas at BRCW Vegas Vacation Celebration Continues at WrestleLit When we decided to continue BRCW as an ongoing c… [+5943 chars]
+FULL CONTENT FROM WORLD NEWS API:
+LOUISVILLE, Ky. (AP) — Just 17 women have trained a horse that ran in one of the first 151 renditions of the Kentucky Derby. Only six women have ridden in the race. Far more have a hand in making the opening jewel of the Triple Crown happen. As Cherie DeVaux looks to become the first woman to train a Derby winner, she is surrounded at Churchill Downs by hundreds of influential women at the track, on the air and behind the scenes on the first Saturday in May. “I often hear about women being involved with a male-dominated sport, but for me it feels like it’s my sport,” jockey-turned-NBC broadcaster Donna Brothers said. “Women are an integral part of it. You see a lot of exercise riders out there who are women, a lot of female grooms, hotwalkers. Unfortunately, you still don’t see a lot of women in the top names — the top jockeys and the top trainers — but I think we’re getting there.” Brothers is joined on NBC’s broadcast by Britney Eurton, who has been in horse racing her entire life as the daughter of trainer Peter Eurton. Lindsay Schanzer four years ago became the first woman to produce the Kentucky Derby, and the 152th running will be her fifth in charge. “It’s not just a male-dominated sport but also a male-dominated industry, sports TV, so I feel great pride,” said Schanzer, who is one of more than 30 women involved in the production, operation and marketing of the race for NBC Sports. “I feel honored to be in this position and to represent the team that I have as best I can.” DeVaux, who trains Golden Tempo, earlier this week seemed to downplay her chance at history. Seeing a young girl on the backstretch near her barn made her realize in the moment just how monumental it would be if Golden Tempo puts her in the record books. “It would be irresponsible of me to not acknowledge that what I’m doing does inadvertently make a difference, even if it’s not my intent,” said DeVaux, who grew up with seven brothers and two sisters. “My brothers are a lot bigger than me, so I think that’s what shaped me. I’ve had to fight and scrap and be heard so that I could survive growing up. And I understand that’s not the same for everybody.” Brothers, whose mother was a jockey, started thinking about the ramifications for DeVaux after watching Golden Tempo on the track and realizing how good a chance he has. Jena Antonucci with Arcangelo in the Belmont Stakes in 2022 is the only woman to train the winner of a Triple Crown race. The Derby adds another layer. “Take gender out of it: She’s a phenomenal trainer,” Eurton said of DeVaux. “For her, this is her life. Male or female, this is what she’s wanted to do and she’s very, very good at it. It’s just a matter of time whether it’s Cherie or another talented female trainer.” An exercise rider for Brad Cox, Katie Tolbert would have a huge hand in the success if Commandment gets the job done on Saturday. And there are countless other women at the barns and around all the horses in the race. “My dad has a lot of female grooms, assistants,” Eurton said. “It can always be greater, but to have that representation is where the start is. And to have so much female support, I think, is huge.” AP horse racing: https://apnews.com/hub/horse-racing
+
+------------------------------------------------------------------------------------------------------------------------
+#032 | score=1 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-05-01 16:46:33
+URL: https://apnews.com/article/turkey-may-day-istanbul-arrests-51e1c609c94fee210f48d9482defd103
+Title: Turkish authorities detain 500 May Day demonstrators
+Extracted negative text: Political protest detentions
+
+DESCRIPTION:
+ISTANBUL (AP) — Turkish authorities detained over 500 May Day demonstrators on Friday for attempting to march in areas declared off-limits. Protests marking International Workers’ Day, a national holiday in Turkey, are frequently marred by clashes with authorities, which have declared Istanbul’s central Taksim Square a no-go area for protesters on security grounds. More than 30 people were killed in violence at the square during May Day protests in 1977.
+
+FULL CONTENT FROM WORLD NEWS API:
+ISTANBUL (AP) — Turkish authorities detained over 500 May Day demonstrators on Friday for attempting to march in areas declared off-limits. Protests marking International Workers’ Day, a national holiday in Turkey, are frequently marred by clashes with authorities, which have declared Istanbul’s central Taksim Square a no-go area for protesters on security grounds. More than 30 people were killed in violence at the square during May Day protests in 1977. On Friday, small groups of protesters kept popping up around Taksim Square, attempting to breach the police blockade, holding union banners and chanting for the square to be reopened. The main gathering point was the nearby Mecidiyekoy district, where hundreds of participants were met with water cannons and pepper spray before being detained. The detentions come a day after Turkey’s top Constitutional Court ruled that three people who were detained for 58 days in 2024 on May Day had their right to peaceful assembly violated, setting a precedent for May Day protests. The Istanbul governor’s office said that the public had been informed of the safety precautions beforehand. “Certain marginal groups dismissed the precautions, and clashed with police officers as they do every year,” it said, adding that 575 people were detained by 6 p.m. Friday.
 
 ------------------------------------------------------------------------------------------------------------------------
 #034 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-24T13:53:41Z
-URL: https://apnews.com/article/soldier-charged-polymarket-maduro-raid-3924aed69e6d6efdda7127cf82364990
-Title: Soldier charged with using intel to win big Polymarket trades on Maduro raid appears in court
-Extracted negative text: soldier's classified information misuse
+Published: 2026-05-01 16:15:38
+URL: https://apnews.com/article/kentucky-derby-post-time-01f513f283277f2e4adec5b9359def62
+Title: There is no clear favorite and plenty of contenders in 152nd Kentucky Derby
+Extracted negative text: Sports horse racing preview
 
 DESCRIPTION:
-A U.S. soldier involved with the capture of Venezuelan President Nicolás Maduro is being released on bond, a day after being charged with using classified information about the operation to win more than $400,000 in an online prediction market. Federal prosec…
+LOUISVILLE, Ky. (AP) — The chaos at the start of the Kentucky Derby sometimes decides the most exciting two minutes in sports in a matter of seconds. Twenty horses bursting out of the starting gate to varying degrees of success makes it a mad dash to the turn. Calling the race on television for NBC, Larry Collmus typically focuses on the favorite.
 
-FULL CONTENT FROM NEWSAPI:
-RALEIGH, N.C. (AP) A U.S. special forces soldier who took part in the capture of Venezuelan President Nicolás Maduro will be released on bond on charges accusing him of using classified information a… [+3030 chars]
+FULL CONTENT FROM WORLD NEWS API:
+LOUISVILLE, Ky. (AP) — The chaos at the start of the Kentucky Derby sometimes decides the most exciting two minutes in sports in a matter of seconds. Twenty horses bursting out of the starting gate to varying degrees of success makes it a mad dash to the turn. Calling the race on television for NBC, Larry Collmus typically focuses on the favorite. This year presents a challenge. “I don’t know who the favorite is going to be,” Collmus said. “I guess we’ll find out. It’s wide open this year.” Todd Pletcher-trained Renegade opened as the favorite, but it could just as easily be Brad Cox’s Commandment or Further Ado or Bill Mott’s Chief Wallabee by the time the field of 20 leaves the gate. The first leg of the Triple Crown is so wide open that at least a half-dozen horses have a legitimate chance to win the 152nd running of the Kentucky Derby on Saturday. “There’s a lot of different ways you could go if you were handicapping this race,” said Chad Brown, the trainer of Emerging Market. “You could really make an argument at this point for maybe half the horses in the field if they ran their very, very best race and had a good trip that could win this race.” Renegade on the rail Renegade was set as the 4-1 favorite on the morning line, but last weekend he drew the inside No. 1 post position on the rail. No horse has won the Derby from there since Ferdinand in 1986. “It’s not the one we would have chosen,” Pletcher said. “It’s not ideal, but it’s what we got and we’ll do the best we can with it.” When Pletcher watched replays of every race since the new starting gate was introduced in 2020, he thought his horses and others on the rail were negatively affected and their chances compromised. The last horse to break from the very inside to finish in the money was Lookin At Lee in 2017. Irad Ortiz Jr. is being counted on to navigate Renegade through the 1 1/4-mile journey around the dirt track at Churchill Downs, and while he has yet to win the Kentucky Derby, he’s in his prime as one of the best jockeys in the world. “Irad’s riding in great form right now, so they just got to work it out,” Pletcher said. “I think his natural running style is to kind of settle and make one run like he has been doing, so we’re not looking to change that.” Cox’s trio is a duo but still formidable Cox entered three horses but is down to two after ruling out Fulleffort on Thursday because of a chip in the colt’s left hind ankle. Mark Casse’s Silent Tactic and Kenny McPeek’s Right to Party were also scratched, putting Great White, Ocelli and Robusta into the field on the far outside. Commandment and Further Ado each has shown the ability to finish first in this deep class of 3-year-olds. Commandment has won four in a row, including the Florida Derby, while Further Ado bounced back from a lengthy absence and won the Blue Grass Stakes. They will now face rivals who thrived all over the country. “There’s a lot of talent, obviously, coming from different regions, whether it’s California, Florida, Louisiana, New York,” Cox said. “I do feel like the horses in Florida were definitely the strongest region this year.” Bob Baffert’s Potente was second to So Happy in the Santa Anita Derby in Southern California, and Litmus Test comes from Oaklawn Park in Arkansas. Baffert is tied for the most Derby victories among trainers and can take sole possession of the record if one of his long shots comes through. With Danon Bourbon and homebred Wonder Dean, Japan again has strong presence two years after Forever Young was a close third. The country is in search of its first Derby win. No super horse? It does not look like there is a super horse in this field who is capable of sweeping the Triple Crown like Justify in 2018 and American Pharoah in 2015. “There’s by no means an American Pharoah in here, at least up to this point, going into the race,” Brown said. “Now, whoever wins this race and goes on, maybe one emerges and turns into one of the best 3-year-olds in the last few years. Who knows?” The bigger question is whether any of them would get the chance, given the reluctance of owners and trainers to run a horse two weeks later in the Preakness Stakes, which this year takes place at Laurel Park while Pimlico Race Course is rebuilt. Two of the past four Kentucky Derby winners did not run in the Preakness, which could soon move from the third to the fourth weekend in May to attract more horses. AP horse racing: https://apnews.com/hub/horse-racing
+
+------------------------------------------------------------------------------------------------------------------------
+#036 | score=1 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-05-01 16:00:54
+URL: https://apnews.com/article/acm-awards-2026-how-to-watch-9d7f0bb6c1895fec702c862c0de7a201
+Title: 2026 Academy of Country Music Awards Guide: How to watch
+Extracted negative text: Country music awards event
+
+DESCRIPTION:
+NEW YORK (AP) — It’s time to cowboy up, y’all. The 2026 Academy of Country Music Awards are right around the corner, and they look different this time around. Buckle up for a few seismic changes.
+
+FULL CONTENT FROM WORLD NEWS API:
+NEW YORK (AP) — It’s time to cowboy up, y’all. The 2026 Academy of Country Music Awards are right around the corner, and they look different this time around. Buckle up for a few seismic changes. Shania Twain will host for the first time ever, taking over for Reba McEntire. The awards ceremony will also take place May 17 at the MGM Grand Garden Arena in Las Vegas, leaving the Ford Center at The Star in Frisco, Texas, just north of Dallas, after three years. And women lead the nominations. But where will the 2026 ACM Awards stream? Who is nominated? What else is noteworthy this year and who will perform? Read on for those answers and more. How to watch the ACMs The 2026 ACM Awards will stream on Prime Video and the Amazon Music channel on Twitch as well as the Amazon Music app on May 17 at 8 p.m. EDT. Who is nominated? It’s the emo cowgirl herself. Megan Moroney leads the 2026 Academy of Country Music Awards with nine nominations. She’s followed by Miranda Lambert, the most-decorated artist in ACM Awards history, with eight, as well as Ella Langley and Lainey Wilson with seven. Then it is Chris Stapleton with six, Zach Top with five and Cody Johnson with four. In addition to Moroney, those competing for entertainer of the year are Wilson, Stapleton, Johnson, Luke Combs, Jelly Roll and Morgan Wallen. In 2025, Wilson took home the top prize — for a second year in a row. In the album of the year category, Wallen’s “I’m the Problem” faces off against Top’s “Ain’t In It For My Health,” Riley Green’s “Don’t Mind If I Do,” Parker McCollum’s “Parker McCollum” and first-time nominee Carter Faith’s “Cherry Valley.” Other first-time nominees include 49 Winchester, Avery Anna, Mackenzie Carpenter, Hudson Westbrook, Stephen Wilson Jr. and more. What’s noteworthy? A lot! Beyond the move to Las Vegas and Twain’s first-time taking a turn at hosting, it’s clear that women are ruling the nominations, with Moroney, Lambert, Langley and Lainey Wilson leading the pack. But is it a sign that the country music business is making room for more female talent? “I think it is so cool,” country singer Ashley McBryde told The Associated Press about women leading the nods. But the music industry pitting women against one another? She says she’s not sure that will ever stop. “But I think we’ve managed — me, Miranda (Lambert), Carly (Pearce), Kelsey (Ballerini), we’ve been trying to build a table, and we’ve been trying for years to make the table bigger, and now it is. And I’m looking forward to operating in the environment that we built.” Additionally, unlike last year, there isn’t just one song dominating. Who could forget the year of Langley and Riley Green’s “You Look Like You Love Me,” which accounted for six of her eight nods last year? This time around, in the single of the year category, Lambert and Stapleton’s “A Song to Sing” will go head-to-head with Moroney’s “Am I Okay?,” Langley’s “Choosin’ Texas,” Top’s “I Never Lie” and Wilson’s “Somewhere Over Laredo.” And that’s just scratching the surface. Who is performing? Performers will include Lambert, Langley, Top, Faith, Wilson, Johnson, Green, Kacey Musgraves, Little Big Town, Blake Shelton, Dan + Shay, Jordan Davis, Kane Brown, The Red Clay Strays, Thomas Rhett, Avery Anna and Tucker Wetmore. For more coverage of this year’s ACM Awards, visit https://apnews.com/hub/academy-of-country-music-awards
+
+------------------------------------------------------------------------------------------------------------------------
+#041 | score=1 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-05-01 15:50:33
+URL: https://apnews.com/article/graham-linehan-father-ted-transgender-activist-1f00e523d76c4ca3b54d0b5908c2d693
+Title: Judge overturns conviction for sitcom writer Linehan over damaging transgender activist's phone
+Extracted negative text: Legal case entertainment industry
+
+DESCRIPTION:
+LONDON (AP) — Graham Linehan, the co-creator of TV sitcoms “Father Ted” and the “IT Crowd,” on Friday had his conviction for damaging the mobile phone of a teenage transgender activist overturned. Linehan, 57, was found guilty in November of criminal damage to then 17-year-old Sophia Brooks’ phone during a dispute outside a conference in London in October 2024. He was cleared of harassing Brooks on social media.
+
+FULL CONTENT FROM WORLD NEWS API:
+LONDON (AP) — Graham Linehan, the co-creator of TV sitcoms “Father Ted” and the “IT Crowd,” on Friday had his conviction for damaging the mobile phone of a teenage transgender activist overturned. Linehan, 57, was found guilty in November of criminal damage to then 17-year-old Sophia Brooks’ phone during a dispute outside a conference in London in October 2024. He was cleared of harassing Brooks on social media. He appealed the criminal damage conviction and a two-day hearing was held this week at London’s Southwark Crown Court. Judge Amanda Tipples, who was assisted by two magistrates, said that the initial report made by Brooks did not mention damage to the phone, but referred to harassment instead. “Having considered all the evidence before us, we cannot be sure that the damage to the complainant’s phone was caused by Mr. Linehan on the evening of the 19th of October 2024. We therefore found Mr. Linehan not guilty of the offense,” the judge said. The Irish comedy writer has become better known for his assertion that trans women are men and criticism of trans activism, expressed in often vituperative social media posts. At his trial last year, District Judge Briony Clarke said that while Linehan’s posts were “deeply unpleasant, insulting and even unnecessary,” they did not amount to harassment. In September, Linehan was arrested at Heathrow Airport on suspicion of inciting violence against transgender people in posts on X. He had posted that trans women were violent criminals if they used women-only facilities. He advocated hitting them if calling police and other measures failed to stop them from using such facilities. He was not charged, but the arrest sparked a debate about freedom of speech and its limits.
+
+------------------------------------------------------------------------------------------------------------------------
+#042 | score=1 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-05-01 15:48:17
+URL: https://apnews.com/article/missing-students-florida-bangladesh-chatgpt-b96cf627c4d979ab1079f4a63a8ec47c
+Title: Body discovered by kayaker was 2nd missing Florida doctoral student from Bangladesh
+Extracted negative text: Local crime and murder investigation
+
+DESCRIPTION:
+TAMPA, Fla. (AP) — A body found in Tampa Bay has been identified as the second missing University of South Florida doctoral studen t from Bangladesh, a sheriff said Friday. Nahida Bristy’s remains were found Sunday in a garbage bag, discovered by a kayaker whose fishing line got snagged, said Hillsborough County Sheriff Chad Chronister. The positive identification on the decomposed body was eventually made using DNA and dental records, he said.
+
+FULL CONTENT FROM WORLD NEWS API:
+TAMPA, Fla. (AP) — A body found in Tampa Bay has been identified as the second missing University of South Florida doctoral studen t from Bangladesh, a sheriff said Friday. Nahida Bristy’s remains were found Sunday in a garbage bag, discovered by a kayaker whose fishing line got snagged, said Hillsborough County Sheriff Chad Chronister. The positive identification on the decomposed body was eventually made using DNA and dental records, he said. The body of her friend, fellow USF doctoral student Zamil Limon, was in another garbage bag that was found two days before that on a bridge over the bay. Limon’s roommate, Hisham Saleh Abugharbeih, was taken into custody the same day and faces two charges of murder. Chronister said the suspect showed no emotion when investigators presented him with details of the killings. “He was nonreactive,” Chronister said. “He was callous and showed no emotion when we showed him the information we had.” The two students were murdered around the same time and place, though detectives need to investigate further before they can decide that conclusively, the sheriff said. The sheriff said detectives didn’t yet know a motive for the killings.
+
+------------------------------------------------------------------------------------------------------------------------
+#046 | score=1 | program_band=band_f | report_band=band_f
+Source: Associated Press
+Published: 2026-05-01 15:39:45
+URL: https://apnews.com/article/summer-movie-breakout-talents-2026-b2f48ae2d47ae1fd4ba944a2e78f79b9
+Title: Summer Movie Breakouts: 11 names you need to know
+Extracted negative text: Movie industry talent profiles
+
+DESCRIPTION:
+The new Moana. The 20-year-old wunderkind filmmaker. The multi Tony Award winner.
+
+FULL CONTENT FROM WORLD NEWS API:
+The new Moana. The 20-year-old wunderkind filmmaker. The multi Tony Award winner. The “Saturday Night Live” comedians. The next generation of Emilys. And the Australians at the heart of one of Sundance’s biggest hits. There’s more than a few up-and-coming talents to get excited about in the movies this summer. The Associated Press spoke to 11 ones to watch. Catherine Lagaʻaia, “Moana” Catherine Lagaʻaia (“lung-uh-aye-uh”) found out she got “Moana” on a school day. It was around 8:15 a.m. and she’d just heard the best news of her life after a very stressful year of auditioning. But the celebration would have to wait: It was swimming carnival day and she was on deck for the 400-meter backstroke. “I guess, like, the water vibes carried through,” said Lagaʻaia, 20, laughing. Lagaʻaia, who is one of eight children, grew up around acting in Sydney, Australia. Her father played Captain Typho in the “Star Wars” prequels, she went to a performing arts high school and a lot of her siblings are in theater. Two of her sisters even auditioned for “Moana” alongside her, but she was just the right age at the right time, she said. The animated film meant the world to Lagaʻaia, who is of Samoan heritage, and she’s acutely aware of the big expectations for the live action film (out July 10) — she has them for herself too. “I felt a fair bit of impostor syndrome stepping into it,” she said. “I think we’ve made some great changes, and we’ve kept a lot of the stuff that holds the heart of the film the same.” Joe Bird and Stacy Clausen, “Leviticus” Teenage boys Ryan (Stacy Clausen, 21) and Naim (Joe Bird, 19) are drawn to one another in their backwater Australian community in “Leviticus,” the “conversion therapy” horror that broke out at the Sundance Film Festival. It hits theaters on June 19. “It is about growing up queer and how the fear of growing up queer can block someone mentally from acting on their desires, and physically,” Clausen said. “But I think that there is something in it for everyone, like whether you’re LGBTQIA or not, it’s about love.” They knew they had made something special, but it’s been affirming to see it resonate with audiences. When the trailer posted on YouTube, Bird noticed one commenter who wrote that they wished they’d had this film when they were younger. “It just takes one person to be inspired, or you know say, ‘Oh, I wish I had a film like this’ to know that you’ve kind of done your job,” Bird said. “It’s all about connecting.” Kara Young and Mallori Johnson, “Is God Is” Aleshea Harris chose a two-time Tony-winner, Kara Young, and a relative newcomer, Mallori Johnson, to anchor the big screen adaptation of her Obie-winning play “Is God Is.” The story is centered on twin sisters searching for their abusive father, who burned and scarred them as babies. Young plays Racine the Rough One; Johnson is Anaia the Quiet One. After fending for themselves their entire lives are set on an epic road trip and a journey of revenge and reckoning. It’s in theaters on May 15. “Anaia depends a lot on Racine to protect her,” Johnson said. “I think that they’ve set up a dynamic since they were children … they have this kind of codependent relationship.” And although both Young and Johnson are in different phases of their careers, their enthusiasm for the material, and getting to be part of it, is identical. “Getting into the world of ‘Is God Is’ feels like an ancestral calling in some wild, beautiful, almost like indescribable way,” Young said. “It’s an epic road trip. It’s a Greek tragedy. It’s a love story between two sisters …. I lost my train of thought because I just got so hyped.” Kane Parsons, “Backrooms” Kane Parsons was a teenager when he was signed to direct his first feature, based on his viral YouTube series “Backrooms.” The concept was inspired by an internet creepypasta that imagined never-ending expanse rooms and hallways full of fluorescent lights, old carpet and monotonous yellow paint; He took that idea and ran with it, creating unnerving videos from his bedroom with the help of the open-source 3D graphics software Blender. Soon both James Wan and Shawn Levy’s companies were interested in taking it to the next level. In the film, out May 29, Chiwetel Ejiofor plays a struggling furniture store owner who seemingly slips out of reality. Renate Reinsve co-stars. “I don’t think of this as inherently horror-driven; it’s definitely not a building full of monsters,” Parsons, 20, said. “I’ve always been more interested in the sort of man looking in the mirror version.” The bachelors, “72 Hours” “SNL” cast members Kam Patterson, 27, and Ben Marshall, 30, play a couple of Gen Z guys on a bachelor trip, with Marcello Hernández, groom-to-be Mason Gooding and a middle-aged colleague (Kevin Hart) who was accidentally added to the group chat in the new Netflix comedy “72 Hours” (streaming July 24). “It was the most fun you could possibly have shooting a movie,” Marshall said. Between goofing around in a mansion in New Jersey and hanging in Miami with Hernández, it was, Patterson said, like summer camp. And Hart was their de facto counselor. They teased Gooding about never having his shirt on, Marshall for being so uniquely bad at jet skiing and Patterson for that time someone left him with one of the production assistant’s walkie talkies and for 5 minutes he had an open mic to the entire crew. That energy continued when the cameras were on too. “I don’t think we said one word that’s actually in the script,” Marshall laughed. Patterson chimed in: “Not at all. We take that script and threw it out the window.” The new assistants in “The Devil Wears Prada 2” Call them the new Emilys. Or, maybe don’t. But there’s a new batch of smart, young things manning the desks at “Runway” in “The Devil Wears Prada 2” (now in theaters). Simone Ashley, of “Bridgerton” fame, is Miranda Priestly’s first assistant Amari, who screenwriter Aline Brosh McKenna didn’t want to be Emily 2.0. “With Amari the comedy comes from, like, flick of the wrist kind of sassiness and her quiet confidence,” Ashley, 31, said. “Me and Aline kind of had this inside joke that Amari is like secretly the next Miranda.” Comedian Caleb Hearon, 31, is Miranda’s second assistant, Charlie, who is not allowed to leave his desk. Ever. But he’s not mad about it: This is literally the dream. “I really thought a lot about a guy like Charlie and what it would mean to him to be in this office and why he wouldn’t mind staying at the desk all day,” Hearon said. And finally, there is Helen J Shen, 26, who after breaking out on stage in “Maybe Happy Ending” makes her big screen debut as Andy’s assistant, Jin. Shen said she “was excited to see that the dialogue was so silly to me, but Jin doesn’t find it silly.” “I felt like that was a fresh take on someone who knows exactly what they’re trying to do,” Shen added. “She has a lot of wonderful things under her belts, intelligence wise, and she’s just trying to like, show that and be as helpful to Andy as possible.” For more coverage of this summer’s upcoming films, visit: https://apnews.com/hub/movies
 
 ------------------------------------------------------------------------------------------------------------------------
 #047 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-24T01:30:01Z
-URL: https://apnews.com/press-release/pr-newswire/eva-air-was-recognized-with-six-inflight-amenity-awards-by-travelplus-pax-international-and-pax-tech-565f91fd4831cb8950c2cd3ec703033e
-Title: EVA Air was Recognized with Six Inflight Amenity Awards by TravelPlus, PAX International, and PAX Tech
-Extracted negative text: negligible financial market impact
+Published: 2026-05-01 15:36:13
+URL: https://apnews.com/article/oscar-missing-mr-nobody-putin-71f8c81308e0271764c2fe700143848a
+Title: Oscar is lost and found after director forced to check it on a flight
+Extracted negative text: Film award travel incident
 
 DESCRIPTION:
-TAIPEI, April 23, 2026 /PRNewswire/ -- EVA Air received six prestigious awards through the TravelPlus Airline Amenity Awards and the PAX International Readership Awards 2026 at the World Travel Catering & Onboard Services Expo (WTCE), recently held in Hamburg…
+NEW YORK (AP) — After being forced to check his Academy Award on a trans-Atlantic flight, recent winner Pavel Talankin’s Oscar went missing before an airline tracked it down two days later. Talankin, who co-directed the best documentary winner “Mr. Nobody Against Putin,” didn’t expect to have to check his statuette for a flight from New York’s John F.
 
-FULL CONTENT FROM NEWSAPI:
-TAIPEI, April 23, 2026 /PRNewswire/ -- EVA Air received six prestigious awards through the TravelPlus Airline Amenity Awards and the PAX International Readership Awards 2026 at the World Travel Cater… [+3529 chars]
+FULL CONTENT FROM WORLD NEWS API:
+NEW YORK (AP) — After being forced to check his Academy Award on a trans-Atlantic flight, recent winner Pavel Talankin’s Oscar went missing before an airline tracked it down two days later. Talankin, who co-directed the best documentary winner “Mr. Nobody Against Putin,” didn’t expect to have to check his statuette for a flight from New York’s John F. Kennedy Airport bound for Frankfurt, Germany, on Wednesday. But a Transportation Security Administration agent said it couldn’t go on board. “At the airport, a TSA agent stopped him and said the Oscar could be used as a weapon,” Talankin’s co-director, David Borenstein, said Thursday night in a post on Instagram. “Pavel didn’t have a bag to check it in, so the TSA put the Oscar in a box and sent it to the bottom of the plane,” added Borenstein. “It never arrived in Frankfurt.” After Borenstein’s announcement prompted an international outcry, the airline Lufthansa on Friday said it had found the lost Oscar. “We can confirm that the Oscar statue has now been located and is safely in our care in Frankfurt,” the airline said in statement. “We are in direct contact with the guest to arrange its personal return as quickly as possible. We sincerely regret the inconvenience caused and have apologized to the owner.” Lufthansa added that an “internal review of the circumstances is ongoing.” In March, “Mr. Nobody Against Putin” won the Academy Award for best documentary, and Talankin and Borenstein’s acceptance speech supplied one of the most memorable moments of the ceremony. Talankin — the “Mr. Nobody” of the film — was a teacher and activities director in a small-town school in Russia who captured on video his students’ lessons, chants and songs promoting Putin’s war in Ukraine. He smuggled his hard drives out of the country to collaborate with Borenstein, who lives and works in Copenhagen, Denmark. Talankin, speaking in Russian through a translator, said from the stage: “In the name of our future, in the name of all of our children, stop all of these wars now.” The TSA didn’t immediately respond to queries Friday.
 
 ------------------------------------------------------------------------------------------------------------------------
-#051 | score=0 | program_band=band_f | report_band=band_f
+#055 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-23T22:23:15Z
-URL: https://apnews.com/article/solider-justice-department-polymarmet-74047663d9ae104127948896fdfb59d9
-Title: Federal officials charge US soldier with using inside info to win $400K bet on Maduro’s capture
-Extracted negative text: soldier's classified information betting
+Published: 2026-05-01 15:00:11
+URL: https://apnews.com/article/top-20-global-concert-tours-from-pollstar-2c42001307695fd6733ba74328eee711
+Title: Top 20 Global Concert Tours from Pollstar
+Extracted negative text: Global concert tour rankings
 
 DESCRIPTION:
-A U.S. soldier involved in the military operation to capture Venezuelan President Nicolas Maduro has been charged with using classified information about the mission to win more than $400,000 in an online betting market. Federal officials unsealed the indictm…
+The Top 20 Global Concert Tours ranks artists by average box office gross per city and includes the average ticket price for shows Worldwide. The list is based on data provided to the trade publication Pollstar by concert promoters and venue managers. TOP 20 GLOBAL CONCERT TOURS For free upcoming tour information, go to www.pollstar.com TOP 20 GLOBAL CONCERT TOURS
 
-FULL CONTENT FROM NEWSAPI:
-WASHINGTON (AP) A U.S. soldier involved in the military operation to capture Venezuelan President Nicolas Maduro has been charged with using classified information about the mission to win more than … [+2865 chars]
+FULL CONTENT FROM WORLD NEWS API:
+The Top 20 Global Concert Tours ranks artists by average box office gross per city and includes the average ticket price for shows Worldwide. The list is based on data provided to the trade publication Pollstar by concert promoters and venue managers. TOP 20 GLOBAL CONCERT TOURS For free upcoming tour information, go to www.pollstar.com TOP 20 GLOBAL CONCERT TOURS
 
 ------------------------------------------------------------------------------------------------------------------------
-#053 | score=0 | program_band=band_f | report_band=band_f
+#056 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-23T19:02:00Z
-URL: https://apnews.com/article/sara-mearns-nyc-ballet-hearing-loss-aids-30eb0e15724ca2feb8b58189208fb7e9
-Title: NYC Ballet Star Takes A Big Leap: Wearing Hearing Aids Onstage
-Extracted negative text: ballet dancer's hearing aid experience
+Published: 2026-05-01 14:57:28
+URL: https://apnews.com/article/paddleboarder-murder-trial-maine-b16cd0dc4c55f6c9f1aa251e692e574c
+Title: Judge rules 18-year-old in Maine paddleboarder death competent for trial
+Extracted negative text: Local criminal trial update
 
 DESCRIPTION:
-Many adults who could benefit from hearing aids don't use them. Sara Mearns, a principal dancer with the New York City Ballet took the leap and wants people to know how helpful it has been. She finally overcame her own reluctance and sought help after startin…
+PORTLAND, Maine (AP) — A judge has ruled an 18-year-old man charged with murder in the killing of a paddleboarder in Maine is competent to stand trial. The death of Sunshine “Sunny” Stewart, 48, of St. George, last year shocked the community around Crawford Pond in rural Union, Maine.
 
-FULL CONTENT FROM NEWSAPI:
-NEW YORK (AP) Sara Mearns was missing her cues. She couldnt hear what her dance partner was saying from across the studio. She was late for her entrances because the music sounded too soft. Without… [+4390 chars]
+FULL CONTENT FROM WORLD NEWS API:
+PORTLAND, Maine (AP) — A judge has ruled an 18-year-old man charged with murder in the killing of a paddleboarder in Maine is competent to stand trial. The death of Sunshine “Sunny” Stewart, 48, of St. George, last year shocked the community around Crawford Pond in rural Union, Maine. Authorities charged Deven Young of Frankfort, Maine, with murder in Stewart’s death in July, about two weeks after Stewart’s body was discovered. The court system has thus far treated Young as a juvenile. Prosecutors in the state want to charge Young, who was 17 at the time of Stewart’s death and is 18 now, as an adult. First, he needed to be deemed competent to stand trial, and a judge ruled this week that he is. “The court finds that the defendant is competent to proceed based on the court’s finding that the juvenile has a rational, as well as a factual, understanding of the proceedings and a sufficient present ability to consult with legal counsel with a reasonable degree of rational understanding,” wrote Maine District Court Judge Eric J. Walker on Wednesday. Young is due back in court on May 7. Police have said a medical examiner determined Stewart’s cause of death was strangulation and blunt force trauma. Jeremy Pratt, an attorney for Young, declined to comment on Thursday. Prosecutors in the case also declined to comment Thursday. Authorities have not publicly stated a possible motive in the case. Court documents about the case, which were briefly made public before being removed from the state’s courts website, contained little detail other than stating that Young “did intentionally or knowingly cause the death of another human being, namely Sunshine Stewart.” Audio recordings by the Waldo County Sheriff’s Office that were obtained by news agencies earlier this year provided details about Young’s history of violent behavior and mental health challenges prior to Stewart’s death. The Portland Press Herald reported that Young had been waiting for behavioral health services from the state. Stewart went missing at Crawford Pond, where she was paddleboarding, on July 2 and her body was found the next day. The pond is a popular summertime attraction for swimming, boating and fishing. Stewart lived about 21 miles (34 kilometers) from the pond in the Tenants Harbor neighborhood in St. George. Stewart’s friends and family celebrated her life with a maritime service last August. The memorial included a procession of boats, some decked out with flowers, in Tenants Harbor. On the boats were pictures of Stewart smiling and a large sign that read, “Shine On.” Over the years, Stewart worked as a fisherman, boat captain, biologist, carpenter and bartender, friends have said.
 
 ------------------------------------------------------------------------------------------------------------------------
-#054 | score=0 | program_band=band_f | report_band=band_f
+#061 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-23T15:03:00Z
-URL: https://apnews.com/article/france-algeria-writer-kamel-daoud-sentenced-28832ad67d766894153294e9877b12a1
-Title: Algeria’s Leading Author Says He’s Been Sentenced To Prison For His Prize-Winning Novel
-Extracted negative text: author's prison sentence in Algeria
+Published: 2026-05-01 14:12:53
+URL: https://apnews.com/article/london-crash-primary-school-girls-killed-driver-charged-73dc6981cc94da504867d12cd6b8cae2
+Title: Driver who drove into a tea party outside a London school charged over death of 2 girls
+Extracted negative text: Local crime and legal case
 
 DESCRIPTION:
-French-Algerian author Kamel Daoud says he has been sentenced to three years in prison in Algeria for his book “Houris.” The novel won France’s top literary award in 2024. It focuses on victims of Algeria’s “black decade.” This conflict began in 1991 when the…
+LONDON (AP) — A woman who drove a Land Rover into a tea party outside a London primary school celebrating the last day of classes in 2023, killing two 8-year-old girls and injuring several other people, was charged Friday with dangerous driving, authorities said. Prosecutors said they decided to charge Claire Freemantle, 49, with two counts of causing death by dangerous driving and seven counts of causing serious injury by dangerous driving after the Metropolitan Police reopened its investigation and discovered new evidence. The London police force apologized for how it initially treated the crash and said it had referred its own officers to a watchdog agency looking into police misconduct.
 
-FULL CONTENT FROM NEWSAPI:
-PARIS (AP) French-Algerian author Kamel Daoud said Wednesday that he has been sentenced to three years in prison in Algeria for his book Houris, a recipient of Frances most prestigious literary award… [+2701 chars]
+FULL CONTENT FROM WORLD NEWS API:
+LONDON (AP) — A woman who drove a Land Rover into a tea party outside a London primary school celebrating the last day of classes in 2023, killing two 8-year-old girls and injuring several other people, was charged Friday with dangerous driving, authorities said. Prosecutors said they decided to charge Claire Freemantle, 49, with two counts of causing death by dangerous driving and seven counts of causing serious injury by dangerous driving after the Metropolitan Police reopened its investigation and discovered new evidence. The London police force apologized for how it initially treated the crash and said it had referred its own officers to a watchdog agency looking into police misconduct. Freemantle was originally not charged after prosecutors said she had an epileptic seizure. She had issued a statement expressing her “deepest sorrow” but said she had no recollection of what occurred. Defense lawyers questioned why prosecutors reversed their original decision not to charge Freemantle and said she will plead not guilty when she makes her first court appearance June 16 in Westminster Magistrates’ Court. It’s not clear what new evidence police found, but the reinvestigation came after complaints by the parents of Nuria Sajjad and Selena Lau, who were killed in the incident outside the private Study Preparatory School in Wimbledon, south London, on July 6, 2023. The driver plowed through a fence and into the side of the school building. More than a dozen people were treated for injuries at the scene and 10, including several pupils, were taken to the hospital for treatment.
 
 ------------------------------------------------------------------------------------------------------------------------
-#055 | score=0 | program_band=band_f | report_band=band_f
+#073 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-23T15:00:17Z
-URL: https://apnews.com/article/canadian-citizenship-americans-new-law-5b8f7da8ce6cfea759b85a3577150407
-Title: Millions of Americans may now also be considered Canadian under new law...
-Extracted negative text: Canadian citizenship for Americans
+Published: 2026-05-01 13:37:57
+URL: https://apnews.com/article/baselitz-art-expressionism-germany-hansgeorg-kern-4206f91de574a200a40f1d44661dc305
+Title: Georg Baselitz, influential German artist, dies at 88
+Extracted negative text: Obituary of German artist
 
 DESCRIPTION:
-Potentially millions of Americans suddenly have a much easier path to Canadian citizenship. A change in the country's laws has prompted a rush of Americans to explore their ancestry and file paperwork seeking dual citizenship. Since the new law took effect De…
+BERLIN (AP) — Georg Baselitz, an acclaimed German artist prominent in the Neo-Expressionalist movement who had a penchant for provocation and was known for painting images upside down, has died. He was 88. The Thaddaeus Ropac Gallery, which represented Baselitz, said the artist died on Thursday, citing his family.
 
-FULL CONTENT FROM NEWSAPI:
-SIOUX FALLS, S.D. (AP) Potentially millions of Americans suddenly have a much easier path to Canadian citizenship, prompting a rush of people to explore their ancestry and file paperwork seeking dual… [+5892 chars]
+FULL CONTENT FROM WORLD NEWS API:
+BERLIN (AP) — Georg Baselitz, an acclaimed German artist prominent in the Neo-Expressionalist movement who had a penchant for provocation and was known for painting images upside down, has died. He was 88. The Thaddaeus Ropac Gallery, which represented Baselitz, said the artist died on Thursday, citing his family. It said he died “peacefully,” but did not give a cause of death. Born Hans-Georg Kern, Baselitz took his artistic name from the village of Deutschbaselitz in the eastern Saxony region, where he was born on Jan. 23, 1938, in Nazi-ruled Germany before the outbreak of World War II. After growing up in the ruins of the war, he left the then-East Germany in 1957 at a time of rising political pressure, and emigrated to the West. “I was born into a destroyed order, into a destroyed landscape, into a destroyed people, into a destroyed society,” he told German news agency dpa before his 85th birthday. The gallery called him “a titan of contemporary painting, sculpture, drawing and printmaking” and “one of the most important artists of our time,” who influenced fellow artists and the international art world. His first exhibition in 1963 reportedly caused a stir, with a vice squad identifying pornography in at least two of his paintings, and confiscating them. He was often described as an “artist of rage,” and had a motto of “contradiction,” according to dpa. His works hang in some of the world’s great galleries and have fetched millions at auction. In 2017, German police announced they had recovered 15 stolen paintings and drawings by Baselitz worth around 2.5 million euros ($2.9 million). Baselitz recalled that some of his earliest recognition came in the 1960s through his series of golden-colored “Hero” paintings, based on fictional characters from Russian civil war novels. The works depicted broken figures staggering toward the viewer in ragged uniforms — in distorted sizes, giant hand and small heads. His battle-weary hero, “Der Hirte (The Shepherd)” from 1966 won international acclaim. In 1969, Baselitz created “Der Wald auf dem Kopf,” (The Forest on its Head), his first “inverted” painting — featuring trees upside down, a theme that would become one of his trademarks. “Georg Baselitz did not just turn his paintings upside down; he also turned our thinking routines upside down,” German President Frank-Walter Steinmeier said. “Having experienced the destruction and suffering of the Second World War as a child, the collapse of all order forced him to question everything around him.” Baselitz mused about his long career in a recent video, commenting that “typical paining has never appealed to me.” “I actually wanted to be more of a black-and-white painter, and above all, I didn’t want to work spatially, perspectively, with shadows and light and such things that arise with the imitation of nature,” he said while seated in a wheelchair in a paint-smudged jacket. “I must say that throughout my life, I was not aware that I was a painter of color, even though I am constantly told that I have such wonderful colors,” Baselitz said. Baselitz said he sought to “construct my connection to the world, to myself and to my wife,” using the most “simple and ordinary” means possible. He spoke in a video from the Giorgio Cini Foundation in Venice, which is hosting an exhibition of Baselitz’s “Golden Heroes” works from May 6 to Sept. 27. A “Naked Masters” exhibit at the Kunsthistorisches Museum in Vienna in 2023 spanned his half-century career and dealt with controversial themes of nudity — notably of the painter and his wife, Elke — displayed alongside oil paintings by old masters also evoking nudity. He is survived by his wife and sons, Daniel Blau and Anton Kern, the gallery said.
 
 ------------------------------------------------------------------------------------------------------------------------
-#063 | score=0 | program_band=band_f | report_band=band_f
+#074 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-23T04:23:27Z
-URL: https://apnews.com/article/andre-giant-marker-north-carolina-50f72416176238154f5b652a833e814b
-Title: Andre The Giant honored with roadside marker in tiny North Carolina town
-Extracted negative text: Andre The Giant roadside marker
+Published: 2026-05-01 13:34:15
+URL: https://apnews.com/article/southern-sea-otters-aquarium-pacific-surrogacy-program-dc8e508b76f9f3edbc96924e14b28c51
+Title: Sea otters form a mother-daughter bond in Aquarium’s surrogacy program
+Extracted negative text: Animal conservation story
 
 DESCRIPTION:
-Wrestler and actor Andre The Giant is being honored with a roadside marker in a small town in North Carolina that was once his home. Officials plan to unveil the marker Thursday. The wrestler, whose real name was Andre Rene Roussimoff, lived on a ranch near E…
+Before last month, a young southern sea otter named Rey would never have imagined she’d be a mother. That changed when she met Sunny, a pup — about two weeks old — found orphaned and alone on Asilomar State Beach in February. The pairing went off without a hitch.
 
-FULL CONTENT FROM NEWSAPI:
-ELLERBE, N.C.. (AP) Andre The Giant, a towering menace in the wrestling ring but a gentle giant on the movie screen, is being honored with a roadside marker in his beloved adopted small town in North… [+1595 chars]
+FULL CONTENT FROM WORLD NEWS API:
+Before last month, a young southern sea otter named Rey would never have imagined she’d be a mother. That changed when she met Sunny, a pup — about two weeks old — found orphaned and alone on Asilomar State Beach in February. The pairing went off without a hitch. The two otters now live as mother and daughter at the Aquarium of the Pacific. They arrived at the facility last month, paired together as part of the facility’s surrogacy program that it runs alongside the Monterey Bay Aquarium. The program, created by the Monterey Bay Aquarium in the 1990s, was launched in Long Beach in 2024. It pairs maternal-age female otters with young, motherless pups who would otherwise not survive on their own in the wild. Megan Smylie, the sea otter program manager, says the operation has since rehabilitated and released nine otters into the wild, with the three others expected to leave by the summer. The aquarium can handle 11 otters at a time, with up to seven in the main tank with rehabilitation pools that can each house two otters. They currently have five otters, including two other females that are preparing for surrogate motherhood. But Sunny and Rey cannot be released into the wild. Experts say both are already too used to being around people and lack the survival instincts to make it on their own in the ocean. Instead, the two are destined for motherhood in captivity. For Rey, Sunny will be the first pup she raises into adulthood. It’s a full-circle moment for her: About two-and-a-half years old, Rey was found stranded herself in July 2023. She spent a couple of years at another facility before moving to Long Beach. “Ray has far surpassed my expectations of what I thought was gonna happen,” Smylie said. “She’s fantastic.” As a surrogate mom, she’s teaching her adopted baby everything she needs to know to fend for herself, regardless of her inability to return to the wild. The two were seen manipulating an imitation crab shell and foraging for food. Young otters, because of the thickness and buoyancy of their fur, don’t have the strength to get their furry bodies to the bottom of the water tank. Otters have the thickest coat of any mammal, with as many as a million hairs per square inch. The hairs trap air, which acts as insulation and helps keep the otters buoyant. In time, she may teach the pup how to use tools. Sea otters are known to be crafty creatures, able to use rocks to crack clamshells, take nuts off bolts and open doors on their own. When it’s time to calm down, she’ll groom the pup, and when it’s time for a nap, Rey will pull Sunny to her chest and roll onto her back. The maternal bond in the wild is a strong one, and the pup requires constant attention. Experts say this quick-forming connection, between that of surrogate-raised otters and their wild offspring, has played a significant role in growing the population found along California’s Central Coast. The animals, which once boasted a population of more than 300,000 along the Northern Pacific Rim from Japan to Baja California, were prized for their fur and hunted down to about 2,000 by the early 19th Century. Officials say they were thought to have been exterminated until a colony of otters was discovered nearly a decade later. Now a federally threatened species, California’s southern sea otter population has rebounded to about 3,000. Despite efforts to aid their comeback, the species faces a low survival rate for pups and constant threats of parasites, shark attacks and human-caused catastrophes. This makes the work of every mothering otter like Rey all the more important, as she is tasked with not only providing pups the childhood she never had but ensuring the preservation of her species. And while Sunny may never see the ocean again, aquarium staff hope she can grow into a mom herself, giving the next generation of young pups another shot at life. “That is kind of a happy ending, if maybe a little bittersweet,” Smylie said. This story was originally published by the Long Beach Post and distributed through a partnership with The Associated Press.
 
 ------------------------------------------------------------------------------------------------------------------------
-#069 | score=1 | program_band=band_f | report_band=band_f
+#080 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-22T19:00:12Z
-URL: https://apnews.com/article/immigration-agents-identification-california-appeals-court-2b60941111adb2c82a929570e594f56d
-Title: SECRET POLICE: Federal appeals court blocks California law requiring federal agents to wear
-    identification...
-Extracted negative text: Federal agent identification law
+Published: 2026-05-01 13:17:56
+URL: https://apnews.com/article/robusta-kentucky-derby-right-to-party-bc76fe383e2413310d2ba7a6a53cabd9
+Title: Robusta is in the Kentucky Derby field with Right to Party out
+Extracted negative text: Horse racing event update
 
 DESCRIPTION:
-An appeals court has blocked a California law passed in 2025 requiring federal immigration agents to wear a badge or some form of identification. The Trump administration filed a lawsuit in November challenging the law, arguing that it would threaten the safe…
+LOUISVILLE, Ky. (AP) — Cristian Torres is getting the chance to ride in his first Kentucky Derby after Kenny McPeek-trained Right to Party was scratched on Friday, with Doug O’Neill’s Robusta drawing into the field. The jockey looked to be out of luck after Silent Tactic was ruled out earlier this week because of a foot injury. Trainer Mark Casse said it was an easy decision in the best interests of the horse but that he felt badly for Torres.
 
-FULL CONTENT FROM NEWSAPI:
-LOS ANGELES (AP) An appeals court has blocked a California law passed in 2025 requiring federal immigration agents to wear a badge or some form of identification. The Trump administration filed a la… [+2600 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#071 | score=0 | program_band=band_f | report_band=band_f
-Source: Associated Press
-Published: 2026-04-22T18:00:15Z
-URL: https://apnews.com/article/texas-ten-commandments-law-public-schools-scotus-43e679cf473e6b98b091d575578824eb
-Title: Texas can require public schools to display Ten Commandments in classrooms, court rules...
-Extracted negative text: religious legal ruling
-
-DESCRIPTION:
-A U.S. appeals court says Texas can require the Ten Commandments to be displayed in public school classrooms. The ruling Tuesday by the 5th Circuit Court of Appeals was a victory for conservatives who have long sought to incorporate more religion into schools…
-
-FULL CONTENT FROM NEWSAPI:
-DALLAS (AP) Texas can require the Ten Commandments to be displayed in public schools, a U.S. appeals court ruled Tuesday in a victory for conservatives who have long sought to incorporate more religi… [+4153 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#072 | score=1 | program_band=band_f | report_band=band_f
-Source: Associated Press
-Published: 2026-04-22T18:00:15Z
-URL: https://apnews.com/article/ai-table-tennis-robot-ping-pong-sony-995b239945e0dc8d7bea918a850969dc
-Title: Milestone for machines: Robot beating human pros at table tennis...
-Extracted negative text: sports robotics milestone
-
-DESCRIPTION:
-A paddle-wielding robot is so adept at playing table tennis that it is posing a tough challenge to elite human players and sometimes defeating them, according to a new study in the journal Nature that shows how advances in artificial intelligence are making r…
-
-FULL CONTENT FROM NEWSAPI:
-A paddle-wielding robot is so adept at playing table tennis that it is posing a tough challenge to elite human players and sometimes defeating them, according to a new study that shows how advances i… [+5733 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#073 | score=0 | program_band=band_f | report_band=band_f
-Source: Associated Press
-Published: 2026-04-22T15:04:00Z
-URL: https://apnews.com/article/dave-mason-dead-obit-traffic-rock-244eb6fd1ca3a213db899b196e8538c2
-Title: Dave Mason, co-founder of Traffic known for 'We Just Disagree' and 'Feelin’ Alright,' dies at 79
-Extracted negative text: famous musician's passing
-
-DESCRIPTION:
-Dave Mason, co-founder of the psychedelic British band Traffic and songwriter behind “Feelin’ Alright” and “Hole in My Shoe,” died Sunday at his home in Gardnerville, Nevada. He was 79. A cause was not immediately revealed. Mason canceled his remaining…
-
-FULL CONTENT FROM NEWSAPI:
-NEW YORK (AP) Dave Mason the co-founder of the psychedelic British band Traffic, songwriter behind classic rock hits Feelin Alright and Hole in My Shoe," and Rock &amp; Roll Hall of Famer died Sunday… [+3144 chars]
+FULL CONTENT FROM WORLD NEWS API:
+LOUISVILLE, Ky. (AP) — Cristian Torres is getting the chance to ride in his first Kentucky Derby after Kenny McPeek-trained Right to Party was scratched on Friday, with Doug O’Neill’s Robusta drawing into the field. The jockey looked to be out of luck after Silent Tactic was ruled out earlier this week because of a foot injury. Trainer Mark Casse said it was an easy decision in the best interests of the horse but that he felt badly for Torres. With Robusta getting in off the also-eligible list, O’Neill tapped Torres for the mount because Emisael Jaramillo was already booked to ride at Santa Anita Park in California on Saturday. Robusta is the final horse eligible for the opening leg of the Triple Crown. Any additional departures would drop the field from the maximum of 20. In addition to Right to Party and Silent Tactic, Brad Cox scratched Fulleffort after an X-ray revealed a chip and fluid in the colt’s left hind ankle. AP horse racing: https://apnews.com/hub/horse-racing
 
 ------------------------------------------------------------------------------------------------------------------------
 #085 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-21T21:51:37Z
-URL: https://apnews.com/press-release/ein-presswire-newsmatics/boca-raton-plastic-surgeon-dr-gregory-albert-pioneers-ai-driven-body-sculpting-at-optimization-centre-590b11da6d9d2e660764fc82127ff040
-Title: Boca Raton Plastic Surgeon Dr. Gregory Albert Pioneers AI-Driven Body Sculpting at Optimization Centre
-Extracted negative text: local private medical practice
+Published: 2026-05-01 13:02:55
+URL: https://apnews.com/article/texas-small-plane-crash-57cd22e7f5d91eb68a04a43a66b4ab5a
+Title: Small plane crashes in Texas Hill Country, killing all five on board
+Extracted negative text: Local small plane crash
 
 DESCRIPTION:
-Optimization Centre in Boca Raton introduces AI-guided liposuction, led by Dr. Gregory Albert, delivering enhanced precision, results, and faster recovery.
+WIMBERLEY, Texas (AP) — A small plane crashed in Texas, killing all five people aboard, a county official said Friday. The crash happened Thursday night in Wimberley, a city about 40 miles (64 kilometers), southwest of Austin, Hays County Judge Ruben Becerra said in a Facebook post. The Federal Aviation Administration said the Cessna 421C crashed around 11:25 p.m. with five people on board.
 
-FULL CONTENT FROM NEWSAPI:
-Optimization Centre in Boca Raton introduces AI-guided liposuction, led by Dr. Gregory Albert, delivering enhanced precision, results, and faster recovery. Optimization is about aligning a patients … [+3195 chars]
+FULL CONTENT FROM WORLD NEWS API:
+WIMBERLEY, Texas (AP) — A small plane crashed in Texas, killing all five people aboard, a county official said Friday. The crash happened Thursday night in Wimberley, a city about 40 miles (64 kilometers), southwest of Austin, Hays County Judge Ruben Becerra said in a Facebook post. The Federal Aviation Administration said the Cessna 421C crashed around 11:25 p.m. with five people on board. It said the FAA and National Transportation Safety Board will investigate the crash.. Becerra said preliminary information indicates the plane was traveling at a high rate of speed when it crashed. He did not release the names of the victims, pending notification of family. He said a second aircraft traveling in the area landed safely near San Antonio. Wimberley, with a population of about 3,000, is a popular tourist and hiking destination in the Texas Hill Country next to the Blanco River. Wimberley Mayor Jim Chiles told The Associated Press he did not have any information about the crash.
 
 ------------------------------------------------------------------------------------------------------------------------
 #086 | score=0 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-21T21:18:47Z
-URL: https://apnews.com/article/mike-tomlin-nbc-6adf95ffbab6f11777be14a9c2bd7e67
-Title: Former Steelers coach Mike Tomlin joining NBC's pregame show, AP sources say
-Extracted negative text: sports entertainment personnel change
+Published: 2026-05-01 13:01:29
+URL: https://apnews.com/article/germany-bavaria-mayday-celebrations-maypole-6839801fdec1fed7a0479596ba9a1b1a
+Title: Village celebrates with Bavarian tunes and beer as maypole rises
+Extracted negative text: Local cultural festival
 
 DESCRIPTION:
-Mike Tomlin is going from the glare of an NFL sideline to the glare of television lights. The former Pittsburgh Steelers coach will join NBC’s “Sunday Night Football” coverage as a pregame analyst, two people briefed on the move tell The Associated Press. The…
+KÜHBACH, Germany (AP) — As the brass band played Bavarian tunes and the villagers drank their beer, watched and cheered, the young men of Kühbach in southern Germany pushed up their new maypole with long wooden rods until it stood perfectly straight against the sky.
 
-FULL CONTENT FROM NEWSAPI:
-Mike Tomlin is going from the glare of an NFL sideline to the glare of television lights. The former Pittsburgh Steelers coach will join NBCs Sunday Night Football coverage as a pregame analyst, two… [+2178 chars]
+FULL CONTENT FROM WORLD NEWS API:
+KÜHBACH, Germany (AP) — As the brass band played Bavarian tunes and the villagers drank their beer, watched and cheered, the young men of Kühbach in southern Germany pushed up their new maypole with long wooden rods until it stood perfectly straight against the sky. In addition to the locals, people from all over Bavaria and beyond flocked to the small village of about 4,500 residents on Friday to watch the Maypole being erected — a custom that has been observed for centuries and is deeply rooted in Bavarian folklore. “The Maypole is a symbol of togetherness,” said Mayor Karl-Heinz Kerscher, pointing at the youngsters pushing up the pole. “All these young guys, when they give it their all, when they show their strength, that’s just proof that we’re powerful, that Bavaria means something, and that here in Kühbach it’s twice as beautiful.” Maypoles are a beloved tradition in Bavaria May 1 is a public holiday observed all over Germany, but putting up maypoles in the center of the village is a beloved tradition celebrated primarily in Bavaria, Austria, and other parts of southern Germany as a symbol of not only community but also the beginning of spring and fertility. In Kühbach, a lot of care and time is devoted to this custom every three years, when a new pole is raised. Last winter, the Kühbacher Burschen, a village club with 240 members, chose a stately spruce in a nearby forest, cut it down, cut off all branches and the bark, let it dry, and painted it three times over in white and blue — the state colors of Bavaria. On the sides of the tree, they attached metal signs with the guild emblems of the village, and — most important — they then guarded their precious maypole, which had been put up for storage in a former sawmill for weeks around the clock so that nobody would steal it. Youngsters try stealing other villages’ maypole Stealing each other’s new maypoles is another beloved tradition in Bavaria. And if the theft is successful, the village that was robbed needs to buy back its maypole, and that gets very expensive: up to 200 liters (422 pints) of beer and a whole barbecued pig with potato dumplings and brown gravy — something that can easily fetch up to 3,000 euros ($3,325). By Friday, however, no maypole had been stolen from Kühbach, and early in the morning the mostly young men and women, all dressed in their best lederhosen and light-blue dirndl dresses, came to the sawmill to triumphantly take it to the center of their village. “Our motto is, ‘preserve traditions, shape the future’ — that really sums it up pretty well,” said Florian Oberhauser, 26, the head of the Kühbacher Burschen, or Kühbach Boys. The 28-meter (92-foot) tall maypole was lifted horizontally on wooden carts and pulled into the village by two sturdy horses from the local beer brewery. Before the maypole is raised, it’s blessed by the priest Once the procession — with children sitting on top of the pole in a long row — arrived at the market square, the Catholic priest, who had just finished his Mayday Mass, blessed the tree and the young men with holy water. Everyone drew closer together to pray and the actual work began. Equipped with long wooden poles, the youngsters paired up on both sides of the pole and cheered each other with shouts of “Hau-Ruck,” as they slowly put up the Maybaum, as it is called in German. When the maypole stood straight against the blue sky, the marching band played an extra fanfare, people poured into the huge festival tent, sat down on the benches, had pork roast and sausages for lunch — and some more beer. A tradition passed down through generations Simone Nodlbichler, 41, who played the clarinet all morning as her band accompanied the Maypole procession through the village, past the church and to the market square of Kühbach, beamed as she put away her instrument. “This tradition is being passed down from generation to generation,” she said as her two teenage daughters looked on. “As you can see, both young and old are involved.” “I think there’s a wonderful sense of community here, and it’s still very much alive,” she added.
 
 ------------------------------------------------------------------------------------------------------------------------
 #089 | score=1 | program_band=band_f | report_band=band_f
-Source: Associated Press
-Published: 2026-04-21T14:31:49Z
-URL: https://apnews.com/press-release/business-wire/n-lorem-foundation-announces-the-50th-nano-rare-patient-receives-personalized-aso-medicine-a49cc0bb378a4048a44e606553325caa
-Title: n-Lorem Foundation Announces the 50th Nano-rare Patient Receives Personalized ASO Medicine
-Extracted negative text: nonprofit foundation patient milestone
+Source: Bloomberg
+Published: 2026-05-01 12:53:18
+URL: https://www.bloomberg.com/news/articles/2026-05-01/brazil-s-bolsonaro-admitted-to-hospital-for-shoulder-surgery?srnd=homepage-europe
+Title: Brazil’s Bolsonaro Admitted to Hospital for Shoulder Surgery - Bloomberg
+Extracted negative text: Political figure medical update
 
 DESCRIPTION:
-SAN DIEGO--(BUSINESS WIRE)--Apr 21, 2026-- n-Lorem, a nonprofit foundation, announced today that the 50 th nano-rare patient has been treated with a personalized, experimental antisense oligonucleotide (ASO) medicine discovered, developed and provided by n-Lo…
+Former President Jair Bolsonaro was hospitalized in Brasilia on Friday morning to undergo surgery on his right shoulder, his wife Michelle Bolsonaro said in a post on Instagram. Supreme Court Justice Alexandre de Moraes authorized the procedure earlier this week.
 
-FULL CONTENT FROM NEWSAPI:
-SAN DIEGO--(BUSINESS WIRE)--Apr 21, 2026-- n-Lorem, a nonprofit foundation, announced today that the 50 th nano-rare patient has been treated with a personalized, experimental antisense oligonucleot… [+5485 chars]
+FULL CONTENT FROM WORLD NEWS API:
+Former President Jair Bolsonaro was hospitalized in Brasilia on Friday morning to undergo surgery on his right shoulder, his wife Michelle Bolsonaro said in a post on Instagram. Supreme Court Justice Alexandre de Moraes authorized the procedure earlier this week.
 
 ------------------------------------------------------------------------------------------------------------------------
-#091 | score=0 | program_band=band_f | report_band=band_f
+#090 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-21T14:00:13Z
-URL: https://apnews.com/article/southern-poverty-law-center-criminal-investigation-db7fdcf9baa0d1b24b8f1e1f2cebc0be
-Title: SOUTHERN POVERTY LAW CENTER says it faces criminal investigation by DOJ...
-Extracted negative text: non-profit criminal investigation
+Published: 2026-05-01 12:49:52
+URL: https://apnews.com/article/netherlands-royalty-princess-amalia-threats-b4fdcaa855b8a4424c5576db314b1da7
+Title: Suspect in Dutch princesses attack plot to face court in The Hague
+Extracted negative text: Royal family security threat
 
 DESCRIPTION:
-The Southern Poverty Law Center says it’s the subject of a Justice Department criminal investigation and faces possible charges over its use of paid informants to infiltrate extremist groups. The Alabama-based civil rights organization made the announcement T…
+THE HAGUE, Netherlands (AP) — A 33-year-old man will appear in court next week after he was detained on suspicion of plotting an attack on two Dutch princesses, prosecutors said Friday. According to details in a court scheduling order published on the website of The Hague Public Prosecutor’s Office, the man is suspected of preparing an attack on the 22-year-old heir to the Dutch throne, Amalia, Princess of Orange, and her 20-year-old sister, Princess Alexia, in February in The Hague. “The suspect was allegedly in possession of two axes in early February with the words ‘Alexia’, ‘Mossad’, and ‘Sieg Heil’ carved into them, and he allegedly had a handwritten sheet with the words ‘Amalia’, ‘Alexia’, and ‘Bloodbath,’” the scheduling order said. A spokesman for The Hague public prosecutor’s office declined to give any more details on the case, ahead of Monday’s procedural hearing.
 
-FULL CONTENT FROM NEWSAPI:
-WASHINGTON (AP) The Southern Poverty Law Center says its the subject of a criminal investigation by the Justice Department and faces possible charges over its past use of paid informants to infiltrat… [+3158 chars]
+FULL CONTENT FROM WORLD NEWS API:
+THE HAGUE, Netherlands (AP) — A 33-year-old man will appear in court next week after he was detained on suspicion of plotting an attack on two Dutch princesses, prosecutors said Friday. According to details in a court scheduling order published on the website of The Hague Public Prosecutor’s Office, the man is suspected of preparing an attack on the 22-year-old heir to the Dutch throne, Amalia, Princess of Orange, and her 20-year-old sister, Princess Alexia, in February in The Hague. “The suspect was allegedly in possession of two axes in early February with the words ‘Alexia’, ‘Mossad’, and ‘Sieg Heil’ carved into them, and he allegedly had a handwritten sheet with the words ‘Amalia’, ‘Alexia’, and ‘Bloodbath,’” the scheduling order said. A spokesman for The Hague public prosecutor’s office declined to give any more details on the case, ahead of Monday’s procedural hearing. It was not clear where or when the man was arrested. The suspect’s name was not released, in line with Dutch privacy regulations. The Royal House did not immediately respond to a request for comment. Amalia has faced threats before. The heir to the Dutch throne was forced in 2022 to give up Amsterdam’s student life and live at her parents’ palace due to threats believed to come from the criminal underworld. Queen Maxima said at the time that Amalia, “can’t leave home” and that it has “enormous consequences for her life.” Amalia subsequently spent several months living in Madrid and later honored the Spanish capital and its citizens for their hospitality by opening a tulip garden there. In 2020, a man was convicted of threatening the princess and one of sending threats via Instagram to the then-16-year-old princess and one of her friends.
 
 ------------------------------------------------------------------------------------------------------------------------
-#092 | score=1 | program_band=band_f | report_band=band_f
+#094 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-21T13:23:51Z
-URL: https://apnews.com/press-release/ein-presswire-newsmatics/additive-manufacturing-users-group-presents-dino-awards-to-six-members-2015087866c26a7e619016f30ac2d838
-Title: Additive Manufacturing Users Group Presents DINO Awards to Six Members
-Extracted negative text: industry group awards
+Published: 2026-05-01 12:14:43
+URL: https://apnews.com/article/britain-superdry-cofounder-rape-conviction-cb53607048d18556e2aa09a109f9d172
+Title: Superdry cofounder James Holder convicted of rape in UK
+Extracted negative text: Corporate executive legal case
 
 DESCRIPTION:
-Olga Ivanova, Daniel Landgraf, Brian Post, Chris Prue, John Thiell and Annie Wang were presented with the coveted award at the 2026 AMUG Conference.
+LONDON (AP) — The cofounder of the fashion brand Superdry was convicted Friday of rape after a night of drinking. James Holder, 54, was found guilty by a jury in Gloucester Crown Court of one count of rape but acquitted of a separate charge of assault by penetration for the May 2022 assault. The accuser said Holder got in her taxi and entered her home uninvited after they had been at a bar in Cheltenham.
 
-FULL CONTENT FROM NEWSAPI:
-Olga Ivanova, Daniel Landgraf, Brian Post, Chris Prue, John Thiell and Annie Wang were presented with the coveted award at the 2026 AMUG Conference. Those who are ultimately selected for a DINO Awar… [+5938 chars]
+FULL CONTENT FROM WORLD NEWS API:
+LONDON (AP) — The cofounder of the fashion brand Superdry was convicted Friday of rape after a night of drinking. James Holder, 54, was found guilty by a jury in Gloucester Crown Court of one count of rape but acquitted of a separate charge of assault by penetration for the May 2022 assault. The accuser said Holder got in her taxi and entered her home uninvited after they had been at a bar in Cheltenham. She said he assaulted her after he awoke from a short nap. She testified that she cried as he carried on despite her pleas to stop. Holder, a married father of two, denied the charges and said all sexual activity had been consensual. He was jailed in advance of sentencing in Bristol Crown Court on May 7.
 
 ------------------------------------------------------------------------------------------------------------------------
-#094 | score=0 | program_band=band_f | report_band=band_f
+#096 | score=1 | program_band=band_f | report_band=band_f
 Source: Associated Press
-Published: 2026-04-21T13:00:13Z
-URL: https://apnews.com/article/mexico-sheinbaum-chihuahua-us-officials-deaths-646664d05452ddbad7b39b9d480fd46e
-Title: Sheinbaum demands explanation...
-Extracted negative text: political incident Mexico
+Published: 2026-05-01 12:01:30
+URL: https://apnews.com/article/amish-mennonite-music-pennsylvania-ben-rose-c2aefc058464943852af5268975bab0f
+Title: In Pennsylvania, musicians with Amish and Mennonite backgrounds find a voice
+Extracted negative text: Amish Mennonite music culture
 
 DESCRIPTION:
-Mexican President Claudia Sheinbaum says she was unaware of any collaboration between the U.S. and local authorities in Chihuahua after four officials died in an accident over the weekend. Sheinbaum said Monday she plans to demand explanations from both count…
+McCOYSVILLE, Pa. (AP) — Conrad Fisher’s musical journey has taken him from an Amish country upbringing in Pennsylvania to Nashville and back. These days the singer-songwriter has been making videos and recordings of musicians with Amish and Mennonite roots — building audiences well beyond the conservative religious communities. Last weekend Fisher took the stage in a former Presbyterian church that he bought for a song and converted into a performance space and recording studio he calls Ragamuffin Hall, in the rural Pennsylvania community of McCoysville.
 
-FULL CONTENT FROM NEWSAPI:
-MEXICO CITY (AP) Mexican President Claudia Sheinbaum said Monday she would demand explanations over what U.S. and Mexican officials were doing in northern Chihuahua when they died in an accident over… [+4954 chars]
+FULL CONTENT FROM WORLD NEWS API:
+McCOYSVILLE, Pa. (AP) — Conrad Fisher’s musical journey has taken him from an Amish country upbringing in Pennsylvania to Nashville and back. These days the singer-songwriter has been making videos and recordings of musicians with Amish and Mennonite roots — building audiences well beyond the conservative religious communities. Last weekend Fisher took the stage in a former Presbyterian church that he bought for a song and converted into a performance space and recording studio he calls Ragamuffin Hall, in the rural Pennsylvania community of McCoysville. Fisher performed two sold-out concerts with Ben and Rose Stoltzfus, a married couple whose Amish background and church choir harmonies have drawn millions of YouTube clicks. It was a sort of warmup for shows they’re playing together in the coming months at much larger theaters in Pennsylvania and Indiana. “Ragamuffin Hall,” Fisher said, “is supposed to be a place where those weird things that’ll get you ostracized everywhere else, we’re like, ‘Oh, no, that’s a gift. And here’s how you use it.’” Fisher’s parents were both raised in Amish families but his father joined a Mennonite congregation as a young adult. Among the Mennonite churches Fisher attended as a boy, musical instruments were rarely used. Nonetheless, his father was a fan of Johnny Cash and didn’t look too closely at what was on Fisher’s MP3 player. When Fisher’s brother came home from a camping trip with a mix CD featuring Chuck Berry, Buddy Holly, the Everly Brothers and the Beach Boys, it changed his life. “It blew my mind, right?” Fisher, now 31, recalled. He started learning keyboards and then guitar, bass and drums before adding music production — “mostly because I was dead set on making a living with music.” “My buddies would be like, ‘Hey, I wrote a song for my girlfriend. Can you do a track?’ And I’m like, sure.” Recording in a converted church He moved to Tennessee as a young adult and for three years immersed himself in the songwriting industry — the Oak Ridge Boys even recorded one of his tunes. But the road life didn’t suit him — particularly bar gigs. “There’s drinking and carrying on,” Fisher said. “It’s just not me. I’m not a prude, but I just don’t enjoy that scene.” Fisher considers his wife and three children his main priority and he remains a faithful Mennonite — his pastor once asked him why he didn’t just start a cabinetry business and launch a prison ministry. Yet his music production work eventually grew to the point three years ago that he could stop working as a carpenter. In 2022, Fisher learned an old brick church several miles from his home was up for sale. After he laid out his vision for making it into a music incubator, they sold it to him below market value. Musicians now regularly find their way to Ragamuffin Hall, mostly to record “clean country music” and rootsy bluegrass with a heavy dose of gospel. The acts he’s recorded include an Amish man who played steel guitar with his son’s band, a musician who drove for hours from Missouri and an Amish band from Ohio. Last Saturday, he sprinkled his own songs between tunes made popular by Waylon Jennings, Alison Krauss and Don Williams. After a short set by Fisher’s five-piece band, they stayed on stage to back up Ben and Rose. Fisher used an electric guitar fashioned from a beam recovered during his renovations of a church stairwell. The overwhelmingly white matinee crowd consisted mostly of older people and included several of the musicians’ family members. Downstairs, Ragamuffin Hall T-shirts were for sale alongside $3 homemade whoopie pies, a regionally ubiquitous Pennsylvania Dutch dessert. A paradigm shift on stage The insular culture and unadorned lives of conservative Anabaptist people aren’t often associated with music, but Amish sacred music dates back half a millennium. Their 900-page hymnal — the “Ausbund” — was composed in part by Anabaptist prisoners in 16th century Germany and is still used today. Fisher’s Amish roots and ability to speak Pennsylvania Dutch, the Old Order Amish dialect, has helped build rapport with likeminded musicians. But Amish church music is almost always group singing only, without instruments or soloists. And the community generally discourages public performances and other “acts of pride.” “There’s a lot of great talent in that community that goes undeveloped because,” Fisher said — using a Pennsylvania German phrase — “that’s just, ‘we don’t do that,’ you know.” That’s the sort of pushback he received in February after uploading a rollicking, live version of “Swing Low, Sweet Chariot” to YouTube. Fisher felt compelled to respond. “I’m a believer, I’m a man of faith, and I’m not ashamed of that,” he replied in a video message. “But I do play a lot of different kinds of music, just like, you know, if you’re a shed builder you build sheds for all kinds of people, not just churches and schools.” Elam Stoltzfus, director of the Nicholas Stoltzfus Homestead in Wyomissing, Pennsylvania, said it was “one of the shocks of my life” to attend a charity fundraiser last year at a farm where Ben and Rose performed. (Stoltzfus is a common name among the Amish.) There were bright lights, a video screen, barbecued chicken and vendors selling T-shirts, CDs and books. Stoltzfus, whose family left the Old Order in the mid-1960s when he was 10, said the gathering was packed with Mennonite and Amish people. They weren’t dancing, but they did clap. “I was thrilled to see this happen, because I knew this was a paradigm shift,” he said. “When I was a teenager, it would never have happened.” Legions of fans on social media Amos Raber, of Goshen, Indiana, also grew up in a “horse and buggy” Amish family and considered himself Amish until he turned 22. Nowadays, he supports his family with concert performances and revenues garnered from what he says are millions of clicks a month on YouTube, Spotify, Apple Music and Facebook. In recent decades, Raber said, he’s seen Amish youth increasingly come together with guitars to sing. But they can still run up against prohibitions on public performances. “Most times, if you see someone who’s really Amish doing that kind of thing, they’re probably not going to be Amish long,” Raber said. Since they began recording and performing music, Ben and Rose have left their Amish church and joined a different Christian congregation. They declined comment for this story. LeRoy Stoltzfus, a singer-songwriter living near Lancaster, was 13 when his family left the Amish church. He said changes in the Lancaster Amish settlement in recent years have made it easier for people to leave without losing contact with families and friends, a process called “shunning” that has long fascinated outsiders. After years of playing guitar as a church worship leader and after spending four years at a Colorado Bible college, he’s now making a living as a musician, stitching together concerts with online ad revenue and recordings for a fan base that includes many Amish and formerly Amish people. “Ever since I can remember I wanted to be a star,” LeRoy Stoltzfus said. “But the older I got, I realized it wasn’t about me — it was about putting out music and helping people.” ‘I would have laughed at you’ Justin Hiltner, a Nashville-based banjo player and songwriter who serves as managing editor of the roots music blog “The Bluegrass Situation,” said after delving into the music he was impressed with its quality. He said he also got the sense that Ben and Rose and Conrad Fisher and the others are building a musical community. “This is clearly not just insular music that’s just facing other Amish folks or other Mennonite folks,” Hiltner said. “Clearly it’s ‘broken containment’ here.” Hiltner called the music -- and Fisher’s videos -- “really compelling.” “To kind of an outsider, this is the performance of American essentialism, the rural American ideal, right?” said Hiltner. “I did hear a level of talent that’s very clearly pushing and pulling these folks towards bringing their music to a wider audience.” Religiously conservative musicians can market their recordings through a network of bookstores across the U.S. and Canada. At one of them, Ken’s Educational Joys in Ephrata, Pennsylvania, racks of CDs are sold alongside a floor-to-ceiling selection of Bibles. Proprietor Lydell Zimmerman said his biggest music sellers are a cappella recordings, but he’s noticed Ben and Rose have drawn a real following. “I think their presence as an Amish couple singing online is what brought people’s attention to them,” Zimmerman said. Ben and Rose came to Fisher’s studio when Ben’s brother, a friend of Fisher’s from Lancaster, booked a session there. He realized right away Ben and Rose had talent. Tapping into Fisher’s production skills, they’ve amassed more than 30 million views for their videos on YouTube. Eventually he proposed some live shows and the couple agreed. “I started recording when I was 14,” Fisher said. “If you would have told me two years ago that what’s going to put me on the map or boost my business in a big way, it’s going to be an Old Order Amish couple, I would have laughed at you.” Associated Press religion coverage receives support through the AP’s collaboration with The Conversation US, with funding from Lilly Endowment Inc. The AP is solely responsible for this content.
+
+------------------------------------------------------------------------------------------------------------------------
+#099 | score=1 | program_band=band_f | report_band=band_f
+Source: Bloomberg
+Published: 2026-05-01 11:46:00
+URL: https://www.bloomberg.com/news/articles/2026-05-01/anger-and-fear-overwhelms-london-s-golders-green-after-antisemitic-attack?srnd=homepage-americas
+Title: Anger and Fear Overwhelms London’s Golders Green After Antisemitic Attack - Bloomberg
+Extracted negative text: Local violent incident
+
+DESCRIPTION:
+Abraham was studying in a synagogue in Golders Green, north London, on Wednesday morning when someone rushed in with a warning: lock the doors, an attacker is on the rampage. Just outside, two Jewish men had been stabbed. Police surrounded the assailant, and arrested him on suspicion of attempted murder.
+
+FULL CONTENT FROM WORLD NEWS API:
+Abraham was studying in a synagogue in Golders Green, north London, on Wednesday morning when someone rushed in with a warning: lock the doors, an attacker is on the rampage. Just outside, two Jewish men had been stabbed. Police surrounded the assailant, and arrested him on suspicion of attempted murder. For the 40–year-old Israeli, a visit to friends became a reminder of how quickly a sense of normality can shatter, even far from home. “We pray for peace,” said Abraham, declining to give his surname, as he walked near the site the following day.
+
+------------------------------------------------------------------------------------------------------------------------
+#100 | score=1 | program_band=band_f | report_band=band_f
+Source: Bloomberg
+Published: 2026-05-01 11:46:00
+URL: https://www.bloomberg.com/news/articles/2026-05-01/anger-and-fear-overwhelms-london-s-golders-green-after-antisemitic-attack?srnd=homepage-europe
+Title: Anger and Fear Overwhelms London’s Golders Green After Antisemitic Attack - Bloomberg
+Extracted negative text: Local violent incident
+
+DESCRIPTION:
+Abraham was studying in a synagogue in Golders Green, north London, on Wednesday morning when someone rushed in with a warning: lock the doors, an attacker is on the rampage. Just outside, two Jewish men had been stabbed. Police surrounded the assailant, and arrested him on suspicion of attempted murder.
+
+FULL CONTENT FROM WORLD NEWS API:
+Abraham was studying in a synagogue in Golders Green, north London, on Wednesday morning when someone rushed in with a warning: lock the doors, an attacker is on the rampage. Just outside, two Jewish men had been stabbed. Police surrounded the assailant, and arrested him on suspicion of attempted murder. For the 40–year-old Israeli, a visit to friends became a reminder of how quickly a sense of normality can shatter, even far from home. “We pray for peace,” said Abraham, declining to give his surname, as he walked near the site the following day.
 

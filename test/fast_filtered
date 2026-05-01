@@ -1,0 +1,11 @@
+WORLD NEWS API FAST FILTER DEBUG REPORT
+Generated at: 2026-05-01T18:51:50
+Read-only check: World News API fetch + fast filter + Prompt A scoring only. No ingestion was performed.
+Current file: fast_filtered
+Fast-filter threshold: 0.85
+Articles in this file: 0
+Prompt A scored articles after fast filter: 100
+Counts: fast_filtered=0 | band_A=13 | band_B=32 | band_C=26 | band_f=29
+========================================================================================================================
+
+No articles filtered out by the fast filter.

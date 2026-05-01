@@ -1,691 +1,208 @@
-NEWSAPI PROMPT A SCORE DEBUG REPORT
-Generated at: 2026-04-28T19:23:20
-Read-only check: NewsAPI fetch + Prompt A scoring only. No ingestion was performed.
+WORLD NEWS API FAST FILTER + PROMPT A SCORE DEBUG REPORT
+Generated at: 2026-05-01T18:51:50
+Read-only check: World News API fetch + fast filter + Prompt A scoring only. No ingestion was performed.
 band_C is the report label for program score_band='drop'.
 Current file: band_A
-Articles in this file: 44
-Total scored articles: 100
-Counts: band_A=44 | band_B=19 | band_C=12 | band_f=25
+Articles in this file: 13
+Fast-filtered articles: 0
+Prompt A scored articles: 100
+Counts: fast_filtered=0 | band_A=13 | band_B=32 | band_C=26 | band_f=29
 ========================================================================================================================
 
 ------------------------------------------------------------------------------------------------------------------------
-#002 | score=9 | program_band=band_A | report_band=band_A
+#002 | score=8 | program_band=band_A | report_band=band_A
 Source: Associated Press
-Published: 2026-04-27T20:45:22Z
-URL: https://apnews.com/article/trump-offshore-wind-energy-climate-interior-02a1fa04b750809bbe035a70256c734d
-Title: Trump again pays offshore wind operators to walk away from leases
-Market relevance reason: Government policy directly impacting the offshore wind sector and specific energy
-    companies through payouts and project cancellations.
+Published: 2026-05-01 22:17:09
+URL: https://apnews.com/article/fact-check-snap-food-stamps-fraud-rollins-1a964909ae5cb808813a6478bbfa5f65
+Title: Why 4.3 million people no longer receive food stamps
+Market relevance reason: The article details a major legislative change reducing SNAP participation, impacting
+    federal spending and social welfare policy with clear fiscal and economic transmission paths.
 
 DESCRIPTION:
-The Trump administration has announced two more payouts for energy companies to walk away from U.S. offshore wind projects under development. Bluepoint Wind and Golden State Wind have agreed to end their offshore wind leases in exchange for reimbursements tot…
+Agriculture Secretary Brooke Rollins this week attributed a multimillion-person drop in the number of participants receiving food stamps through the Supplemental Nutrition Assistance Program to the tamping down of fraud and an improved economy. But experts discount those factors, saying the primary driver of the decrease was more likely new legislation that changed how the program runs. Here’s a closer look at the facts.
 
-FULL CONTENT FROM NEWSAPI:
-WASHINGTON (AP) The Trump administration announced two more payouts Monday for energy companies to walk away from U.S. offshore wind projects under development. Bluepoint Wind and Golden State Wind … [+4988 chars]
+FULL CONTENT FROM WORLD NEWS API:
+Agriculture Secretary Brooke Rollins this week attributed a multimillion-person drop in the number of participants receiving food stamps through the Supplemental Nutrition Assistance Program to the tamping down of fraud and an improved economy. But experts discount those factors, saying the primary driver of the decrease was more likely new legislation that changed how the program runs. Here’s a closer look at the facts. ROLLINS: “As of just a couple of days ago, we now have moved 4.3 million Americans off of the food stamp program. A lot of that is fraud. A lot of it is people taking the program that shouldn’t have been. And a lot of it is just a better economy. We’ve had wage growth that has outpaced inflation for the first time since early 2021. This is a really big day. So people don’t need food stamps.” THE FACTS: SNAP beneficiaries decreased by nearly 4.3 million from January 2025 to January 2026, according to preliminary government data released by the Agriculture Department. However, experts say new requirements mandated by a massive tax and spending cut bill Republicans pushed through Congress last summer are the primary reasons. The bill is projected to cut $186 billion in federal spending — 20% — from SNAP over 10 years, according to the Congressional Budget Office. “What we’ve seen in terms of the data is that the trend in participation declines seems to be related to the program being harder to access,” said Roger Figueroa, an assistant professor at Cornell University who studies food insecurity from a public health perspective. The data says fraud is low Fraud within the SNAP is small, according to experts — not nearly enough to account for such a significant drop. In financial year 2023, the latest data that is available, 41,476 people were disqualified from SNAP for fraud. That includes people who erroneously reported information during the application process and people who exchanged benefits for cash or other noneligible items. Out of 42,176,946 total participants that’s less than 1%. “I don’t see any evidence supporting a significant reduction in fraud as a driver of what we’re seeing as far as declining SNAP participation,” said Caitlin Caspi, an associate professor at the University of Connecticut who studies food insecurity. Asked for data to support Rollins’ claim about fraud’s relationship to the decrease of SNAP beneficiaries, the USDA directed The Associated Press to reporting from the New York Post and the Foundation for Government Accountability on broad-based categorical eligibility. SNAP applicants in most states may be eligible for SNAP using this policy if they qualify for non-cash benefits from the federal Temporary Assistance for Needy Families program or similar state-run efforts. BBCE has beencriticized for allowing states too much flexibility in determining who is eligible for SNAP by removing asset maximums, using a higher limit for gross income or both. The Trump administration hopes to do away with the policy, but for now it is a legal option. Food insecurity persists despite economic gains The U.S. economy generally performed strongly in 2025 after getting off to a bumpy start. Gross domestic product shrank for the first time in three years during the first quarter, but growth rebounded in the second half of the year. It slowed in the fourth quarter, but continued to accelerate at the start of 2026, expanding at a modest 2% pace from January through March, rebounding from a record 43-day government shutdown last year. But while the economy is strong, food prices are rising. They were up 3.1% in 2025 and are expected to increase 2.9% in 2026. And for many of those facing ongoing financial hardship, a strong economy typically doesn’t make a difference. “We have a persistent poverty problem in this country,” said Kate Bauer, an associate professor of nutritional sciences at the University of Michigan. “And we have huge economic disparities. And most people, even in good economic times, are not able to pull their families out of poverty.” Wage growth, at 3.4%, did outpace inflation, at 3.3%, in March, though it was not the first time since 2021, as Rollins claimed. And yet in 2025 higher-income Americans benefited more than lower-income households, which struggled with weaker income gains and steep prices. Plus, hiring was sluggish and the unemployment rate ticked up. “We’re not seeing a linear kind of drop-off,” said Caspi. “We are not seeing, if you look at the unemployment rates, things that might be an indicator that a strong economy was driving this change. We don’t see, for example, a pattern of decline in unemployment that would match the pattern of decline in SNAP participation.” The ‘Big Beautiful Bill’ made massive changes to SNAP Experts say some of the biggest drivers in the drop of SNAP participants were changes made in the 940-page “One Big Beautiful Bill Act,” also known as H.R. 1. For example, it mandated that certain adults who were previously exempt from work requirements are now subject to them. There are two types of work requirements for eligibility. General rules apply to most people age 16-59, but able-bodied adults without dependents must follow stricter guidelines —- made even stricter by H.R. 1 —- unless they qualify for an exemption. Participants can meet the more stringent requirements by working or participating in a work program for at least 80 hours a month. They do not need to be paid. Previously, able-bodied adults older than 54 without dependents were exempt from the enhanced requirements. That age has been raised to 64. And the bill lowered the age of children whom a person is responsible for to qualify for an exemption from 18 to 14. Homeless people, veterans and former foster children 24 or younger are no longer exempt either. “Families have lots of really complicated situations and you can’t just say to people, in 10 days or in one month, go find 80 hours a week of work when you don’t have the skills and those jobs aren’t available in your community,” said Bauer. SNAP eligibility applies only to U.S. citizens and some lawful immigrants, although groups such as refugees and asylees no longer qualify because of H.R. 1. By the numbers In January 2025, when Trump was sworn in as president for his second term, there were approximately 42.83 million SNAP participants. That number dropped nearly 10% by January 2026, to about 38.55 million. The majority of the decline occurred in the second half of the year, after Trump signed H.R. 1 in July. There was a decrease of just 743,572 people from January 2025 to June 2025 and one of about 3.47 million from July 2025 to January 2026. The Congressional Budget Office predicted that the bill would cause such a sharp drop, estimating in an August 2025 report that certain provisions would “reduce participation in SNAP by roughly 2.4 million people in an average month over the 2025-2034 period.” “It shouldn’t be surprising that we are seeing this decline and it shouldn’t be a leap in logic to think that these declines are attributable to H.R. 1.,” said Caspi. Find AP Fact Checks here: https://apnews.com/APFactCheck.
 
 ------------------------------------------------------------------------------------------------------------------------
-#005 | score=8 | program_band=band_A | report_band=band_A
+#008 | score=8 | program_band=band_A | report_band=band_A
 Source: Associated Press
-Published: 2026-04-27T11:00:13Z
-URL: https://apnews.com/article/musk-altman-artificial-intelligence-trial-openai-eb854fa682675f70267abd8a7b9a6a43
-Title: Musk vs. Altman: High-stakes showdown over AI...
-Market relevance reason: High-stakes legal dispute between prominent AI figures, potentially impacting major
-    tech companies and the AI sector's competitive landscape.
+Published: 2026-05-01 20:34:29
+URL: https://apnews.com/article/california-sacramento-river-delta-tunnel-newsom-649da2b2fe5acb49d9a6be8d32c80fde
+Title: Will California ever build the Delta tunnel?
+Market relevance reason: The article details a major $20 billion California water infrastructure project with
+    significant fiscal, regulatory, and environmental implications affecting water supply and agricultural
+    sectors.
 
 DESCRIPTION:
-Technology tycoons Elon Musk and Sam Altman are poised to face off in a high-stakes trial revolving around the alleged betrayal, deceit and unbridled ambition that blurred the bickering billionaires’ once-shared vision for the development of artificial intell…
+In what Gov. Gavin Newsom hailed as a major milestone, his $20 billion Delta tunnel largely cleared another chokepoint last week — but it still faces obstacles of a different magnitude. For more than half a century, California’s leaders have debated rerouting water around, rather than through, the network of rivers, farmland and marshes of the Sacramento-San Joaquin Delta.
 
-FULL CONTENT FROM NEWSAPI:
-OAKLAND, Calif. (AP) Technology tycoons Elon Musk and Sam Altman are poised to face off in a high-stakes trial revolving around the alleged betrayal, deceit and unbridled ambition that blurred the bi… [+5869 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#009 | score=9 | program_band=band_A | report_band=band_A
-Source: Bloomberg
-Published: 2026-04-27T05:49:39Z
-URL: https://www.bloomberg.com/news/articles/2026-04-27/india-revamps-trade-reporting-system-including-offshore-rupee
-Title: Clearing Corporation revamps trade reporting system, including offshore rupee
-Market relevance reason: Major regulatory and infrastructure changes in India's financial markets, impacting
-    financial institutions, trading, and transparency.
-
-DESCRIPTION:
-The revamp is aimed at reporting more details of trades and to create a more uniform format aligned with standards used elsewhere
-
-FULL CONTENT FROM NEWSAPI:
-The central bank-supervised clearinghouse is making changes to its trade reporting system to bring it more in line with global standards and to make it easier for lenders to disclose their offshore r… [+1541 chars]
+FULL CONTENT FROM WORLD NEWS API:
+In what Gov. Gavin Newsom hailed as a major milestone, his $20 billion Delta tunnel largely cleared another chokepoint last week — but it still faces obstacles of a different magnitude. For more than half a century, California’s leaders have debated rerouting water around, rather than through, the network of rivers, farmland and marshes of the Sacramento-San Joaquin Delta. Newsom’s version would pipe Sacramento River water through a 45-mile bypass to a reservoir on the California Aqueduct, in an effort to shore up state supplies and send more water south. Delta communities call the plan a water grab that would devastate one of the country’s largest estuaries and destroy towns, wildlife and generational farms. State officials and major water suppliers say it’s necessary to safeguard water for two-thirds of Californians against the threats of climate change and natural disasters. Tasked with refereeing the fight, a state agency called the Delta Stewardship Council weighed opponents’ many challenges to the project and last week voted six-to-one to require the Department of Water Resources to address just two of them. Newsom declared victory, saying “we are closer than ever to seeing this important piece of infrastructure completed.” Maybe closer than ever, California water watchers say, but still far from complete. Far bigger obstacles loom: court rulings that have upended California’s financing plans, critical water rights decisions still to come from state regulators, and water agencies that have yet to decide whether the tunnel’s water will be worth the cost. “These are all existential,” said Jeffrey Mount, a senior fellow at the Public Policy Institute of California. “You’ve got some pretty tough hurdles ahead.” A dying Delta The Sacramento-San Joaquin River Delta is the heart of California’s nature-defying water systems, where state and federal pumps send Northern California river water coursing to cities and farms in the lower half of the state. The Delta is collapsing under the strain — wracked by algal blooms, degraded water quality and fish species spiraling towards extinction. Residents, environmentalists and the fishing industry fear that diverting freshwater through a tunnel will push it over the edge. Voters beat back the first-generation tunnel — a peripheral canal — in the 1980s, during Gov. Jerry Brown’s first stint as governor. But governor after governor has continued the push. The canal eventually became the twin tunnels that became Newsom’s Delta Conveyance Project, which remains mired in planning. Carrie Buckman, environmental program manager for the tunnel project at the Department of Water Resources, is optimistic that construction could start as soon as 2029 and would last around 13 years. But with Newsom in his last year as governor, the clock is ticking. And the region’s residents continue in limbo — bracing for a project that would carve through their communities, farms and waterways. “Nobody seems to care about the people out here on the ground,” said Duane Martin Jr., a third-generation cattleman in the Delta. Martin steered his pickup down country roads, along the orchards and pastures of Sacramento County. Great egrets strutted the edges of fields to snatch small, struggling creatures from the grass, and red-winged blackbirds clung to golden stalks of mustard. Martin worries for his cattle operation. His father was a cattleman. His grandfather was a cattleman. Now a father himself, his daughters’ cattle graze in the pasture outside his home. He’s outraged by the prospect of the truck traffic, the noise, the churn of the concrete batch plant and the roughly 200-acre pile of tunnel muck planned for land where he’s been grazing cattle for decades. But more than that, he said, gruff beneath his Stetson, “It’s the community that they’re going to impact — those of us that have lived here most of our lives.” “They’re going to change the Delta area forever.” An unending water war The Delta’s vulnerability is real: levees are at risk of crumbling under age, earthquakes and climate-fueled storms; sea level rise threatens to flood the system with too much saltwater. For Buckman, it’s simple: As climate change makes California’s swings from wet to dry more extreme, “It’s about water supply.” Mount, like the water suppliers supporting the project, believes construction is inevitable. “If you don’t build it in this generation, you’ll build it in the next,” he said. “Build a tunnel, or start a very painful process of really cutting back on water supplies from the Delta.” The costs are high; around $20.1 billion by the Department of Water Resources’ estimate, $60 to more than $100 billion, by an economic assessment commissioned by opponents. California doesn’t yet have a way to pay for it. State water managers planned to issue revenue bonds, to be paid back by water agencies receiving water from the tunnel — and their customers. But a trial court said that the water code did not give the Water Resources “carte blanche to do as it wishes” and the financing plan “exceeded its delegated authority.” The Third District Court of Appeal agreed, and in April, the California Supreme Court refused to review the case. Buckman said that the department still plans to issue bonds and is figuring out its next steps. As yet, no water agency has committed to paying for a tunnel — and no agency likely will, until the department can finance it, according to Kelley Taber, an attorney representing tunnel opponents. The federal government and the powerful irrigation districts it supplies have already opted out, Buckman said. “Ag, at large, cannot afford to pay for large infrastructure projects,” said Jennifer Pierre, general manager for the State Water Contractors, an association of public water agencies that receive water from California’s massive delivery system, the State Water Project. But she said the costs don’t diminish the need. That leaves the bulk of the bill with urban water suppliers and their customers. Metropolitan Water District, the Southern California water import giant that supplies half the state’s population, is already paying nearly half the tunnel’s planning costs — but it’s also heavily investing in local recycled water supplies. Its board isn’t expected to vote on whether to shoulder much of the tunnel’s construction costs until 2027. No construction commitment before then means no commitment before a new governor takes office. Meanwhile, major water rights questions remain unresolved. State regulators are holding hearings that could last through the summer about whether to allow the Department of Water Resources to divert Sacramento River water into the proposed tunnel intakes. Newsom has advocated for a Delta tunnel since his first days as governor. Four Newsom appointees sit on the seven-member Delta Stewardship Council that just advanced the tunnel project, minus a couple speedbumps. He has also championed unsuccessful legislative fixes to financing and other roadblocks. The question is whether the next governor will continue the push. Pierre said they must — the need for the tunnel is clear. Mount isn’t as sure. It will depend on the next governor’s priorities — and who they put in key leadership positions. “Whoever they appoint, that is really where it happens,” he said. “It’s hard for me to imagine that if Brown and/or Newsom weren’t all in on this, it would have gotten this far.” ‘They’re gonna have to take it’ Martin pulls his pickup to the side of the road next to a lush pasture he leases that’s more prairie than Pacific. This is one of the next battlegrounds for the tunnel project. In the spring and summer, Martin grazes hundreds of cows and their calves here. And in the winter, the Sacramento Area Sewer District plans to pipe recycled water onto the fields, creating seasonal feeding grounds and rest stops for the protected sandhill crane and other birds traveling the Pacific Flyway. It’s part of the largest agricultural recycled water project in the state, Harvest Water, to provide highly treated wastewater to 16,000 acres of farmland in the region and take the pressure off local groundwater supplies. California has already awarded more than $400 million for Harvest Water, but the funding hinges on the environmental benefits like habitat the project will provide, according to the sewer district’s Jofil Borja. It’s an ideal spot, between the Stone Lakes National Wildlife Refuge and the Cosumnes River Preserve. And that’s where it runs up against the tunnel project. The pastures where Martin grazes his cattle and the sewer district plans to create seasonal habitat are also in the Department of Water Resources’ sights. State water managers plan to build a nearly 600-acre construction complex — with a permanent 214-acre mound of excavated tunnel materials up to 15 feet tall — right here. “You tell me if you want to be the neighbor that lives right there, lookin’ out his front yard at this pile of muck,” Martin said, gesturing at a house across the road. Right now, its view is a sea of grass that disappears into a darker line of trees. In refereeing the fight over this land, the Delta Stewardship Council last week ordered the Department of Water Resources to resolve its conflicts with Harvest Water over the site, or explain why that isn’t possible, the council’s staff report said. Kelley Taber, the attorney representing the sewer district, is celebrating the mixed victory. “I always thought that this was going to be (the department’s) Achilles heel,” Taber said. Among the “multitude of disastrous impacts to the Delta,” she said, it’s “the most obvious fatal flaw.” Buckman disputed staff’s assessment of the siting conflict in a letter to the council, saying that the tunnel project can’t avoid the entire Harvest Water footprint, and that the habitats don’t exist yet. But, she added, the department would “work promptly” to address the issue. If it does, to the council’s satisfaction, state water managers will still need to buy or seize the land. The landowner declined to speak on the record. Martin expects it will be a fight — and he’s ready for it. Under eminent domain, the state can forcibly take property for a public purpose. The landowner can contest it. But he’s unlikely to stop it. “They’re gonna have to take it,” Martin said. “I’ve got a lot of friends that leave, but I ain’t about to quit. I’m a fighter, and I’m going to stay here and fight for it to the death.” This story was originally published by CalMatters and distributed through a partnership with The Associated Press.
 
 ------------------------------------------------------------------------------------------------------------------------
-#010 | score=8 | program_band=band_A | report_band=band_A
-Source: Bloomberg
-Published: 2026-04-27T05:02:18Z
-URL: https://www.bloomberg.com/news/articles/2026-04-27/deepseek-slashes-fees-for-new-ai-model-in-chinese-price-war
-Title: DeepSeek slashes fees for new AI model in Chinese price war
-Market relevance reason: Significant competitive pricing strategy in the Chinese AI sector, impacting market
-    dynamics and profitability for companies in the space.
-
-DESCRIPTION:
-The Hangzhou-headquartered AI lab is offering a 75 per cent discount to developers using the DeepSeek-V4-Pro, released last week
-
-FULL CONTENT FROM NEWSAPI:
-DeepSeek is aggressively pitching low-priced plans for its just-released flagship model, intensifying competition across a Chinese artificial intelligence industry trying to take on Silicon Valleys b… [+1826 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#012 | score=9 | program_band=band_A | report_band=band_A
+#035 | score=8 | program_band=band_A | report_band=band_A
 Source: Associated Press
-Published: 2026-04-27T04:30:45Z
-URL: https://apnews.com/press-release/pr-newswire/ascletis-completes-enrollment-in-u-s-phase-ii-study-of-asc30-an-oral-small-molecule-glp-1r-agonist-for-the-treatment-of-diabetes-98dd1e7fd44dbb88f478ac5ceffdd69f
-Title: Ascletis Completes Enrollment in U.S. Phase II Study of ASC30, an Oral Small Molecule GLP-1R Agonist,
-    for the Treatment of Diabetes
-Market relevance reason: Direct company-level news regarding a significant clinical trial milestone for a
-    pharmaceutical company, impacting its future prospects and the diabetes treatment sector.
+Published: 2026-05-01 16:00:58
+URL: https://apnews.com/article/trump-tariffs-eu-autos-trade-800e6ed469b73cd4c144edb65e40ba72
+Title: Trump says he'll place 25% tariff on autos from EU
+Market relevance reason: The announcement of a 25% tariff on EU autos is a major trade policy development with
+    clear transmission paths to the automotive sector, international trade, and global economic conditions.
 
 DESCRIPTION:
-- 13-week U.S. Phase II study is evaluating the efficacy, safety and tolerability of oral small molecule GLP-1R agonist ASC30, a once-daily tablet, in 100 participants with diabetes.
+WASHINGTON (AP) — President Donald Trump said Friday that he will increase the tariffs charged on cars and trucks from the European Union next week to 25%, a move that could jolt the world economy at a fragile moment. Trump said in the post that the EU “is not complying with our fully agreed to Trade Deal,” though he did not flesh out his objections in the post. Trump and European Commission President Ursula von der Leyen had agreed to the trade deal last July.
 
-FULL CONTENT FROM NEWSAPI:
-- 13-week U.S. Phase II study is evaluating the efficacy, safety and tolerability of oral small molecule GLP-1R agonist ASC30, a once-daily tablet, in 100 participants with diabetes. - Topline data … [+4655 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#013 | score=10 | program_band=band_A | report_band=band_A
-Source: Bloomberg
-Published: 2026-04-27T04:05:43Z
-URL: https://www.bloomberg.com/news/articles/2026-04-27/emerging-stocks-rise-to-record-high-on-ai-iran-offer
-Title: Emerging stocks rise to record high on AI, Iran’s Hormuz offer
-Market relevance reason: Reports on record highs in emerging markets, driven by major themes like AI and
-    geopolitical developments, directly impacting global stock market sentiment and sector performance.
-
-DESCRIPTION:
-Easing West Asia tensions have bolstered sentiment thanks to an extended US-Iran ceasefire, while a developing-market currency gauge rose around 0.3%
-
-FULL CONTENT FROM NEWSAPI:
-Emerging-market equities rose to a record high, buoyed by optimism over the artificial intelligence trade and a report that Iran offered a new proposal to reopen the Strait of Hormuz. The MSCI EM In… [+2243 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#014 | score=9 | program_band=band_A | report_band=band_A
-Source: Bloomberg
-Published: 2026-04-27T03:42:14Z
-URL: https://www.bloomberg.com/news/articles/2026-04-24/byd-geely-see-more-ev-demand-as-oil-prices-climb-from-iran-war
-Title: BYD, Geely see more EV demand as oil prices climb from Iran War
-Market relevance reason: Connects geopolitical events and rising oil prices to increased demand for electric
-    vehicles, directly impacting specific automotive companies and the EV sector.
-
-DESCRIPTION:
-Cambricon Technologies Corp. and Foxconn Industrial Internet Co. will also continue to offer a glimpse of how China’s hardware players are responding to the artificial intelligence boom
-
-FULL CONTENT FROM NEWSAPI:
-Chinas BYD Co. and Geely Automobile Holdings Ltd. are poised to benefit from higher demand for electric vehicles as the Iran war drives up oil prices. Overseas sales growth will become a bigger pri… [+1587 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#015 | score=10 | program_band=band_A | report_band=band_A
-Source: Bloomberg
-Published: 2026-04-27T01:28:40Z
-URL: https://www.bloomberg.com/news/articles/2026-04-27/sun-pharma-to-acquire-us-listed-organon-in-12-billion-deal
-Title: Sun Pharma inks agreement to buy US-based Organon for $11.75 billion
-Market relevance reason: Reports a significant acquisition deal between two pharmaceutical companies, directly
-    impacting their valuations and the sector.
-
-DESCRIPTION:
-The transaction has been approved by the boards of both Sun Pharma and Organon, and is expected to close in early 2027, pending closing conditions such as regulatory and Organon shareholder approvals
-
-FULL CONTENT FROM NEWSAPI:
-Sun Pharmaceutical Industries and US-based Organon &amp; Co have entered into an agreement under which Sun will acquire all outstanding shares of Organon for $14 per share in an all-cash transaction … [+4721 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#016 | score=9 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-26T14:04:27Z
-URL: https://apnews.com/article/tillis-powell-federal-reserve-warsh-justice-department-3867248f5664b14e6f545724e6ed085a
-Title: Tillis says he's ready to move ahead with confirming Warsh as Fed chair
-Market relevance reason: News regarding the confirmation of a Federal Reserve chair, which has significant
-    implications for monetary policy and the broader economy.
-
-DESCRIPTION:
-The Republican senator who had effectively blocked confirmation of President Donald Trump’s pick to lead the Federal Reserve says he's dropping his opposition after the Department of Justice ended its investigation of the current central bank chair. The annou…
-
-FULL CONTENT FROM NEWSAPI:
-WASHINGTON (AP) The Republican senator who had effectively blocked confirmation of President Donald Trumps pick to lead the Federal Reserve said Sunday he was dropping his opposition after the Depart… [+5388 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#017 | score=8 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-26T13:17:43Z
-URL: https://apnews.com/press-release/newsfile/duol-shareholder-reminder-faruqi-faruqi-llp-investigates-claims-on-behalf-of-investors-of-duolingo-983a419c699bf0fb12f1f8cb96c940e2
-Title: DUOL SHAREHOLDER REMINDER: Faruqi & Faruqi, LLP Investigates Claims on Behalf of Investors of Duolingo
-Market relevance reason: Reports a legal investigation into a publicly traded company, signaling potential
-    negative financial and reputational impacts for investors.
-
-DESCRIPTION:
-Faruqi & Faruqi, LLP Securities Litigation Partner James (Josh) Wilson Encourages Investors Who Suffered Significant Losses In Duolingo To Contact Him Directly To Discuss Their Options
-
-FULL CONTENT FROM NEWSAPI:
-Faruqi &amp; Faruqi, LLP Securities Litigation Partner James (Josh) Wilson Encourages Investors Who Suffered Significant Losses In Duolingo To Contact Him Directly To Discuss Their Options If you su… [+2395 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#018 | score=9 | program_band=band_A | report_band=band_A
-Source: Bloomberg
-Published: 2026-04-26T05:31:41Z
-URL: https://www.bloomberg.com/news/articles/2026-04-24/reliance-s-profit-meets-estimate-on-steady-telecom-retail-units
-Title: Ambani flags ‘unprecedented dislocation’ as Reliance net slips
-Market relevance reason: Reports on a major company's quarterly profit and its chairman's comments on
-    macroeconomic dislocations, directly impacting company valuation and broader market sentiment.
-
-DESCRIPTION:
-Billionaire Mukesh Ambani flagged the “unprecedented dislocation” unleashed by the US-Iran war after Reliance Industries Ltd.’s quarterly profit slipped but managed to meet analyst expectations due to a strong show by its consumer units.
-
-FULL CONTENT FROM NEWSAPI:
-Billionaire Mukesh Ambani flagged the unprecedented dislocation unleashed by the US-Iran war after Reliance Industries Ltd.s quarterly profit slipped but managed to meet analyst expectations due to a… [+4722 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#024 | score=10 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-25T00:58:54Z
-URL: https://apnews.com/press-release/pr-newswire/related-digital-announces-financing-for-16-billion-oracle-data-center-project-in-saline-township-michigan-87559d51a8799afee7cf9bc90d009a01
-Title: Related Digital Announces Financing for $16 Billion Oracle Data Center Project in Saline Township,
-    Michigan
-Market relevance reason: This article details a $16 billion financing deal for a major data center project,
-    involving key players like Oracle, Blackstone, and PIMCO. This is highly relevant for company-level
-    analysis, the technology sector, and infrastructure investment.
-
-DESCRIPTION:
-Related Digital and Funds Affiliated with Blackstone Commit Equity to Fund Project; Fixed Rate, Long-Term Debt Financing Anchored by PIMCO-Managed Funds and Accounts
-
-FULL CONTENT FROM NEWSAPI:
-Related Digital and Funds Affiliated with Blackstone Commit Equity to Fund Project; Fixed Rate, Long-Term Debt Financing Anchored by PIMCO-Managed Funds and Accounts Campus Creates Thousands of Unio… [+8412 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#026 | score=9 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-24T18:12:53Z
-URL: https://apnews.com/article/treasury-bessent-sanctions-china-iran-oil-12a02b5ba394cbcab355d645bfe9cdf7
-Title: US sanctions China-based oil refinery and 40 shippers over Iranian oil
-Market relevance reason: This article details significant US economic sanctions against a China-based oil
-    refinery and shipping companies over Iranian oil. This has direct macroeconomic, sector-level (oil & gas,
-    shipping), and company-level implications due to geopolitical tensions and trade restrictions.
-
-DESCRIPTION:
-The Trump administration is sanctioning a major China-based oil refinery and about 40 shipping companies. The move announced Friday is part of a campaign to cut off Iran’s oil exports, a key revenue source. The U.S. has also imposed a blockade of the Strait o…
-
-FULL CONTENT FROM NEWSAPI:
-WASHINGTON (AP) President Donald Trumps administration is placing economic sanctions on a major China-based oil refinery and roughly 40 shipping companies and tankers involved in transporting Iranian… [+3445 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#027 | score=8 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-24T17:42:03Z
-URL: https://apnews.com/press-release/business-wire/frankfurt-higher-regional-court-upholds-besremi-arbitral-award-in-favor-of-aop-health-41d25c52881f48f8a6c70ae39698ec98
-Title: Frankfurt Higher Regional Court upholds BESREMi® arbitral award in favor of AOP Health
-Market relevance reason: This article reports on a significant legal victory for AOP Health regarding an
-    arbitral award for its drug BESREMi®. This has direct company-level financial implications for AOP Health
-    and PharmaEssentia Corp.
-
-DESCRIPTION:
-VIENNA--(BUSINESS WIRE)--Apr 24, 2026-- Today, the Higher Regional Court of Frankfurt upheld the February 2025 1 partial final ICC arbitral award in favor of AOP Orphan Pharmaceuticals GmbH (“AOP Health”) in its dispute with PharmaEssentia Corp.
-
-FULL CONTENT FROM NEWSAPI:
-VIENNA--(BUSINESS WIRE)--Apr 24, 2026-- Today, the Higher Regional Court of Frankfurt upheld the February 2025 1 partial final ICC arbitral award in favor of AOP Orphan Pharmaceuticals GmbH (AOP Hea… [+5872 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#030 | score=10 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-24T14:32:11Z
-URL: https://apnews.com/article/federal-reserve-investigation-powell-justice-department-28d04cc0d99cda25cea69931f65e25d3
-Title: Justice Department drops criminal probe of Fed chair Powell
-Market relevance reason: This article reports on the Justice Department dropping its probe into the Federal
-    Reserve chair, which is highly significant for macroeconomic policy, market stability, and the
-    confirmation process for a key financial leader.
-
-DESCRIPTION:
-The Justice Department has ended its probe into Federal Reserve chair Jerome Powell, clearing a major roadblock to the confirmation of his successor, Kevin Warsh. U.S. Attorney for the District of Columbia Jeannine Pirro said on X on Friday that her office wa…
-
-FULL CONTENT FROM NEWSAPI:
-WASHINGTON (AP) The Justice Department has ended its probe into Federal Reserve chair Jerome Powell, clearing a major roadblock to the confirmation of his successor, Kevin Warsh. U.S. Attorney for … [+2100 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#033 | score=9 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-24T14:13:30Z
-URL: https://apnews.com/article/psychedelics-trump-fda-kennedy-drugs-mdma-afd00baa39f4300e4631d1f3eed27b7f
-Title: FDA: Three psychedelic drugs to get review following Trump directive
-Market relevance reason: FDA's decision for 'ultra-fast review' of psychedelic drugs for mental health is a
-    significant regulatory development. This has strong sector-level implications for the pharmaceutical and
-    biotech industries, potentially impacting companies involved in developing these treatments.
-
-DESCRIPTION:
-The Food and Drug Administration says it will offer ultra-fast review to three psychedelic drugs being studied for hard-to-treat mental health conditions, including major depression. The agency announced the move Friday, following an executive order by Presid…
-
-FULL CONTENT FROM NEWSAPI:
-WASHINGTON (AP) The Food and Drug Administration said Friday it will offer ultra-fast review to three psychedelic drugs being developed to treat mental health conditions, including depression, the la… [+4765 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#035 | score=9 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-24T13:41:12Z
-URL: https://apnews.com/press-release/access-newswire/alt5-sigma-corporation-alts-and-nano-labs-na-announce-memorandum-of-understanding-to-explore-ai-infrastructure-and-financial-systems-for-the-agentic-economy-e57ba9736a7fbaf7787e9a54e903443f
-Title: ALT5 Sigma Corporation (ALTS) and Nano Labs (NA) Announce Memorandum of Understanding to Explore AI
-    Infrastructure and Financial Systems for the Agentic Economy
-Market relevance reason: This article explicitly states that two NASDAQ-listed companies (ALT5 Sigma and Nano
-    Labs) are exploring collaboration on AI infrastructure and financial systems. This is direct, material
-    company-level news for publicly traded entities, with sector implications for AI and fintech.
-
-DESCRIPTION:
-Two NASDAQ-Listed Companies Enter Into a Structured, Non-Binding Memorandum of Understanding to Evaluate Collaboration Across AI Data Centers, Agent Cloud and AI-Native Payments, Supported by Defined Workstreams and Joint Leadership
-
-FULL CONTENT FROM NEWSAPI:
-Two NASDAQ-Listed Companies Enter Into a Structured, Non-Binding Memorandum of Understanding to Evaluate Collaboration Across AI Data Centers, Agent Cloud and AI-Native Payments, Supported by Defined… [+7994 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#036 | score=10 | program_band=band_A | report_band=band_A
-Source: Bloomberg
-Published: 2026-04-24T10:15:59Z
-URL: https://www.bloomberg.com/news/articles/2026-04-24/musk-says-tesla-has-begun-production-of-its-cybercab-robotaxi
-Title: Musk Says Tesla Has Begun Producing Its Cybercab Robotaxi
-Market relevance reason: Elon Musk's announcement that Tesla has started manufacturing its Cybercab robotaxi
-    is highly significant company-level news for a major publicly traded company (Tesla). This impacts future
-    revenue streams, production capabilities, and investor sentiment.
-
-DESCRIPTION:
-The two-door, two-seat sedan was unveiled two years ago without a steering wheel or pedals — something which would require certain exemptions from US regulators for mass production
-
-FULL CONTENT FROM NEWSAPI:
-Tesla Inc. has started manufacturing its Cybercab robotaxi, Chief Executive Officer Elon Musk said Friday in a post on his social media site X, fulfilling a long-promised launch at a time when the co… [+1419 chars]
+FULL CONTENT FROM WORLD NEWS API:
+WASHINGTON (AP) — President Donald Trump said Friday that he will increase the tariffs charged on cars and trucks from the European Union next week to 25%, a move that could jolt the world economy at a fragile moment. Trump said in the post that the EU “is not complying with our fully agreed to Trade Deal,” though he did not flesh out his objections in the post. Trump and European Commission President Ursula von der Leyen had agreed to the trade deal last July. It set a 15% tariff on most goods. Both the U.S. and the EU had previously confirmed their commitment to preserving the trade framework, known as the Turnberry Agreement, which was named after Trump’s golf course in Scotland. But the status of the 2025 deal was first cast into doubt after the Supreme Court this year ruled that the Republican president lacked the legal authority to declare an economic emergency and charge tariffs on EU goods. The initial agreement had been a tariff ceiling of 15% on goods from the EU, but the Supreme Court ruling reduced that to 10% as the Trump administration launched a new set of import taxes based on other laws.
 
 ------------------------------------------------------------------------------------------------------------------------
 #038 | score=9 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-24T08:06:16Z
-URL: https://apnews.com/press-release/pr-newswire/southstate-bank-corporation-reports-first-quarter-2026-results-declares-quarterly-cash-dividend-ebf539c01ae2d84e152cf3a326efa320
-Title: SouthState Bank Corporation Reports First Quarter 2026 Results, Declares Quarterly Cash Dividend
-Market relevance reason: SouthState Bank Corporation (NYSE: SSB) reporting its first-quarter results and
-    declaring a dividend is direct, material company-level financial news for a publicly traded entity. This
-    is crucial for investors and analysts tracking the company's performance.
-
-DESCRIPTION:
-WINTER HAVEN, Fla., April 23, 2026 /PRNewswire/ -- SouthState Bank Corporation ("SouthState" or the "Company") (NYSE: SSB) today released its unaudited results of operations and other financial information for the three-month period ended March 31, 2026.
-
-FULL CONTENT FROM NEWSAPI:
-WINTER HAVEN, Fla., April 23, 2026 /PRNewswire/ -- SouthState Bank Corporation (SouthState or the Company) (NYSE: SSB) today released its unaudited results of operations and other financial informati… [+101169 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#039 | score=8 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-24T07:43:59Z
-URL: https://apnews.com/article/iran-strait-hormuz-closed-us-military-analysis-5df204d8321e76cfad30c4329eb8d1ac
-Title: Analysis: Iran war recalls US Navy's experience in 1980s 'Tanker war'
-Market relevance reason: Analysis of geopolitical tensions in the Persian Gulf and potential threats to oil
-    tankers in the Strait of Hormuz has significant macroeconomic implications, particularly for global oil
-    prices, shipping costs, and related energy sector stocks.
-
-DESCRIPTION:
-The United States once protected ships from Iranian attacks in the Strait of Hormuz in the 1980s. That came during Iran's long war with Iraq. The U.S. could follow that model now and become more aggressive to protect ships passing through the strait as the ce…
-
-FULL CONTENT FROM NEWSAPI:
-DUBAI, United Arab Emirates (AP) Naval mines bobbing in the waters of the Persian Gulf, threatening oil tankers. Iranian speed boats raking ships with machine-gun fire in the Strait of Hormuz. And th… [+5780 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#040 | score=8 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-24T07:43:42Z
-URL: https://apnews.com/article/deepseek-ai-china-gpt-v4-d2ed33f2521917193616e061674d5f92
-Title: China's DeepSeek launches an update of its AI model
-Market relevance reason: DeepSeek, a Chinese AI startup, launching a major update to its AI model is
-    significant sector-level news. It highlights the ongoing global AI rivalry and can impact investor
-    sentiment and valuations for publicly traded AI companies and the broader tech sector.
-
-DESCRIPTION:
-DeepSeek, the Chinese artificial intelligence startup that shook up world markets last year, has launched preview versions of its latest major update. DeepSeek’s V4 will be tested to see how it compares with U.S. competitors like OpenAI’s ChatGPT, Anthropic’s…
-
-FULL CONTENT FROM NEWSAPI:
-HONG KONG (AP) DeepSeek, the Chinese artificial intelligence startup that shook world markets last year, launched preview versions of its latest major update Friday as the AI rivalry between China an… [+4595 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#041 | score=9 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-24T07:26:50Z
-URL: https://apnews.com/press-release/business-wire/baycom-corp-reports-2026-first-quarter-earnings-of-8-2-million-48aefd15bf7e4e87a51f1194ad05752b
-Title: BayCom Corp Reports 2026 First Quarter Earnings of $8.2 Million
-Market relevance reason: Direct company-level earnings report for a publicly traded company (NASDAQ: BCML),
-    highly relevant for investors and sector analysis.
-
-DESCRIPTION:
-WALNUT CREEK, Calif.--(BUSINESS WIRE)--Apr 23, 2026-- BayCom Corp (“BayCom” or the “Company”) (NASDAQ: BCML), the holding company for United Business Bank (the “Bank” or “UBB”), announced earnings of $8.2 million, or $0.75 per diluted common share, for the fi…
-
-FULL CONTENT FROM NEWSAPI:
-WALNUT CREEK, Calif.--(BUSINESS WIRE)--Apr 23, 2026-- BayCom Corp (BayCom or the Company) (NASDAQ: BCML), the holding company for United Business Bank (the Bank or UBB), announced earnings of $8.2 m… [+64337 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#043 | score=8 | program_band=band_A | report_band=band_A
 Source: Bloomberg
-Published: 2026-04-24T04:36:11Z
-URL: https://www.bloomberg.com/news/articles/2026-04-23/adp-is-said-planning-to-reduce-stake-in-india-s-gmr-airports
-Title: ADP cuts stake in India’s GMR Airports in $1 billion deal
-Market relevance reason: A publicly traded company (ADP) is divesting a significant stake in another publicly
-    traded company (GMR Airports), impacting both companies and the airport sector.
+Published: 2026-05-01 15:57:07
+URL: https://www.bloomberg.com/news/articles/2026-05-01/trump-says-us-to-raise-tariff-rate-on-eu-cars-trucks-to-25
+Title: Trump Tariffs: US to Raise Tariff Rate on EU Cars, Trucks to 25% - Bloomberg
+Market relevance reason: Major trade tariff increase on EU autos with clear sector and company-level impact
 
 DESCRIPTION:
-ADP sells up to 7.3% of GMR Airports for $1 billion, maintaining governance rights in a multistage deal with GMR's founding family.
+President Donald Trump said he was raising tariffs on cars and trucks from the EU to 25%, claiming that the bloc had failed to fully comply with a trade agreement negotiated with the US. “I am pleased to announce that, based on the fact the European Union is not complying with our fully agreed to Trade Deal, next week I will be increasing Tariffs charged to the European Union for Cars and Trucks coming into the United States,” Trump said Friday in a social media post. “The Tariff will be increased to 25%.”
 
-FULL CONTENT FROM NEWSAPI:
-ADP, the operator of the main Paris airports, agreed to sell up to 7.3 per cent of Indias GMR Airports Ltd as part of a deal worth as much as 924 million ($1.08 billion). The French group agreed to … [+1811 chars]
+FULL CONTENT FROM WORLD NEWS API:
+President Donald Trump said he was raising tariffs on cars and trucks from the EU to 25%, claiming that the bloc had failed to fully comply with a trade agreement negotiated with the US. “I am pleased to announce that, based on the fact the European Union is not complying with our fully agreed to Trade Deal, next week I will be increasing Tariffs charged to the European Union for Cars and Trucks coming into the United States,” Trump said Friday in a social media post. “The Tariff will be increased to 25%.”
 
 ------------------------------------------------------------------------------------------------------------------------
-#046 | score=8 | program_band=band_A | report_band=band_A
+#039 | score=9 | program_band=band_A | report_band=band_A
 Source: Bloomberg
-Published: 2026-04-24T03:22:59Z
-URL: https://www.bloomberg.com/news/articles/2026-04-24/india-s-currency-is-undervalued-top-economic-official-says
-Title: Rupee is fundamentally undervalued, says chief economic adviser
-Market relevance reason: Macroeconomic statement on a major emerging market currency's valuation and its
-    potential impact on investor flows, highly relevant for market and sector analysis.
+Published: 2026-05-01 15:57:07
+URL: https://www.bloomberg.com/news/articles/2026-05-01/trump-says-us-to-raise-tariff-rate-on-eu-cars-trucks-to-25?srnd=homepage-europe
+Title: Trump Tariffs: US to Raise Tariff Rate on EU Cars, Trucks to 25% - Bloomberg
+Market relevance reason: Major trade tariff increase on EU autos with clear sector and company-level impact
 
 DESCRIPTION:
-The currency has come under pressure due to rising crude oil prices, geopolitical tensions in West Asia, and strong foreign portfolio outflows, making it Asia’s worst-performing currency in 2026 so far
+President Donald Trump said he was raising tariffs on cars and trucks from the EU to 25%, claiming that the bloc had failed to fully comply with a trade agreement negotiated with the US. “I am pleased to announce that, based on the fact the European Union is not complying with our fully agreed to Trade Deal, next week I will be increasing Tariffs charged to the European Union for Cars and Trucks coming into the United States,” Trump said Friday in a social media post. “The Tariff will be increased to 25%.”
 
-FULL CONTENT FROM NEWSAPI:
-Indias rupee is fundamentally undervalued, the countrys chief economic adviser said, adding that current levels could draw investors. For long-term investors, the rupees current valuation provides a… [+1240 chars]
+FULL CONTENT FROM WORLD NEWS API:
+President Donald Trump said he was raising tariffs on cars and trucks from the EU to 25%, claiming that the bloc had failed to fully comply with a trade agreement negotiated with the US. “I am pleased to announce that, based on the fact the European Union is not complying with our fully agreed to Trade Deal, next week I will be increasing Tariffs charged to the European Union for Cars and Trucks coming into the United States,” Trump said Friday in a social media post. “The Tariff will be increased to 25%.”
 
 ------------------------------------------------------------------------------------------------------------------------
-#048 | score=9 | program_band=band_A | report_band=band_A
+#051 | score=8 | program_band=band_A | report_band=band_A
 Source: Bloomberg
-Published: 2026-04-24T00:59:43Z
-URL: https://www.bloomberg.com/news/articles/2026-04-23/meta-microsoft-look-to-trim-workforces-amid-heavy-ai-spending
-Title: Meta cuts 8,000 jobs, Microsoft offers buyouts amid AI spending push
-Market relevance reason: Significant company-level news for major tech companies (Meta, Microsoft) regarding
-    workforce reductions and strategic spending on AI, impacting profitability and sector trends.
+Published: 2026-05-01 15:07:14
+URL: https://www.bloomberg.com/news/articles/2026-05-01/spirit-airlines-prepares-to-shut-down-as-talks-fail-wsj-says?srnd=homepage-europe
+Title: Spirit Airlines (FLYYQ) Prepares to Shut Down as Talks Fail, Report Says - Bloomberg
+Market relevance reason: Spirit Airlines preparing to shut down due to liquidity issues and failed government
+    bailout talks represents a material company-specific operational and credit liquidity event with clear
+    market impact.
 
 DESCRIPTION:
-Meta will cut about 8,000 jobs, or 10% of staff, while Microsoft is offering voluntary buyouts to thousands of US employees, reflecting broader cost optimisation in Big Tech.
+Spirit Aviation Holdings Inc. is laying the groundwork to shutter its operations as it runs increasingly low on cash, according to people familiar with the matter. Spirit, buffeted by the recent surge in fuel costs, had been in talks with the US government on a rescue financing, but those conversations hit an impasse in recent days, Bloomberg previously reported. The airline is making preparations to wind down as its liquidity position worsened and the prospects of winning a bailout were dimming, said the people, who asked not to be named because the information is private.
 
-FULL CONTENT FROM NEWSAPI:
-Meta Platforms Inc. and Microsoft Corp. have both taken drastic actions to trim their workforces in an effort to streamline their operations and offset heavy spending on artificial intelligence. Me… [+2763 chars]
+FULL CONTENT FROM WORLD NEWS API:
+Spirit Aviation Holdings Inc. is laying the groundwork to shutter its operations as it runs increasingly low on cash, according to people familiar with the matter. Spirit, buffeted by the recent surge in fuel costs, had been in talks with the US government on a rescue financing, but those conversations hit an impasse in recent days, Bloomberg previously reported. The airline is making preparations to wind down as its liquidity position worsened and the prospects of winning a bailout were dimming, said the people, who asked not to be named because the information is private.
 
 ------------------------------------------------------------------------------------------------------------------------
-#052 | score=9 | program_band=band_A | report_band=band_A
+#063 | score=8 | program_band=band_A | report_band=band_A
 Source: Associated Press
-Published: 2026-04-23T21:00:38Z
-URL: https://apnews.com/article/trump-offshore-wind-energy-climate-62211c03d8c617161ffffe3d8393908f
-Title: Up close with the wind farms taking shape on U.S. East Coast
-Market relevance reason: This article discusses the development and operation of offshore wind farms, which is
-    highly relevant to the renewable energy sector, infrastructure investment, and the performance of
-    companies involved in clean energy generation and technology.
+Published: 2026-05-01 14:06:09
+URL: https://apnews.com/article/china-tariffs-africa-trade-us-7da631f9be17069ec92e1d7f432058d7
+Title: China grants Africa's biggest economies tariff-free access
+Market relevance reason: China’s tariff-free trade policy for Africa’s largest economies represents a durable
+    trade policy shift with clear sector and regional trade impact.
 
 DESCRIPTION:
-Offshore wind turbines roughly three times the height of the Statue of Liberty were spinning far off the coast of Rhode Island on Thursday, sending clean electricity to the region. Wind farms are taking shape and operating along the East Coast, even as Presid…
+CAPE TOWN, South Africa (AP) — A China policy giving Africa’s biggest economies tariff-free access to its market for the next two years came into effect Friday while its economic rival the United States seeks to impose new import taxes under President Donald Trump’s push for protectionism. The China deal covers Africa’s 20 largest economies, including South Africa, Egypt, Nigeria, Algeria and Kenya. China had already dropped tariffs on 33 poorer African countries, meaning 53 of the continent’s 54 nations are now eligible for “tariff-free treatment” for their goods, according to China.
 
-FULL CONTENT FROM NEWSAPI:
-OFF THE COAST OF RHODE ISLAND (AP) Offshore wind turbines roughly three times the height of the Statue of Liberty were spinning far off the coast of Rhode Island on Thursday, sending clean electricit… [+6729 chars]
+FULL CONTENT FROM WORLD NEWS API:
+CAPE TOWN, South Africa (AP) — A China policy giving Africa’s biggest economies tariff-free access to its market for the next two years came into effect Friday while its economic rival the United States seeks to impose new import taxes under President Donald Trump’s push for protectionism. The China deal covers Africa’s 20 largest economies, including South Africa, Egypt, Nigeria, Algeria and Kenya. China had already dropped tariffs on 33 poorer African countries, meaning 53 of the continent’s 54 nations are now eligible for “tariff-free treatment” for their goods, according to China. The country not eligible is the small nation of Eswatini because it is the only one in Africa that maintains formal diplomatic ties with Taiwan. China says it’ll help mutual development The Customs Tariff Commission of the State Council in China said the agreement would promote the common development of China and Africa. China’s official Xinhua News Agency said a shipment of 24 metric tons of apples from South Africa that cleared customs in Shenzhen in the early hours of Friday was the first batch of goods to enter under the new zero-tariff policy. According to Xinhua, China’s Commerce Ministry said it would especially benefit African products like cocoa from Ivory Coast and Ghana, coffee and avocados from Kenya, and citrus fruits and wine from South Africa, which used to face tariffs of between 8% and 30%. Ivory Coast is by far the world’s biggest cocoa producer and it and Ghana account for more than 50% of the global supply. South Africa is a major citrus fruit exporter. African nations looking away from the US Several of Africa’s top economies said they would look for new markets for some of their U.S.-bound products after the Trump administration imposed reciprocal tariffs a year ago — at one point with rates of 30% for Africa’s leading economy, South Africa, and higher than 40% for some other African countries. “South Africa looks forward to working with China in a friendly, pragmatic and flexible manner,” South African Trade Minister Parks Tau said in February during bilateral talks in China. While the U.S. Supreme Court struck down Trump’s far-reaching global tariffs as unconstitutional in February, the Republican president said his administration had “very powerful alternatives” and promptly rolled out temporary import taxes to replace them. China is already the biggest trade partner for Africa, a continent of 1.5 billion people that’s expected to nearly double to 2.5 billion by 2050, according to the United Nations, when it would have more than a quarter of the world’s people. China dominates a large trade imbalance with Africa China hailed its tariff-free deal as promoting common development, but there is a large trade imbalance between it and Africa, while African nations owe Beijing billions in debt repayments. China-Africa trade reached a record $348 billion in 2025, though China’s exports to Africa increased by around 25% to $225 billion, while its imports from Africa increased by only around 5% to $123 billion, widening the trade deficit for Africa. China has long imported raw materials from Africa and sent back manufactured goods. Thierry Pairault, a China-Africa expert at France’s National Center for Scientific Research, said that while the new policy might have some benefits for agricultural products, most African raw material exports like oil and minerals already had tariff-free access to China. “(Chinese leader) Xi Jinping is positioning China as the antithesis of Western protectionism. This gesture is intended to appeal to both African public opinion and global markets,” Pairault wrote in an assessment published by the China Global South Project, which analyzes China’s relationship with poor countries. But the policy “only applies where it costs (China) almost nothing,” Pairault wrote. AP Africa news: https://apnews.com/hub/africa
 
 ------------------------------------------------------------------------------------------------------------------------
-#057 | score=9 | program_band=band_A | report_band=band_A
+#071 | score=8 | program_band=band_A | report_band=band_A
 Source: Associated Press
-Published: 2026-04-23T14:23:31Z
-URL: https://apnews.com/press-release/pr-newswire/cipla-receives-u-s-fda-approval-for-first-ab-rated-generic-of-ventolin-hfa-5e9f980b571fa5abf0db0eae133bc589
-Title: Cipla Receives U.S. FDA Approval for First AB-Rated Generic of Ventolin® HFA
-Market relevance reason: This article reports on Cipla receiving U.S. FDA approval for a generic drug. This is
-    significant company-level news for a pharmaceutical firm, directly impacting its product portfolio,
-    revenue potential, and market share in the healthcare sector.
+Published: 2026-05-01 13:44:57
+URL: https://apnews.com/article/russia-ukraine-war-tuapse-strike-2efb9ac87f60bd4ef7f2646240922192
+Title: Ukraine says a strike hit Tuapse oil terminal, the fourth attack on the region in 2 weeks
+Market relevance reason: The article reports repeated attacks on Russian oil infrastructure, which is a
+    durable and concrete development with clear implications for energy commodities, supply chains, and
+    geopolitical risk affecting markets.
 
 DESCRIPTION:
-MUMBAI, India and WARREN, N.J., April 23, 2026 /PRNewswire/ -- Cipla Limited (BSE: 500087) (NSE: CIPLA-EQ) (hereafter referred to as 'Cipla') and its wholly owned subsidiary Cipla USA Inc., (hereafter referred to as 'Cipla'), today announced that it has recei…
+KYIV, Ukraine (AP) — Ukrainian forces struck an oil terminal in the Russian Black Sea city of Tuapse, Ukraine’s General Staff said on Friday, marking the fourth attack targeting the region’s oil infrastructure in just over two weeks. Explosions and a fire were recorded on the premises of local oil infrastructure, the statement from the General Staff said. Local officials in Russia said a Ukrainian drone attack sparked the blaze and that no casualties were reported.
 
-FULL CONTENT FROM NEWSAPI:
-MUMBAI, India and WARREN, N.J., April 23, 2026 /PRNewswire/ -- Cipla Limited (BSE: 500087) (NSE: CIPLA-EQ) (hereafter referred to as Cipla) and its wholly owned subsidiary Cipla USA Inc., (hereafter … [+3751 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#059 | score=9 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-23T12:40:07Z
-URL: https://apnews.com/press-release/pr-newswire/canadian-gdp-to-rebound-in-the-first-two-quarters-of-2026-d09ddff6bcd75219a12b664cbff8b745
-Title: Canadian GDP to rebound in the first two quarters of 2026
-Market relevance reason: This article provides a macroeconomic forecast for Canadian GDP growth. GDP is a
-    fundamental economic indicator that influences investment decisions, market sentiment, and the performance
-    of various sectors and companies within the Canadian economy.
-
-DESCRIPTION:
-TORONTO, April 23, 2026 /CNW/ - The Canadian economy is expected to show modest growth in the first half of 2026, finds the latest Main Street Quarterly report by the Canadian Federation of Independent Business (CFIB
-
-FULL CONTENT FROM NEWSAPI:
-TORONTO, April 23, 2026 /CNW/ - The Canadian economy is expected to show modest growth in the first half of 2026, finds the latest Main Street Quarterly report by the Canadian Federation of Independe… [+3169 chars]
+FULL CONTENT FROM WORLD NEWS API:
+KYIV, Ukraine (AP) — Ukrainian forces struck an oil terminal in the Russian Black Sea city of Tuapse, Ukraine’s General Staff said on Friday, marking the fourth attack targeting the region’s oil infrastructure in just over two weeks. Explosions and a fire were recorded on the premises of local oil infrastructure, the statement from the General Staff said. Local officials in Russia said a Ukrainian drone attack sparked the blaze and that no casualties were reported. The facility had been hit previously on April 16, April 20 and April 28. Regional governor Veniamin Kondratyev said a fire at the city’s oil refinery had also been extinguished Thursday, less than 24 hours before the latest strike. Meanwhile, Russian attacks continued to strike Ukraine. Russia attacked the western Ukrainian city of Ternopil with over 50 drones on Friday, according to mayor Serhii Nadal. Hits were recorded in industrial facilities and infrastructure, he said. At least 10 people were wounded, he added, while some neighborhoods remain without electricity as a result of the mass attack. Two multi-story residential buildings and port infrastructure in Odesa were damaged after Russian forces launched another overnight drone attack on the southern region, local authorities said. As a result of the strikes, an apartment in a 16-story building was destroyed and the roof caught fire. In another high-rise residential building, a fire engulfed the 12th floor, according to Ukraine’s Emergency Service. In a post on Telegram, President Volodymyr Zelenskyy said at least five people were wounded in the region. He said damage from overnight attacks was also recorded in the central city of Kryvyi Rih and the northeastern Kharkiv region, where railway infrastructure was hit. “Russia continues to attack our energy infrastructure, critical infrastructure, and civilian objects. Tonight, there were 210 drone strikes, and about 140 of them were “Shahed” drones,” Zelenskyy wrote.
 
 ------------------------------------------------------------------------------------------------------------------------
-#060 | score=10 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-23T12:16:37Z
-URL: https://apnews.com/article/medical-marijuana-rescheduling-justice-department-trump-cannabis-1d6722d3aae122b1a91f8e4b6c690268
-Title: Trump reclassifies state-licensed medical marijuana in historic shift
-Market relevance reason: This article reports on a historic policy shift reclassifying medical marijuana. This
-    regulatory change has significant implications for the cannabis industry, potentially impacting companies'
-    operations, legal status, investment opportunities, and market valuations.
-
-DESCRIPTION:
-President Donald Trump’s acting attorney general has signed an order reclassifying state-licensed medical marijuana as a less-dangerous drug. It's a major policy shift long sought by advocates who say cannabis should never have been treated like heroin by the…
-
-FULL CONTENT FROM NEWSAPI:
-WASHINGTON (AP) President Donald Trumps acting attorney general on Thursday signed an order reclassifying state-licensed medical marijuana as a less-dangerous drug, a major policy shift long sought b… [+5668 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#061 | score=8 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-23T06:39:40Z
-URL: https://apnews.com/article/slovakia-russia-oil-pipeline-ukraine-8ddc0f83e41d4be65b141c833f885eff
-Title: Russian oil to Slovakia resumes flowing through pipeline that crosses Ukraine
-Market relevance reason: Resumption of Russian oil flow impacts global oil supply, energy prices, and
-    geopolitical stability in Europe, affecting the energy sector and related companies.
-
-DESCRIPTION:
-Slovak Economy Minister Denisa Saková says the flow of Russian oil to Slovakia through the Druzhba pipeline that crosses Ukraine has resumed. Hungary and Slovakia have been locked in an escalating feud with Ukraine since Russian oil deliveries to Hungary and …
-
-FULL CONTENT FROM NEWSAPI:
-BRATISLAVA, Slovakia (AP) The flow of Russian oil to Slovakia through the Druzhba pipeline that crosses Ukraine has resumed, Slovak Economy Minister Denisa Saková said Thursday. Hungary and Slovakia… [+519 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#064 | score=9 | program_band=band_A | report_band=band_A
+#082 | score=8 | program_band=band_A | report_band=band_A
 Source: Bloomberg
-Published: 2026-04-23T04:18:42Z
-URL: https://www.bloomberg.com/news/articles/2026-04-22/deepseek-in-talks-to-raise-at-20-billion-value-the-information
-Title: Tencent, Alibaba in talks to join DeepSeek’s first funding round
-Market relevance reason: Major tech companies (Tencent, Alibaba) investing in an AI pioneer (DeepSeek) signals
-    significant sector trends, competitive dynamics, and strategic moves within the artificial intelligence
-    and technology markets.
+Published: 2026-05-01 13:14:19
+URL: https://www.bloomberg.com/news/articles/2026-05-01/exxon-ceo-says-price-caps-export-bans-will-worsen-energy-woes
+Title: Exxon CEO Says Price Caps, Export Bans Will Worsen Energy Woes - Bloomberg
+Market relevance reason: Exxon CEO's warning about export bans and price caps amid Middle East conflict
+    signals durable supply chain and energy market disruptions with broad sector impact.
 
 DESCRIPTION:
-DeepSeek is owned by hedge fund Zhejiang High-Flyer Asset Management, whose cofounder Liang Wenfeng formed the startup in 2023
+Exxon Mobil Corp. Chief Executive Officer Darren Woods warned that national bans on exporting fuel hurt the global market and restrict needed supplies. Countries including China, Russia and South Korea have prohibited or imposed restrictions on exports of diesel or other fuels in response to the global upheaval in energy markets stemming from the Middle East war.
 
-FULL CONTENT FROM NEWSAPI:
-Tencent Holdings Ltd. and Alibaba Group Holding Ltd. are in discussions to join a maiden round of financing for Chinese AI pioneer DeepSeek, marking a milestone for the countrys artificial intelligen… [+2902 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#065 | score=10 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-23T04:01:06Z
-URL: https://apnews.com/article/warner-brothers-paramount-skydance-netflix-david-ellison-d52e8730ba894adf2ebb9a69646d323b
-Title: Paramount edges closer to a Warner Bros takeover as shareholders vote on the deal
-Market relevance reason: A proposed $81 billion merger between major media companies (Warner Bros. Discovery,
-    Paramount) has direct and substantial implications for the involved companies' valuations, the competitive
-    landscape of the media sector, and investor sentiment.
-
-DESCRIPTION:
-Warner Bros. Discovery shareholders are set to vote Thursday on a $81 billion proposed sale of the company to Skydance-owned Paramount, in a mega merger that could vastly reshape Hollywood and the wider media landscape. Paramount wants to buy all of Warner. T…
-
-FULL CONTENT FROM NEWSAPI:
-NEW YORK (AP) Warner Bros. Discovery shareholders are set to vote Thursday on the companys proposed $81 billion sale to Skydance-owned Paramount, in a mega merger that could vastly reshape Hollywood … [+4802 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#074 | score=8 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-22T14:55:27Z
-URL: https://apnews.com/press-release/pr-newswire/lumeris-introduces-native-audio-for-tom-transforming-real-time-patient-conversations-acb413d3c8eaf113673d5fb061589b6c
-Title: Lumeris Introduces Native Audio for Tom, Transforming Real-Time Patient Conversations
-Market relevance reason: Company-specific news about a new product launch in healthcare technology,
-    potentially impacting its market position and sector.
-
-DESCRIPTION:
-Built with Gemini's native audio capabilities, the new functionality enables more natural patient interactions.
-
-FULL CONTENT FROM NEWSAPI:
-Built with Geminis native audio capabilities, the new functionality enables more natural patient interactions. CAMBRIDGE, Mass., April 22, 2026 /PRNewswire/ -- Lumeris, a leader in healthcare techno… [+4513 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#075 | score=9 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-22T14:17:22Z
-URL: https://apnews.com/article/uk-smoking-ban-vape-vaping-cigarettes-ade338fc91f6a7dc73d4996acb64ca5d
-Title: UK passes bill to ban cigarette purchases for anyone born after 2008
-Market relevance reason: Major regulatory change impacting the tobacco sector in the UK, with long-term
-    financial implications for companies in that market.
-
-DESCRIPTION:
-Parliament has passed a bill to make cigarettes inaccessible to future generations in the U.K. Children born after Dec. 31, 2008, will never be able to buy cigarettes under the new Tobacco and Vapes Bill. The legislation, approved Tuesday, awaits formal appro…
-
-FULL CONTENT FROM NEWSAPI:
-LONDON (AP) Opponents of smoking got a breath of fresh air as Parliament passed a bill that will put cigarettes out of reach for future generations. The end of smoking, and the devastating harm it c… [+1606 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#076 | score=10 | program_band=band_A | report_band=band_A
-Source: The Wall Street Journal
-Published: 2026-04-22T13:58:00Z
-URL: https://www.wsj.com/business/earnings/boeing-ba-q1-earnings-report-stock-2026-e9c2aa35
-Title: Boeing’s Commercial Jet Business Improves, Reducing Quarterly Loss
-Market relevance reason: Direct company earnings report showing improved performance, highly relevant for
-    company-specific and aerospace sector analysis.
-
-DESCRIPTION:
-The plane maker reported brisk first-quarter commercial sales, despite wiring flaws that delayed some deliveries.
-
-FULL CONTENT FROM NEWSAPI:
-Boeings results beat analysts estimates. - Genna Martin/Reuters Boeings commercial jet production lines continued to gain steam in the first quarter, helping reduce the companys quarterly loss. The… [+2187 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#077 | score=9 | program_band=band_A | report_band=band_A
-Source: Bloomberg
-Published: 2026-04-22T08:56:26Z
-URL: https://www.bloomberg.com/news/articles/2026-04-22/microsoft-to-face-uk-class-action-over-cloud-computing-licencing
-Title: Microsoft to face UK class action over cloud computing licencing
-Market relevance reason: Company-specific legal challenge for Microsoft regarding cloud computing licensing,
-    with potential financial and regulatory implications for the company and the tech sector.
-
-DESCRIPTION:
-The ruling comes weeks after the UK’s antitrust watchdog started an investigation into Microsoft’s business software ecosystem to decide whether licensing practices for products such as Word, Excel and Copilot need tighter regulation
-
-FULL CONTENT FROM NEWSAPI:
-Microsoft Corp. must face a UK class action trial over allegations it abused its dominant position in the market to overcharge businesses that used the Windows Server operating system and Azure, an a… [+1317 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#079 | score=8 | program_band=band_A | report_band=band_A
-Source: Bloomberg
-Published: 2026-04-22T06:46:33Z
-URL: https://www.bloomberg.com/news/articles/2026-04-22/bitcoin-rises-on-optimism-over-trump-s-extended-iran-ceasefire
-Title: Bitcoin rises on optimism over Trump’s extended Iran ceasefire
-Market relevance reason: Reports on Bitcoin's price movement in response to a geopolitical event, relevant for
-    the cryptocurrency market and macroeconomic sentiment.
-
-DESCRIPTION:
-Bitcoin rises 2.7% to $77,500 amid optimism from Trump's Iran ceasefire, boosting market confidence in cryptocurrencies.
-
-FULL CONTENT FROM NEWSAPI:
-Bitcoin jumped along with equities on Wednesday after President Donald Trump said he would extend a ceasefire with Iran, bolstering market confidence. The original cryptocurrency rose as much as 2.7… [+1976 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#080 | score=9 | program_band=band_A | report_band=band_A
-Source: Bloomberg
-Published: 2026-04-22T04:48:34Z
-URL: https://www.bloomberg.com/news/articles/2026-04-21/iran-war-has-boosted-costs-of-energy-food-and-now-condoms
-Title: Pricier condoms show war is impacting cost of nearly everything
-Market relevance reason: Highlights broad macroeconomic impacts of geopolitical events on supply chains and
-    consumer prices, with a specific company example (Karex Bhd) and sector implications.
-
-DESCRIPTION:
-The surge in condom costs underscores how the West Asia war, which has already upended energy markets and raised prices for food to fertilizers, is disrupting virtually every aspect of life for consumers
-
-FULL CONTENT FROM NEWSAPI:
-The fallout across industries from the Iran war has now hit condoms. Karex Bhd, which makes one out of every five condoms worldwide, is preparing to raise its prices by as much as 30 per cent as the… [+3121 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#082 | score=9 | program_band=band_A | report_band=band_A
-Source: Bloomberg
-Published: 2026-04-22T04:06:23Z
-URL: https://www.bloomberg.com/news/articles/2026-04-21/china-s-catl-debuts-ev-battery-with-speedy-six-minute-recharge
-Title: China’s CATL debuts EV battery with speedy six minute recharge
-Market relevance reason: Major technological breakthrough from the world's largest EV battery manufacturer
-    (CATL), with significant implications for the electric vehicle sector and related industries globally.
-
-DESCRIPTION:
-CATL’s newest LFP battery is capable of recharging from 10% power to 35% as quickly as one minute, but it said those time frames assume moderate temperature environments
-
-FULL CONTENT FROM NEWSAPI:
-Contemporary Amperex Technology Co. Ltd., the worlds largest electric vehicle battery manufacturer, unveiled a new fast-charging technology ahead of the Beijing auto show in a bid to stay ahead of BY… [+1814 chars]
+FULL CONTENT FROM WORLD NEWS API:
+Exxon Mobil Corp. Chief Executive Officer Darren Woods warned that national bans on exporting fuel hurt the global market and restrict needed supplies. Countries including China, Russia and South Korea have prohibited or imposed restrictions on exports of diesel or other fuels in response to the global upheaval in energy markets stemming from the Middle East war.
 
 ------------------------------------------------------------------------------------------------------------------------
 #084 | score=8 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-22T00:23:26Z
-URL: https://apnews.com/article/trump-media-truth-social-nunes-ceo-don-jr-f528dc294683c7f132c063b4a21dd68e
-Title: Truth Social leadership shake-up: Kevin McGurn steps in amid stock collapse
-Market relevance reason: Significant leadership change at a publicly traded social media company (Trump Media
-    & Technology Group), directly impacting its stock performance and investor sentiment.
-
-DESCRIPTION:
-The Trump business behind Truth Social is replacing a former congressman and big supporter of the U.S. president as leader of the social media platform after a stock collapse in the past year. Devin Nunes, a former California congressmen in Donald Trump’s fir…
-
-FULL CONTENT FROM NEWSAPI:
-NEW YORK (AP) The Trump business behind Truth Social is replacing a former congressman and big supporter of the U.S. president as the leader of the social media platform after a stock collapse that w… [+2677 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#093 | score=8 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-21T13:19:13Z
-URL: https://apnews.com/press-release/pr-newswire/lasix-onyu-now-available-from-walmart-specialty-pharmacy-for-home-delivery-889e7d766ff7c936dff50b0c193738de
-Title: Lasix® ONYU Now Available from Walmart Specialty Pharmacy for Home Delivery
-Market relevance reason: This is company-specific news for Walmart, indicating an expansion of its specialty
-    pharmacy services and market reach, which could impact its revenue and competitive position.
-
-DESCRIPTION:
-Nationwide overnight delivery from Walmart improves access to novel at-home prescription treatment, with particular benefit for rural communities where transportation and distance are often barriers to timely treatment.
-
-FULL CONTENT FROM NEWSAPI:
-Nationwide overnight delivery from Walmart improves access to novel at-home prescription treatment, with particular benefit for rural communities where transportation and distance are often barriers … [+7241 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#097 | score=9 | program_band=band_A | report_band=band_A
-Source: Associated Press
-Published: 2026-04-21T07:15:48Z
-URL: https://apnews.com/press-release/business-wire/circus-reports-strong-q1-2026-operational-progress-accelerates-defence-growth-and-expands-product-portfolio-ee96ffa58d2e4dc3a8de5591dc170044
-Title: Circus Reports Strong Q1 2026 Operational Progress, Accelerates Defence Growth and Expands Product
-    Portfolio
-Market relevance reason: This is company-specific news for a publicly traded company reporting strong
-    operational progress and growth, directly impacting its financial outlook and investor sentiment.
-
-DESCRIPTION:
-MUNICH--(BUSINESS WIRE)--Apr 21, 2026-- Circus SE (ISIN:DE000A2YN355/ XETRA:CA1), a global AI-robotics company developing autonomous sustainment systems, published key highlights from its Q1 Quarterly Operational Update Call, outlining significant progress ac…
-
-FULL CONTENT FROM NEWSAPI:
-MUNICH--(BUSINESS WIRE)--Apr 21, 2026-- Circus SE (ISIN:DE000A2YN355/ XETRA:CA1), a global AI-robotics company developing autonomous sustainment systems, published key highlights from its Q1 Quarter… [+5187 chars]
-
-------------------------------------------------------------------------------------------------------------------------
-#098 | score=9 | program_band=band_A | report_band=band_A
 Source: Bloomberg
-Published: 2026-04-21T06:47:20Z
-URL: https://www.bloomberg.com/news/articles/2026-04-21/inox-clean-is-said-to-revive-plan-for-up-to-1-billion-india-ipo
-Title: Inox Clean Energy eyes reviving IPO plan to raise $1 billion
-Market relevance reason: This is significant company-level news about a potential $1 billion IPO, indicating
-    capital raising and market entry, which is highly relevant for the company and the clean energy sector.
+Published: 2026-05-01 13:10:06
+URL: https://www.bloomberg.com/news/articles/2026-05-01/boe-s-sole-dissenter-says-rates-need-to-rise-more-promptly?srnd=homepage-europe
+Title: Bank of England’s Sole Dissenter Makes Case for Quick Rate Hikes - Bloomberg
+Market relevance reason: Bank of England chief economist advocating urgent rate hikes amid inflation concerns
+    and geopolitical risks signals a major monetary policy development.
 
 DESCRIPTION:
-Inox Clean Energy Ltd. has revived plans for an initial public offering that could raise as much as $1 billion, according to people familiar with the matter.
+The Bank of England should be raising interest rates with greater urgency after entering the Iran war with slowing progress in its battle to bring down inflation, according to its chief economist. Huw Pill — the only voice on the Monetary Policy Committee to back higher rates on Thursday — said he was concerned about disinflation “stalling” even before energy prices were pushed up by the conflict.
 
-FULL CONTENT FROM NEWSAPI:
-Inox Clean Energy Ltd. has revived plans for an initial public offering that could raise as much as $1 billion, according to people familiar with the matter. The company is in discussions with banke… [+1970 chars]
+FULL CONTENT FROM WORLD NEWS API:
+The Bank of England should be raising interest rates with greater urgency after entering the Iran war with slowing progress in its battle to bring down inflation, according to its chief economist. Huw Pill — the only voice on the Monetary Policy Committee to back higher rates on Thursday — said he was concerned about disinflation “stalling” even before energy prices were pushed up by the conflict.
 
 ------------------------------------------------------------------------------------------------------------------------
-#100 | score=10 | program_band=band_A | report_band=band_A
-Source: Bloomberg
-Published: 2026-04-21T05:53:59Z
-URL: https://www.bloomberg.com/news/articles/2026-04-21/indian-debt-funds-cut-hedges-as-oil-risks-inflate-rate-hike-bets
-Title: Indian debt funds cut hedges as oil risks inflate rate-hike bets
-Market relevance reason: This is highly relevant macroeconomic and sector-level news for India, discussing
-    interest rate expectations, oil price impact, and investment strategies of debt funds, directly affecting
-    the financial markets.
+#087 | score=8 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-05-01 13:01:19
+URL: https://apnews.com/article/purdue-pharma-opioid-crisis-settlement-sackler-3eb7b6f1c6d343a0289ea57e992bf9a7
+Title: The numbers behind the Purdue Pharma's settlement
+Market relevance reason: The article covers Purdue Pharma's major legal settlement and corporate restructuring
+    with clear implications for the pharmaceutical sector and related legal and financial markets.
 
 DESCRIPTION:
-The two-year swap rate is still trading near 6%, about 40 basis points above levels before the Iran conflict, showing markets continue to price in higher-for-longer interest rates
+OxyContin maker Purdue Pharma is set to dissolve and be replaced with a new company operating in the public interest under the settlement of thousands of lawsuits that goes into effect Friday. It’s among the largest in a series of settlements over the toll of opioids over the past several years. It’s particularly prominent because some people pin the nation’s opioid epidemic to the sales efforts behind OxyContin, a powerful prescription painkiller that became available in 1996.
 
-FULL CONTENT FROM NEWSAPI:
-Some Indian debt fund managers are cutting back on interest-rate hedges against their bond holdings, saying markets have already priced in an excessive rise in borrowing costs driven by a surge in oi… [+1926 chars]
+FULL CONTENT FROM WORLD NEWS API:
+OxyContin maker Purdue Pharma is set to dissolve and be replaced with a new company operating in the public interest under the settlement of thousands of lawsuits that goes into effect Friday. It’s among the largest in a series of settlements over the toll of opioids over the past several years. It’s particularly prominent because some people pin the nation’s opioid epidemic to the sales efforts behind OxyContin, a powerful prescription painkiller that became available in 1996. Here’s a look at the epidemic and settlement by the numbers. More than this many deaths in the U.S. have been connected to opioid overdose since 1999, according to federal data. The epidemic’s death toll was first driven by prescription opioids, then heroin, and most recently — and most deadly — fentanyl. $7.4 billion The minimum money provided by the Purdue settlement. Most of it — at least $6.5 billion — is to come from members of the Sackler family who owned the company. They’ve also given up any interest in the drugmaker, which family members stopped controlling before it filed for bankruptcy in 2019. As part of the settlement, Purdue is being replaced by Knoa Pharma, with a board appointed by states and a mission to fight the opioid epidemic. $57.8 billion The estimated value of all opioid lawsuit settlements since 2019, according to analysis by Opioid Settlement Tracker. The companies that have settled suits with state and local governments and other groups include drugmakers, wholesalers, pharmacy chains and at least one consulting firm. Most of the money in the agreements is required to be used to deal with the epidemic. How many years the Purdue settlement money will be provided over. The biggest amounts will come early in that period. The number of individuals charged with crimes as part of the U.S. Department of Justice probe into Purdue that resulted in a guilty plea by the company. Number of U.S. Supreme Court justices, out of nine, who ruled in 2024 to reject an earlier version of Purdue’s settlement. They found that members of the Sackler family would have improperly received personal protection from lawsuits through the corporate bankruptcy process. Under the final deal, groups that reject payments can still sue members of the family. $10.7 billion The amount members of the Sackler family received in payouts from Purdue from 2008 to 2018, according to a 2019 audit. They have not received distributions since then. Nearly half that money went to taxes the Sacklers paid on behalf of the company. A congressional committee report in 2021 estimated that the family members had a total net worth of $11 billion at the time. The number of company documents to be made public as part of the Purdue settlement. Like other opioid industry documents, they’re to be maintained by the University of California San Francisco and Johns Hopkins University. The approximate expected maximum payout to individuals — or their survivors — who can show they were harmed by Purdue opioids that were prescribed to them. The other major industry settlements don’t include any individual payments to victims.
+
+------------------------------------------------------------------------------------------------------------------------
+#093 | score=9 | program_band=band_A | report_band=band_A
+Source: Associated Press
+Published: 2026-05-01 12:15:09
+URL: https://apnews.com/article/exxon-oil-gas-iran-aaa-hormuz-chevron-d900e3092cf157304abd659eae6388c5
+Title: Profit for big US oil companies decline in first quarter, but it's a temporary setback
+Market relevance reason: The article details major earnings impacts on Exxon Mobil and Chevron due to
+    geopolitical conflict affecting oil supply through the Strait of Hormuz, with clear sector and company-
+    level transmission paths and broad market implications.
+
+DESCRIPTION:
+Profit for the two largest oil companies in the U.S. tumbled during the first quarter, a three-month period in which the price of crude and gasoline rocketed higher. It’s a setback on paper only, however, the result of financial hedges that backfired after the U.S. and Israel launched attacks on Iran in late February. Exxon Mobil and Chevron reported quarterly results on Friday, with adjusted profits for both companies topping Wall Street expectations.
+
+FULL CONTENT FROM WORLD NEWS API:
+Profit for the two largest oil companies in the U.S. tumbled during the first quarter, a three-month period in which the price of crude and gasoline rocketed higher. It’s a setback on paper only, however, the result of financial hedges that backfired after the U.S. and Israel launched attacks on Iran in late February. Exxon Mobil and Chevron reported quarterly results on Friday, with adjusted profits for both companies topping Wall Street expectations. The shares of both companies, up sharply this week, ticked higher before the opening bell. With energy prices depressed at the start of the year, Exxon Mobil and Chevron had arranged hedges to offset volatility, a standard practice in the industry. In the aftermath of an attack by the U.S. and Israel on Iran, however, the physical delivery of oil became impossible with the Strait of Hormuz essentially closed. Exxon and Chevron cannot book gains on those hedges until the crude is physically delivered. The near closure of the Strait of Hormuz off the coast of Iran is a flashpoint in the war and the source of much of the economic pain being felt globally. About 20% of the world’s oil passes through the strait on a typical day, but the passage has been choked off since the war began in late February. Exxon earned $4.18 billion, or $1 per share, for the period ended March 31. A year earlier it earned $7.7 billion, or $1.76 per share. The company lost almost $4 billion in the quarter on what it called “unfavorable estimated timing effects” of its hedges. Removing such one-time impacts, Exxon earned $1.16 per share, easily topping the $1.07 per share analyst surveyed by Zacks Investment Research predicted. Exxon does not adjust its reported results based on one-time events such as asset sales. Revenue totaled $85.14 billion, breezing past Wall Street’s expectation of $81.49 billion. First-quarter net production was 4.6 million oil-equivalent barrels per day. That’s down from 5 million oil-equivalent barrels per day in the previous quarter. Chevron reported a first-quarter profit of $2.21 billion, or $1.11 per share. It earned $3.5 billion, or $2 per share, a year earlier. The company said that its quarter included a $360 million net loss related to a legal reserve and that foreign currency effects lowered earnings by $223 million. Chevron’s adjusted profit was $1.41 per share, easily beating the 92 cents per share Wall Street was calling for. Like Exxon, Chevron does not adjust its reported results based on one-time events such as asset sales. The company’s revenue totaled $48.61 billion, also better than expected. Exxon and Chevron are among the big drillers reporting earnings this week. On Tuesday BP said that its first-quarter profit more than doubled. The oil companies’ results come at a time when gasoline prices in the U.S. hit new multiyear highs, a point of increasing agitation for travelers, households and also businesses that are particularly sensitive to higher energy prices. The average price of gasoline in the U.S. hit $4.39 on Friday, according to motor club AAA. up more than 8% this week. Inflation in the U.S. rose sharply last month during largest monthly jump in gas prices in six decades, according to data from the U.S. Department of Labor. The surge in gas prices has squeezed the budgets of lower- and middle-income families, making it more difficult to pay for necessities. But it’s disrupting businesses as well, particularly those sensitive to higher fuel costs. Airlines worldwide have begun canceling flights as the war in the Middle East strains jet fuel supplies and pushes up ticket prices.
+
+------------------------------------------------------------------------------------------------------------------------
+#097 | score=8 | program_band=band_A | report_band=band_A
+Source: Bloomberg
+Published: 2026-05-01 12:00:00
+URL: https://www.bloomberg.com/news/articles/2026-05-01/fed-s-kashkari-and-hammack-say-war-has-changed-rate-outlook?srnd=homepage-europe
+Title: Three Fed Officials Say Rising Uncertainty Drove Dissents - Bloomberg
+Market relevance reason: The article covers Federal Reserve officials dissenting on monetary policy signaling,
+    indicating potential shifts in interest rates that impact financial conditions and inflation outlook.
+
+DESCRIPTION:
+Three Federal Reserve officials said they dissented over this week’s policy statement because it was no longer appropriate to signal the Fed’s next move was still likely to be an interest-rate cut. “I believe the FOMC should offer a policy outlook that signals that the next rate change could be either a cut or a hike, depending on how the economy evolves,” Minneapolis Fed president Neel Kashkari said in an essay released Friday. “This could tighten financial conditions somewhat today, pushing back against a high-inflation scenario that could require an even stronger monetary policy response in the future.”
+
+FULL CONTENT FROM WORLD NEWS API:
+Three Federal Reserve officials said they dissented over this week’s policy statement because it was no longer appropriate to signal the Fed’s next move was still likely to be an interest-rate cut. “I believe the FOMC should offer a policy outlook that signals that the next rate change could be either a cut or a hike, depending on how the economy evolves,” Minneapolis Fed president Neel Kashkari said in an essay released Friday. “This could tighten financial conditions somewhat today, pushing back against a high-inflation scenario that could require an even stronger monetary policy response in the future.”
 

@@ -5,7 +5,8 @@ import re
 import shutil
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, Iterable, List, Literal, Optional, Protocol, Sequence
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
+from urllib.request import Request, urlopen
 
 try:
     import requests
@@ -39,10 +40,37 @@ try:
 except ImportError:
     ingest_stock = None
 
+from prompt import (
+    GENERAL_SCORE_PROMPT,
+    NEWS_FACT_PROMPT,
+    NEWS_METADATA_PROMPT,
+    NEWS_SUMMARY_PROMPT,
+    PROMPT_A_TEMPLATE,
+    PROMPT_B_TEMPLATE,
+)
+
 
 load_dotenv("config.env")
 
-DEFAULT_NEWSAPI_KEY = os.getenv("NEWSAPI_KEY")
+
+def _config_env_value(name, path="config.env"):
+    if not os.path.exists(path):
+        return None
+    with open(path, "r", encoding="utf-8") as env_file:
+        for line in env_file:
+            if "=" not in line or line.lstrip().startswith("#"):
+                continue
+            key, value = line.split("=", 1)
+            if key.strip().upper() == name.upper():
+                return value.strip().strip("\"'")
+    return None
+
+
+DEFAULT_WORLD_NEWS_API_KEY = (
+    os.getenv("WORLD_NEWS_API_KEY")
+    or os.getenv("World_News_API_KEY")
+    or _config_env_value("WORLD_NEWS_API_KEY")
+)
 DEFAULT_NEWS_DATA_DIR = os.getenv("NEWS_DATA_DIR", "./data_store/news")
 DEFAULT_NEWS_VECTOR_DIR = os.getenv("NEWS_STORAGE_DIR", "./storage/news/general")
 DEFAULT_GRAPH_STORAGE_DIR = os.getenv("GRAPH_STORAGE_DIR", "./storage/graph")
@@ -81,6 +109,15 @@ ALLOWED_SOURCE_NAMES = {
     "marketwatch",
     "fortune",
 }
+WORLD_NEWS_SEARCH_URL = "https://api.worldnewsapi.com/search-news"
+WORLD_NEWS_SOURCE_URLS = [
+    "https://www.bloomberg.com",
+    "https://www.reuters.com",
+    "https://www.ft.com",
+    "https://www.wsj.com",
+    "https://www.economist.com",
+    "https://apnews.com",
+]
 BUCKET_QUERIES = {
     "us": (
         '(economy OR tariffs OR trade OR congress OR white house OR federal reserve '
@@ -219,76 +256,12 @@ FIXED_KEYWORDS = {
         "Media & Entertainment": ["media", "streaming", "entertainment", "broadcast"],
     },
 }
-GENERAL_SCORE_PROMPT = """
-You are a senior equity analyst.
-Score each of the following news articles from 0-10 for long-term macro/sector fundamental importance.
-
-{articles_block}
-
-Reply in this exact format only:
-Score 1: 7
-Score 2: 4
-Score 3: 9
-"""
-NEWS_SUMMARY_PROMPT = """
-Summarize in no more than 150 words for stock analysts.
-Be factual, concise, and focus on long-term implications for earnings, margins, supply chains,
-competition, regulation, and sector structure.
-
-Article:
-{article_text}
-"""
-NEWS_FACT_PROMPT = """
-Extract 3-5 bullet points of LONG-TERM FUNDAMENTAL impact only.
-Focus on:
-- earnings, margins, cash flow
-- customers, competitors, suppliers
-- technology moats or supply chain
-- regulation, policy, or macro risk
-
-Reply with bullet points only.
-
-Article:
-{article_text}
-"""
-NEWS_METADATA_PROMPT = """
-You are extracting metadata for a long-term financial news knowledge base.
-Return valid JSON only with these keys:
-- dynamic_keywords: list[str]
-- companies: list[str]
-- customers: list[str]
-- people: list[str]
-- products: list[str]
-- services: list[str]
-- brands: list[str]
-- emerging_topics: list[str]
-- technology_topics: list[str]
-- esg_issues: list[str]
-- financial_phrases: list[str]
-- competitor_mentions: list[{{"name": str, "relation": "positive"|"negative"|"neutral"}}]
-- custom_competitive_mentions: list[str]
-- monetary_policy_details: list[str]
-- fiscal_policy_details: list[str]
-- commodity_context: list[str]
-- primary_ticker_focus: str
-- sentiment_score: number
-- sentiment_explanation: str
-- financial_impact_keywords: list[str]
-- relevance_to_financial_indicators: "high"|"medium"|"low"
-- normalized_event_timeline: str
-
-News title: {title}
-News source: {source}
-News summary: {summary}
-News text:
-{article_text}
-"""
 
 
-def _require_newsapi_key():
-    api_key = str(DEFAULT_NEWSAPI_KEY or "").strip()
+def _require_world_news_api_key():
+    api_key = str(DEFAULT_WORLD_NEWS_API_KEY or "").strip()
     if not api_key:
-        raise ValueError("NEWSAPI_KEY is not set in config.env or the environment.")
+        raise ValueError("WORLD_NEWS_API_KEY is not set in config.env or the environment.")
     return api_key
 
 
@@ -383,6 +356,23 @@ def _source_domain(url):
     return host
 
 
+def _source_name_from_url(url):
+    domain = _source_domain(url)
+    if domain.endswith("bloomberg.com"):
+        return "Bloomberg"
+    if domain.endswith("reuters.com"):
+        return "Reuters"
+    if domain.endswith("ft.com"):
+        return "Financial Times"
+    if domain.endswith("wsj.com"):
+        return "The Wall Street Journal"
+    if domain.endswith("economist.com"):
+        return "The Economist"
+    if domain.endswith("apnews.com"):
+        return "Associated Press"
+    return domain or None
+
+
 def _source_is_allowed(article):
     source_name = _normalize_source_name(article.get("source_name"))
     source_domain = _source_domain(article.get("url"))
@@ -447,6 +437,12 @@ GRAPH_FACT_FIELDS = {
     "published_at",
     "confidence",
 }
+WORLD_NEWS_BUCKET_QUERIES = {
+    "us": 'economy OR tariffs OR trade OR congress OR "Federal Reserve" OR regulation',
+    "international": "global trade OR China OR Europe OR Japan OR India OR sanctions OR central bank",
+    "business": "earnings OR merger OR acquisition OR bankruptcy OR layoffs OR supply chain",
+    "technology": "AI OR semiconductor OR cloud OR cybersecurity OR software OR data center OR chip",
+}
 TYPO_KEY_NORMALIZATIONS = {
     "affacted_regions": "affected_regions",
     "affact_regions": "affected_regions",
@@ -484,94 +480,6 @@ ALLOWED_MARKET_TRANSMISSION_CHANNELS = {
     "other",
 }
 ALLOWED_IMPACTS = {"positive", "negative", "mixed", "neutral", "uncertain"}
-
-PROMPT_A_TEMPLATE = """
-You are a financial-news relevance scoring model for a stock-market RAG system.
-
-Score each article from 0 to 10 for stock-market, sector, macroeconomic, or
-company-level usefulness.
-
-Score-band mapping:
-- score 0-1  => "band_f"
-- score 2-4  => "drop"
-- score 5-7  => "band_B"
-- score 8-10 => "band_A"
-
-Rules:
-- band_f articles need extracted_negative_text: a concise 3-7 word noun phrase.
-- drop articles get no further processing.
-- band_B articles are temporary vector memory only.
-- band_A articles are permanent vector memory and may have graph_facts later.
-- Use null, not NAN.
-- Return valid JSON only.
-
-Output format:
-{
-  "results": [
-    {
-      "article_id": "string",
-      "score": 0,
-      "score_band": "band_f | drop | band_B | band_A",
-      "market_relevance_reason": "string or null",
-      "extracted_negative_text": "string or null"
-    }
-  ]
-}
-
-Articles:
-{articles_json}
-""".strip()
-
-PROMPT_B_TEMPLATE = """
-You are a financial-news metadata extraction model for a stock-market RAG system.
-
-The current system does NOT create Event objects. The main object is Article.
-graph_facts belong to Article metadata for now.
-
-Only extract metadata supported by article text. Do not infer implied tickers.
-explicit_companies_mentioned must include only companies directly mentioned.
-
-Graph fact rules:
-- graph_facts can be extracted for score_band = "band_B" and score_band = "band_A".
-- score_band = "band_B" graph_facts stay on Article metadata only and are not
-  ingested into the property graph.
-- score_band = "band_A" graph_facts stay on Article metadata and are ingested
-  into the property graph.
-- graph_facts may contain only subject, predicate, object, source_article_id,
-  published_at, confidence.
-- Do not include event_id.
-- Include only graph facts with confidence >= 0.70.
-- Use null, not NAN.
-- Return valid JSON only.
-
-Output format:
-{
-  "articles": [
-    {
-      "article_id": "string",
-      "published_at": "string or null",
-      "source_name": "string or null",
-      "title": "string",
-      "url": "string or null",
-      "description": "string or null",
-      "content": "string or null",
-      "score": 0,
-      "score_band": "band_B | band_A",
-      "market_relevance_reason": "string",
-      "origin_regions": [],
-      "affected_regions": [],
-      "affected_industry_primary": null,
-      "affected_industry_secondary": [],
-      "market_transmission_channel": [],
-      "explicit_companies_mentioned": [],
-      "graph_facts": []
-    }
-  ]
-}
-
-Articles:
-{articles_json}
-""".strip()
 
 NEGATIVE_TEXTS = [
     "Local high school basketball tournament",
@@ -1477,50 +1385,73 @@ def _save_raw_article_record(record, data_dir=DEFAULT_NEWS_DATA_DIR):
         json.dump(record, raw_file, ensure_ascii=False, indent=2, sort_keys=True)
 
 
-def _newsapi_request(params):
+def _world_news_request(params):
+    api_key = _require_world_news_api_key()
+    if requests is None:
+        request = Request(
+            f"{WORLD_NEWS_SEARCH_URL}?{urlencode(params)}",
+            headers={
+                "Accept": "application/json",
+                "User-Agent": "Stock-RAG-world-news-ingest/1.0",
+                "x-api-key": api_key,
+            },
+        )
+        with urlopen(request, timeout=30) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        if "news" not in payload:
+            raise RuntimeError(f"World News API request failed: {payload}")
+        return payload
+
     response = requests.get(
-        "https://newsapi.org/v2/everything",
+        WORLD_NEWS_SEARCH_URL,
         params=params,
+        headers={
+            "Accept": "application/json",
+            "User-Agent": "Stock-RAG-world-news-ingest/1.0",
+            "x-api-key": api_key,
+        },
         timeout=30,
     )
     response.raise_for_status()
     payload = response.json()
-    if payload.get("status") != "ok":
-        raise RuntimeError(f"NewsAPI request failed: {payload}")
+    if "news" not in payload:
+        raise RuntimeError(f"World News API request failed: {payload}")
     return payload
 
 
 def fetch_news_bucket(bucket, start_dt, end_dt, max_pages=5, page_size=100):
-    api_key = _require_newsapi_key()
-    query = BUCKET_QUERIES[bucket]
+    query = WORLD_NEWS_BUCKET_QUERIES.get(bucket, BUCKET_QUERIES[bucket])
     articles = []
     for page in range(1, max_pages + 1):
-        payload = _newsapi_request(
+        batch_size = min(page_size, 100)
+        payload = _world_news_request(
             {
-                "apiKey": api_key,
-                "q": query,
-                "from": start_dt.date().isoformat(),
-                "to": end_dt.date().isoformat(),
+                "text": query,
+                "text-match-indexes": "title,content",
+                "earliest-publish-date": start_dt.strftime("%Y-%m-%d %H:%M:%S"),
+                "latest-publish-date": end_dt.strftime("%Y-%m-%d %H:%M:%S"),
                 "language": "en",
-                "sortBy": "publishedAt",
-                "pageSize": min(page_size, 100),
-                "page": page,
-                "domains": ",".join(ALLOWED_SOURCE_DOMAINS),
+                "sort": "publish-time",
+                "sort-direction": "DESC",
+                "number": batch_size,
+                "offset": (page - 1) * batch_size,
+                "news-sources": ",".join(WORLD_NEWS_SOURCE_URLS),
             }
         )
-        page_articles = payload.get("articles", [])
+        page_articles = payload.get("news", [])
         if not page_articles:
             break
 
         for raw_article in page_articles:
+            url = raw_article.get("url")
             article = {
                 "bucket": bucket,
                 "title": _normalize_whitespace(raw_article.get("title")),
-                "description": _normalize_whitespace(raw_article.get("description")),
-                "content": _normalize_whitespace(raw_article.get("content")),
-                "url": raw_article.get("url"),
-                "source_name": _normalize_whitespace((raw_article.get("source") or {}).get("name")),
-                "published_at": raw_article.get("publishedAt"),
+                "description": _normalize_whitespace(raw_article.get("summary")),
+                "content": _normalize_whitespace(raw_article.get("text")),
+                "url": url,
+                "source_name": _normalize_whitespace(_source_name_from_url(url)),
+                "published_at": raw_article.get("publish_date"),
             }
             article["article_id"] = _article_id(article)
             if not _source_is_allowed(article):
@@ -1529,7 +1460,7 @@ def fetch_news_bucket(bucket, start_dt, end_dt, max_pages=5, page_size=100):
                 continue
             articles.append(article)
 
-        if len(page_articles) < min(page_size, 100):
+        if len(page_articles) < batch_size:
             break
     return articles
 

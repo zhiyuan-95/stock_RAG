@@ -473,7 +473,7 @@ def get_voyage_api_key():
     return _require_config_value("Voyage_API_KEY")
 
 
-def env():
+def env(llm_model=None):
     from llama_index.embeddings.voyageai import VoyageEmbedding
     from llama_index.llms.google_genai import GoogleGenAI
 
@@ -481,9 +481,10 @@ def env():
 
     gemini_api_key = get_gemini_api_key()
     voyage_api_key = get_voyage_api_key()
+    llm_model = llm_model or os.getenv("STOCK_LLM_MODEL") or DEFAULT_LLM_MODEL
 
     Settings.llm = GoogleGenAI(
-        model=DEFAULT_LLM_MODEL,
+        model=llm_model,
         api_key=gemini_api_key,
         temperature=0.1,
     )
