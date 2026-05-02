@@ -78,6 +78,7 @@ NEWS_STATE_FILENAME = "news_state.json"
 RAW_ARTICLE_DIRNAME = "raw_articles"
 NEWS_HISTORY_YEARS = 2
 NEWS_BATCH_SIZE = 10
+DEFAULT_NEGATIVE_FILTER_EMBED_MODEL = "all-MiniLM-L6-v2"
 SUMMARY_WORD_LIMIT = 150
 RETENTION_MONTHS = 24
 ALLOWED_SOURCE_DOMAINS = [
@@ -315,6 +316,32 @@ def _normalize_whitespace(text):
     return re.sub(r"\s+", " ", str(text or "")).strip()
 
 
+def _first_sentence(text):
+    text = _normalize_whitespace(text)
+    if not text:
+        return ""
+    sentence_boundary = re.search(r"(?<=[.!?])\s+", text)
+    if sentence_boundary:
+        return text[: sentence_boundary.start()].strip()
+    return text
+
+
+def _title_description_text(title, description):
+    return "\n\n".join(
+        text
+        for text in [_normalize_whitespace(title), _normalize_whitespace(description)]
+        if text
+    ).strip()
+
+
+def _title_first_description_sentence_text(title, description):
+    return "\n\n".join(
+        text
+        for text in [_normalize_whitespace(title), _first_sentence(description)]
+        if text
+    ).strip()
+
+
 def _slugify(value):
     normalized = re.sub(r"[^a-z0-9]+", "-", str(value or "").lower()).strip("-")
     return normalized or "news"
@@ -401,7 +428,9 @@ def _article_id(article):
 
 
 def _article_brief(article, max_chars=900):
-    text = _normalize_whitespace(_article_text(article))
+    text = _normalize_whitespace(
+        _title_description_text(article.get("title"), article.get("description"))
+    )
     if len(text) > max_chars:
         text = text[: max_chars - 3].rstrip() + "..."
     return (
@@ -437,6 +466,33 @@ GRAPH_FACT_FIELDS = {
     "published_at",
     "confidence",
 }
+POLICY_CATEGORIES = {
+    "monetary_policy",
+    "fiscal_policy_tax",
+    "trade_tariffs_sanctions",
+    "export_controls",
+    "immigration_labor_policy",
+    "energy_policy",
+    "financial_regulation",
+    "antitrust_regulation",
+    "healthcare_regulation",
+    "defense_geopolitical_policy",
+    "industrial_policy",
+    "other_policy",
+}
+POLICY_STATUSES = {
+    "rhetoric",
+    "threatened",
+    "proposed",
+    "announced",
+    "signed",
+    "implemented",
+    "delayed",
+    "reversed",
+    "blocked",
+    "expired",
+    "unclear",
+}
 WORLD_NEWS_BUCKET_QUERIES = {
     "us": 'economy OR tariffs OR trade OR congress OR "Federal Reserve" OR regulation',
     "international": "global trade OR China OR Europe OR Japan OR India OR sanctions OR central bank",
@@ -448,6 +504,8 @@ TYPO_KEY_NORMALIZATIONS = {
     "affact_regions": "affected_regions",
     "artical_id": "article_id",
     "netative_anchor_vector": "negative_anchor_vector",
+    "policy_status": "status",
+    "policy_status_confidence": "status_confidence",
 }
 NULL_TEXT_VALUES = {"", "nan", "none", "null", "n/a", "na"}
 ALLOWED_REGIONS = {
@@ -520,6 +578,34 @@ class LLMClient(Protocol):
 class EmbeddingClient(Protocol):
     def embed_texts(self, texts: Sequence[str]) -> Sequence[Sequence[float]]:
         ...
+
+
+class SentenceTransformerEmbeddingClient:
+    def __init__(self, model: str = DEFAULT_NEGATIVE_FILTER_EMBED_MODEL, batch_size: int = 64):
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError as exc:
+            raise ImportError(
+                "sentence-transformers is required for the fast negative-anchor filter. "
+                "Install it with: pip install sentence-transformers"
+            ) from exc
+
+        self.model = model
+        self.batch_size = batch_size
+        self.encoder = SentenceTransformer(self.model)
+
+    def embed_texts(self, texts: Sequence[str]) -> Sequence[Sequence[float]]:
+        texts = [str(text or " ") for text in texts]
+        if not texts:
+            return []
+        embeddings = self.encoder.encode(
+            texts,
+            batch_size=self.batch_size,
+            convert_to_numpy=True,
+            normalize_embeddings=True,
+            show_progress_bar=False,
+        )
+        return [vector.tolist() for vector in embeddings]
 
 
 class VectorStoreClient(Protocol):
@@ -604,6 +690,40 @@ def _filter_allowed_strings(values, allowed_values):
     return [value for value in values if value in allowed_values]
 
 
+def _normalize_policy_signal_value(value):
+    value = _normalize_null_value(value)
+    if value is None:
+        return None
+    if isinstance(value, BaseModel):
+        return value
+    if isinstance(value, dict):
+        return normalize_ingest_payload(value)
+    if isinstance(value, str):
+        cleaned = _clean_optional_text(value)
+        if cleaned is None:
+            return None
+        return {
+            "category": "other_policy",
+            "status": "unclear",
+            "status_confidence": 0.0,
+            "status_reason": cleaned,
+        }
+    if isinstance(value, list):
+        cleaned_items = [
+            cleaned_item
+            for item in value
+            if (cleaned_item := _clean_optional_text(item)) is not None
+        ]
+        if cleaned_items:
+            return {
+                "category": "other_policy",
+                "status": "unclear",
+                "status_confidence": 0.0,
+                "status_reason": "; ".join(cleaned_items),
+            }
+    return None
+
+
 def _company_is_directly_mentioned(company: "CompanyMention", article_text: str) -> bool:
     haystack = f" {_normalize_whitespace(article_text).lower()} "
     company_name = _normalize_whitespace(company.name).lower()
@@ -668,6 +788,19 @@ class RawArticle(BaseModel):
             if str(text or "").strip()
         ).strip()
 
+    def fast_filter_text(self) -> str:
+        return _title_first_description_sentence_text(self.title, self.description)
+
+    def prompt_a_payload(self) -> Dict[str, Any]:
+        return {
+            "article_id": self.article_id,
+            "title": self.title,
+            "description": self.description,
+            "source_name": self.source_name,
+            "published_at": self.published_at,
+            "url": self.url,
+        }
+
     def scoring_payload(self) -> Dict[str, Any]:
         return {
             "article_id": self.article_id,
@@ -680,6 +813,40 @@ class RawArticle(BaseModel):
         }
 
 
+class PolicySignal(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    category: str = "other_policy"
+    status: str = "unclear"
+    status_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    status_reason: Optional[str] = None
+    actor: Optional[str] = None
+    target: Optional[str] = None
+    effective_date: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_input(cls, data):
+        return _normalize_policy_signal_value(data) or {}
+
+    @field_validator("category", mode="before")
+    @classmethod
+    def normalize_category(cls, value):
+        value = _clean_optional_text(value)
+        return value if value in POLICY_CATEGORIES else "other_policy"
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def normalize_status(cls, value):
+        value = _clean_optional_text(value)
+        return value if value in POLICY_STATUSES else "unclear"
+
+    @field_validator("status_reason", "actor", "target", "effective_date", mode="before")
+    @classmethod
+    def clean_optional_text_fields(cls, value):
+        return _clean_optional_text(value)
+
+
 class PromptAScoreResult(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -688,11 +855,33 @@ class PromptAScoreResult(BaseModel):
     score_band: str
     market_relevance_reason: Optional[str] = None
     extracted_negative_text: Optional[str] = None
+    is_policy_article: bool = False
+    policy: Optional[PolicySignal] = None
 
     @model_validator(mode="before")
     @classmethod
     def normalize_input(cls, data):
-        return normalize_ingest_payload(data or {})
+        data = normalize_ingest_payload(data or {})
+        if isinstance(data, dict) and str(data.get("score_band", "")).lower() in {
+            "band_c",
+            "band_d",
+            "c",
+            "d",
+        }:
+            data["score_band"] = SCORE_BAND_DROP
+        return data
+
+    @field_validator("is_policy_article", mode="before")
+    @classmethod
+    def normalize_policy_flag(cls, value):
+        if isinstance(value, str):
+            return value.strip().lower() in {"true", "1", "yes"}
+        return bool(value)
+
+    @field_validator("policy", mode="before")
+    @classmethod
+    def normalize_policy(cls, value):
+        return _normalize_policy_signal_value(value)
 
     @model_validator(mode="after")
     def normalize_band(self):
@@ -701,6 +890,10 @@ class PromptAScoreResult(BaseModel):
             self.market_relevance_reason = None
         else:
             self.extracted_negative_text = None
+        if self.policy is not None and not self.is_policy_article:
+            self.is_policy_article = True
+        if not self.is_policy_article:
+            self.policy = None
         return self
 
 
@@ -800,6 +993,8 @@ class GraphFact(BaseModel):
 class ArticleMetadata(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
+    is_policy_article: bool = False
+    policy: Optional[PolicySignal] = None
     origin_regions: List[str] = Field(default_factory=list)
     affected_regions: List[str] = Field(default_factory=list)
     affected_industry_primary: Optional[IndustryImpact] = None
@@ -812,6 +1007,26 @@ class ArticleMetadata(BaseModel):
     @classmethod
     def normalize_input(cls, data):
         return normalize_ingest_payload(data or {})
+
+    @field_validator("is_policy_article", mode="before")
+    @classmethod
+    def normalize_policy_flag(cls, value):
+        if isinstance(value, str):
+            return value.strip().lower() in {"true", "1", "yes"}
+        return bool(value)
+
+    @field_validator("policy", mode="before")
+    @classmethod
+    def normalize_policy(cls, value):
+        return _normalize_policy_signal_value(value)
+
+    @model_validator(mode="after")
+    def enforce_policy_consistency(self):
+        if self.policy is not None and not self.is_policy_article:
+            self.is_policy_article = True
+        if not self.is_policy_article:
+            self.policy = None
+        return self
 
     @field_validator("origin_regions", "affected_regions", mode="before")
     @classmethod
@@ -966,7 +1181,7 @@ class NegativeAnchorFilter:
             self.negative_anchor_vectors = []
 
     def decision_for_article(self, article: RawArticle) -> NegativeAnchorDecision:
-        text = article.description or article.title or ""
+        text = article.fast_filter_text()
         if not text or not self.negative_anchor_vectors:
             return NegativeAnchorDecision(
                 article_id=article.article_id,
@@ -1003,7 +1218,7 @@ class NegativeAnchorFilter:
 
 def _articles_json(articles: Sequence[RawArticle]) -> str:
     return json.dumps(
-        [article.scoring_payload() for article in articles],
+        [article.prompt_a_payload() for article in articles],
         ensure_ascii=False,
         sort_keys=True,
     )
@@ -1036,6 +1251,12 @@ def _merge_article_and_score(article: RawArticle, score_result: PromptAScoreResu
             "score": score_result.score,
             "score_band": score_result.score_band,
             "market_relevance_reason": score_result.market_relevance_reason,
+            "is_policy_article": getattr(score_result, "is_policy_article", False),
+            "policy": (
+                score_result.policy.model_dump(mode="json")
+                if getattr(score_result, "policy", None) is not None
+                else None
+            ),
         }
     )
     return payload

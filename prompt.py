@@ -22,17 +22,32 @@ NEWS_SUMMARY_PROMPT = """
         """
 
 NEWS_FACT_PROMPT = """
-        Extract 3-5 bullet points of LONG-TERM FUNDAMENTAL impact only.
-        Focus on:
-        - earnings, margins, cash flow
-        - customers, competitors, suppliers
-        - technology moats or supply chain
-        - regulation, policy, or macro risk
+        You are generating graph-ingestion facts for a stock-market RAG system.
 
-        Reply with bullet points only.
+        Given the article text and extracted metadata, produce 3-5 bullet points only if the article contains market-relevant, fact-based information worth storing in the graph layer.
 
-        Article:
-        {article_text}
+        Each bullet must be:
+        - atomic: one factual claim per bullet
+        - market-relevant: explain the transmission channel to stocks, sectors, commodities, rates, FX, or macro expectations
+        - specific: include named entities, policy/event status, dates/timeframes, quantities, and affected sectors/tickers when available
+        - grounded: do not add facts not supported by the article
+        - non-duplicative: avoid repeating the same fact in different wording
+        - neutral: distinguish confirmed facts from proposals, opinions, forecasts, rumors, or speculation
+
+        Do NOT generate generic article summaries.
+        Do NOT include background-only facts unless they directly explain the market impact.
+        Do NOT generate bullets for articles with no new material development, even if the article discusses an important topic.
+        Do NOT turn vague political promises, long-term debates, or unresolved discussions into confirmed market events.
+
+        If the article does not contain at least 2 concrete market-relevant facts, return:
+        GRAPH_FACTS: []
+        REASON: "No concrete market-relevant development."
+
+        Output format:
+
+        GRAPH_FACTS:
+        - [Entity] [action/event] [object/target] [status] [date/timeframe]; market relevance: [transmission channel]; affected areas: [sectors/tickers/assets if available]; certainty: [confirmed/proposed/uncertain/opinion].
+        - ...
     """
 
 NEWS_METADATA_PROMPT = """
@@ -78,10 +93,14 @@ You will receive a batch of news articles. Each article may contain:
 - article_id
 - title
 - description
-- content
 - source_name
 - published_at
 - url
+
+For Prompt A, score only from the title and description fields. Full article
+content is intentionally not provided at this stage. Do not assume facts that
+are not supported by the title or description. Full content is used later only
+for metadata and graph-fact extraction from articles classified as band_A.
 
 For each article, return one strict JSON object inside the results array.
 
@@ -105,7 +124,7 @@ Score rubric:
 7 = strong sector or macro relevance, but limited company specificity or permanence
 8 = durable concrete market, sector, or company development meeting the permanent-memory standard
 9 = major market-moving event with clear transmission path
-10 = systemic, crisis-level, or broad cross-market event
+10 = confirmed systemic, crisis-level, or broad cross-market event
 
 Meaning of each score_band:
 - band_f: irrelevant junk. Extract a reusable negative topic phrase for future filtering.
@@ -115,72 +134,241 @@ Meaning of each score_band:
 - band_A: high-impact article. Store permanently and pass to metadata extraction
   for graph_facts.
 
-Market transmission paths include:
-- monetary_policy
-- fiscal_policy
-- inflation
-- labor_market
-- consumer_demand
-- earnings_margin
-- supply_chain
-- commodities_energy
-- credit_liquidity
-- currency_fx
-- regulation_policy
-- trade_tariffs_sanctions
-- technology_infrastructure
-- market_sentiment
-- company-specific revenue, cost, guidance, legal, operational, or competitive impact
+Core scoring gates:
 
-Scoring rules:
-- Do not score high just because an article is political, dramatic, viral, or
-  public-interest news.
-- Score high only when there is a plausible market, sector, macroeconomic, or
-  company-level transmission path.
-- General politics should usually score low unless it affects regulation,
-  fiscal policy, trade, sanctions, inflation, labor, energy, credit, currency,
-  or major business conditions.
-- Sports, celebrity, entertainment, lifestyle, local crime, weather, personal
-  wellness, and routine local news should usually score 0 or 1 unless the
-  article clearly connects to a market transmission path.
-- Permanent memory standard:
-  Score 8-10 only if the article contains a durable, concrete market-relevant
-  development. Do not assign band_A merely because the article is about
-  business, finance, a company, a podcast, an interview, an IPO rumor, or a
-  general industry trend.
-- For score 8-10, at least one of the following must be true:
-  - major macro policy signal
-  - major monetary/fiscal/inflation/labor/energy/trade development
-  - direct impact on a major public company or sector
-  - material earnings/guidance/balance-sheet/legal/operational event
-  - geopolitical shock with plausible commodity, supply-chain, credit, or
-    currency transmission
-  - large regulatory/policy action with clear sector impact
-- If the article is only generally financial, educational, promotional,
-  newsletter-like, podcast-like, interview-like, rumor-like, or weakly related
-  to markets, score it 2-5.
-- Use score 5-7 for concrete market-relevant articles that are worth temporary
-  memory but do not meet the permanent-memory standard.
-- If score is 0 or 1:
-  - score_band must be "band_f"
-  - market_relevance_reason must be null
-  - extracted_negative_text must be a concise noun phrase of 3-7 words
-    describing the irrelevant topic
-  - Do not use full sentences
-  - Good examples: "Celebrity red carpet fashion", "Local weather forecast",
-    "Video game review"
-  - Bad examples: "The article is about celebrities", "Talking about weather"
-- If score is 2, 3, or 4:
-  - score_band must be "drop"
-  - market_relevance_reason should briefly explain why market relevance is too weak
-  - extracted_negative_text must be null
-- If score is 5-10:
-  - extracted_negative_text must be null
-  - market_relevance_reason must explain the concrete market relevance in one sentence
-- Use only the information in the article. Do not invent facts, companies,
-  tickers, market reactions, or causal links not supported by the article.
-- Use null, not "NAN", "None", or empty strings.
-- Return valid JSON only. No markdown. No explanation outside JSON.
+    Do not confuse public importance with market relevance.
+    A news article can be politically, legally, socially, or culturally important
+    but still be irrelevant for this stock-market RAG system.
+
+    Score 5 or above only when the article contains a specific investable market
+    transmission path.
+
+    A specific investable market transmission path means the article directly or
+    strongly implies an effect on at least one of the following:
+    - public companies or tickers
+    - listed sectors, industries, or ETFs
+    - commodities, energy, rates, FX, credit, or inflation
+    - company revenue, costs, margins, guidance, balance sheet, legal risk, or operations
+    - capital-markets activity such as IPO, debt refinancing, bankruptcy, bailout, M&A, or major financing
+    - confirmed or concrete policy, regulation, tariff, sanction, export control, or central-bank action with economic impact
+
+    Do not score 5 or above for vague, speculative, or second-order links such as:
+    - could affect political sentiment
+    - could shape future regulation someday
+    - could influence public opinion
+    - could matter if the situation escalates
+    - could affect markets indirectly
+    - could have long-term implications
+
+    Band_B admission test:
+
+    Before assigning score 5-7/band_B, the article must satisfy at least one:
+
+    1. Public company / ticker / listed sector impact:
+    The article names or clearly affects a public company, ticker, listed sector,
+    ETF, commodity, rate, currency, credit market, or major investable industry.
+
+    2. Macro or market variable impact:
+    The article affects inflation, rates, labor, consumer demand, supply chains,
+    commodities, energy, credit, FX, margins, revenue, or market liquidity.
+
+    3. Concrete capital-markets event:
+    The article reports IPO preparation, debt refinancing, bankruptcy risk,
+    shutdown risk, bailout discussion, M&A, major financing, earnings, guidance,
+    balance-sheet stress, or restructuring.
+
+    4. Concrete policy/regulatory/geopolitical development:
+    The article reports a proposed, threatened, announced, signed, implemented,
+    blocked, delayed, reversed, or expired policy with a credible economic channel.
+
+    5. Real operating impact:
+    The article reports production cuts, plant shutdowns, capacity reduction,
+    strikes, supply disruption, contract awards, major cost increases, demand shock,
+    or infrastructure power/energy demand.
+
+    If none of the Band_B admission conditions are satisfied, the article cannot
+    receive score 5 or above.
+    Assign score 2-4/drop if the article is weak public-interest, political, legal,
+    policy-adjacent, geopolitical, local, or business-adjacent news.
+    Assign score 0-1/band_f only if the article is a stable reusable junk category.
+
+    Score caps:
+
+    1. Private sports, entertainment, or cultural business:
+    Capped at score 4 unless the article directly affects a public company, listed
+    sector, media rights market, sports betting company, streaming platform,
+    advertiser, or public-market asset.
+
+    2. General politics:
+    Election campaigns, endorsements, redistricting, voter rules, political
+    profiles, and partisan disputes are capped at score 4 unless the article reports
+    a concrete policy change, fiscal change, regulatory change, trade action, or
+    market reaction.
+
+    3. Legal/court stories:
+    Court cases are capped at score 4 unless they directly affect a public company,
+    industry regulation, product access, financial liability, merger approval,
+    bankruptcy, labor rules, or material sector economics.
+
+    4. Local/state infrastructure:
+    Local or state infrastructure debates are capped at score 4 unless the article
+    reports committed financing, construction start, contract award, cancellation,
+    regulatory approval/rejection, or named public-company exposure.
+
+    5. Geopolitical conflict:
+    Military conflict, protests, or diplomatic tension are capped at score 4 unless
+    the article directly affects oil, gas, shipping, commodities, supply chains,
+    sanctions, defense spending, FX, credit risk, or named public companies.
+
+    6. Private/nonprofit/local institution news:
+    Private school, university, church, nonprofit, local administration, and local
+    crime stories are capped at score 4 unless there is a clear public-company,
+    sector, credit, or macroeconomic impact.
+
+    Professional sports franchise ownership rule:
+
+    A professional sports team sale, ownership transfer, franchise valuation, or league approval process is usually score 2-4/drop.
+
+    Do not treat a private sports franchise as a public company.
+    Do not call a sports team "public" unless the article explicitly says it is publicly traded or owned by a listed company.
+
+    A sports franchise sale can receive score 5 or above only if the article directly names or clearly affects:
+    - a publicly traded owner or buyer
+    - a listed sports-betting company
+    - a listed media, streaming, or broadcasting company
+    - a major advertising or sponsorship market
+    - a public credit/debt instrument
+    - a listed sector or ETF
+
+    Large private valuation alone is not enough for Band_B.
+
+    Future-action rule:
+    Future-action statements are capped at Band_B, not automatically Band_B.
+    A future-action statement such as "will", "may", "plans to", "is considering",
+    "threatens to", "vows to", or "signals" should be scored as follows:
+    - score 2-4/drop if the article lacks a specific investable market transmission path
+    - score 5-7/band_B if the article has a specific investable transmission path but the action is not final
+    - score 8-10/band_A only if the action is officially announced with concrete terms, signed, implemented, blocked, delayed, reversed, or has already caused realized market impact
+
+    Drop vs band_f rule:
+
+    Use score 2-4/drop for weak market relevance, public-interest news, political
+    news, legal news, geopolitical news, or policy-adjacent news that is not useful
+    enough for stock-market memory.
+
+    Use score 0-1/band_f only for stable reusable junk categories that are safely
+    irrelevant across most future contexts.
+
+    Do not use band_f for broad topics that can become market-relevant in another
+    article, such as elections, court rulings, government policy, geopolitical
+    conflict, sanctions, protests, labor disputes, infrastructure, immigration,
+    public health, energy policy, military conflict, AI policy, or regulation.
+
+    If these topics lack a concrete market transmission path, classify them as
+    score 2-4/drop, not band_f.
+
+    Band boundary correction rules:
+
+    The most common classification error is over-upgrading public-interest articles
+    into band_B. Avoid this error.
+
+    Band_B is not for articles that are merely important, political, legal,
+    dramatic, or business-adjacent. Band_B is only for articles that are useful for
+    future stock-market retrieval.
+
+    Before assigning score 5-7/band_B, the article must pass the Band_B admission
+    test.
+
+    Band_B admission test:
+    At least one of the following must be true:
+    1. The article names or clearly affects a public company, ticker, listed sector,
+       ETF, commodity, rate, currency, credit market, or major investable industry.
+    2. The article reports a concrete capital-markets event: IPO preparation, debt
+       refinancing, bankruptcy risk, shutdown risk, bailout discussion, M&A, major
+       financing, earnings, guidance, balance-sheet stress, or restructuring.
+    3. The article reports a concrete policy/regulatory/geopolitical development
+       with a credible economic channel: tariffs, sanctions, export controls,
+       central-bank action, fiscal policy, energy policy, labor policy, financial
+       regulation, antitrust, healthcare regulation, defense spending, or industrial
+       policy.
+    4. The article reports a concrete operating event: production cut, plant
+       shutdown, capacity reduction, strike, supply disruption, contract award,
+       major cost increase, demand shock, or infrastructure power/energy demand.
+    5. The article directly affects inflation, rates, labor, consumer demand,
+       supply chains, commodities, energy, credit, FX, margins, revenue, or market
+       liquidity.
+
+    If none of these conditions are met, the article cannot be score 5-7/band_B.
+    It must be score 2-4/drop unless it is stable irrelevant junk.
+
+    Weak second-order reasoning is not enough for Band_B.
+    Do not assign Band_B based only on phrases such as:
+    - could affect political sentiment
+    - could shape future regulation
+    - may have long-term implications
+    - could affect public opinion
+    - could matter if the issue escalates
+    - might influence markets indirectly
+
+    Band_F safety rule:
+    Use score 0-1/band_f only for stable reusable junk categories such as sports
+    game recaps, celebrity gossip, entertainment reviews, lifestyle advice, local
+    crime, weather, animal rescue, obituaries, horoscopes, and routine cultural
+    events.
+
+    Do not use band_f for broad topics that can be market-relevant in another
+    context, including elections, court rulings, government policy, geopolitical
+    conflict, military conflict, protests, labor disputes, infrastructure,
+    immigration, public health, AI policy, energy policy, or regulation.
+    If these topics lack a concrete market transmission path, classify them as
+    score 2-4/drop.
+
+Future-action correction:
+Future-action statements are capped at Band_B, not automatically Band_B.
+A statement using "will", "may", "plans to", "is considering", "threatens to",
+"vows to", or "signals" should be score 2-4/drop if it does not pass the Band_B
+admission test.
+
+Market materiality and unresolved-project rules:
+1. Public-market materiality gate:
+Do not assign band_A only because an article involves a large dollar amount,
+government project, infrastructure plan, public works project, environmental dispute,
+local/state policy, or public-interest issue.
+
+For score 8-10, the article must report at least one concrete public-market
+transmission path:
+- direct effect on a public company’s revenue, costs, guidance, balance sheet,
+  legal risk, or operations;
+- direct effect on a broad listed sector, ETF, commodity, interest rate, currency,
+  or credit market;
+- confirmed national or cross-border policy action with clear market impact;
+- realized market reaction reported in the article;
+- confirmed funding, implementation, contract award, cancellation, or regulatory
+  decision that materially affects investable companies or sectors.
+
+If no concrete public-market transmission path is present, score must be 0-5.
+
+2. Local/state policy cap:
+State, local, municipal, regional, or project-specific policy articles are usually
+score 2-5 unless they clearly affect a major public company, listed sector, ETF,
+commodity market, national macro condition, or major public contract awarded to
+publicly traded companies.
+
+3. Unresolved project cap:
+If an article is about a proposed, debated, uncertain, unfunded, legally challenged,
+or not-yet-committed project, score it below 8 unless the article reports clear
+realized market impact or direct material impact on public companies/sectors.
+
+If financing is not secured, construction is not committed, or key approvals remain
+unresolved, the maximum score is usually 5 or 6.
+
+4. Policy status clarification:
+Do not classify a project as "announced" merely because the article reports a
+planning milestone, regulatory review, hearing, debate, environmental review, or
+partial procedural approval.
+
+Use "proposed" or "unclear" when the project remains unresolved.
+Use "implemented" only when construction, enforcement, or policy execution has begun.
 
 Output format:
 {
@@ -190,7 +378,9 @@ Output format:
       "score": 0,
       "score_band": "band_f | drop | band_B | band_A",
       "market_relevance_reason": "string or null",
-      "extracted_negative_text": "string or null"
+      "extracted_negative_text": "string or null",
+      "is_policy_article": false,
+      "policy": null
     }
   ]
 }
@@ -207,6 +397,8 @@ graph_facts belong to Article metadata for now.
 
 Only extract metadata supported by article text. Do not infer implied tickers.
 explicit_companies_mentioned must include only companies directly mentioned.
+Carry is_policy_article and policy forward exactly from Prompt A. Do not invent
+policy fields in Prompt B.
 
 Graph fact rules:
 - graph_facts can be extracted for score_band = "band_B" and score_band = "band_A".
@@ -235,6 +427,8 @@ Output format:
       "score": 0,
       "score_band": "band_B | band_A",
       "market_relevance_reason": "string",
+      "is_policy_article": false,
+      "policy": null,
       "origin_regions": [],
       "affected_regions": [],
       "affected_industry_primary": null,

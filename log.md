@@ -105,3 +105,47 @@ summarize commands in one sentence, write down the major change, and add a date 
 46. Corrected the classification swap across `ingest_stock.py`, `analysis.py`, `main.py`, `query.py`, and related flows so `industry` is now the broader SIC-derived bucket like `Technology` or `Consumer Defensive`, while `sector` is the narrower subcategory like `Electronic Computers` or `beverage`, and the benchmark and metadata layers now use those meanings consistently.
 
 47. Replaced the raw SIC-description subcategory mapping with an explicit `industry -> sector` taxonomy in `ingest_stock.py` and propagated it through `analysis.py`, `main.py`, `query.py`, and `ingest_graph.py` so companies now resolve into broad industries like `Consumer Staples` and narrower sectors like `Food, Beverage & Tobacco` or `Technology Hardware & Equipment`.
+
+## 2026-05-01
+
+48. Reworked `ingest_news.py` around an Article-first news-ingestion MVP: removed the Event/event_id concept, kept `graph_facts` on Article metadata, normalized typo/null handling, added Pydantic schemas, dependency-injected store/client protocols, Prompt A scoring, Prompt B extraction, score-band policy logic, and a high-level batch ingestion pipeline.
+
+49. Added a cosine-similarity negative-anchor filter to `ingest_news.py` that embeds predefined irrelevant-topic anchors, compares each incoming article description/title against the anchor matrix, and filters high-similarity hard negatives before Prompt A.
+
+50. Updated `test.py` from a small ad hoc print script into a read-only news scoring runner that fetches recent articles, prints progress while running, groups results into `band_A`, `band_B`, `band_C` audit/drop output, and `band_f`, and writes readable files under `test/` with score, reason, description/summary, and full available content.
+
+51. Switched the news fetch path from NewsAPI to World News API in both `ingest_news.py` and `test.py`, using `World_News_API_KEY`/`WORLD_NEWS_API_KEY`, source URLs for Bloomberg, Reuters, Financial Times, The Wall Street Journal, The Economist, and AP, World News `summary` as the report description, and World News `text` as the full content.
+
+52. Tightened Prompt A's permanent-memory standard so `band_A` requires a durable, concrete market-relevant development, not merely a generally financial topic, podcast, interview, rumor, promotional item, or broad trend.
+
+53. Centralized prompt text into the new `prompt.py` module and updated `ingest_news.py` and `query.py` to import Prompt A, Prompt B, legacy news prompts, and the main stock-analysis prompt from that single prompt source.
+
+54. Updated Prompt A model wiring in `test.py` so Prompt A can run through `gpt-4.1-mini` by default via the OpenAI chat-completions endpoint, while preserving explicit Gemini model support through the existing LlamaIndex/Gemini path; also made `ingest_stock.env()` accept an optional LLM model override.
+
+55. Added `test.py` command-line controls for Prompt A model selection, output directory, World News query text, and later Prompt A batch/timeout/retry behavior, so the read-only scoring run can be adjusted without editing code.
+
+## 2026-05-02
+
+56. Added the fast negative-anchor filter to the `test.py` read-only runner, including Voyage embedding calls, max cosine similarity against `ingest_news.NEGATIVE_TEXTS`, a configurable threshold, and a new `test/fast_filtered` report file showing matched anchor, similarity, description, and content.
+
+57. Added OpenAI Prompt A timeout/retry handling and smaller default Prompt A batches in `test.py` so long World News content batches are less likely to fail the entire run on a transient timeout or dropped connection.
+
+58. Added a terminal distribution summary before file generation in `test.py`, printing total fetched articles plus counts for `fast_filtered`, `band_A`, `band_B`, `band_C`, and `band_f` before writing the report files.
+
+59. Extended Prompt A with policy-article detection in `prompt.py`, including allowed policy categories, policy status guidance, future-action scoring rules, and structured `is_policy_article` / `policy` output fields.
+
+60. Added policy parsing and validation to `ingest_news.py` through `PolicySignal`, `is_policy_article`, and policy status/category normalization, and carried Prompt A policy fields into the merged payload passed to Prompt B and Article metadata.
+
+61. Updated `test.py` report formatting to print Prompt A policy fields for scored articles and made that formatting backward-compatible so older score objects without policy attributes do not crash report generation.
+
+62. Added public-market materiality, local/state policy caps, unresolved-project caps, and policy-status clarification language to Prompt A so important topics without concrete market transmission are held to lower bands.
+
+63. Restored the score `2-4` behavior back to the original dropped-program path after the later band-C wording experiment: Prompt A again emits `drop`, `ingest_news.py` maps scores `2-4` to `drop`, and `test.py` keeps `band_C` only as the readable audit/report file for dropped articles.
+
+64. Hardened Prompt A policy parsing in `ingest_news.py` so a plain-text `policy` value from the LLM is converted into a `PolicySignal.status_reason` instead of crashing report generation; policy presence now also marks the item as a policy article when the boolean flag is omitted.
+
+65. Refactored the `test.py` read-only World News scoring flow into a shared function and added a band_A metadata inspection path that runs Prompt B only for band_A articles, prints each extracted Article metadata JSON block, and remains non-ingesting.
+
+66. Changed the news filtering/scoring flow so the fast negative-anchor filter embeds only `title + first sentence of description`, Prompt A receives only `title + description`, and full article content remains reserved for later Prompt B metadata and graph-fact extraction on selected articles.
+
+67. Switched the fast negative-anchor filter embedding path from Voyage to the local SentenceTransformers `all-MiniLM-L6-v2` model, added a reusable `SentenceTransformerEmbeddingClient`, and updated the test runner default/help text accordingly.

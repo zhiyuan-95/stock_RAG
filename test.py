@@ -15,12 +15,12 @@ import ingest_news
 
 WORLD_NEWS_SEARCH_URL = "https://api.worldnewsapi.com/search-news"
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
-VOYAGE_EMBEDDINGS_URL = "https://api.voyageai.com/v1/embeddings"
 DEFAULT_PROMPT_A_MODEL = "gpt-4.1-mini"
 DEFAULT_PROMPT_A_BATCH_SIZE = 5
 DEFAULT_PROMPT_A_TIMEOUT_SECONDS = 300
 DEFAULT_PROMPT_A_RETRIES = 3
-DEFAULT_FAST_FILTER_EMBED_MODEL = "voyage-finance-2"
+DEFAULT_PROMPT_B_BATCH_SIZE = 3
+DEFAULT_FAST_FILTER_EMBED_MODEL = ingest_news.DEFAULT_NEGATIVE_FILTER_EMBED_MODEL
 DEFAULT_NEGATIVE_SIMILARITY_THRESHOLD = 0.85
 WORLD_NEWS_SOURCE_URLS = (
     "https://www.bloomberg.com",
@@ -56,7 +56,9 @@ BAND_TO_SCORE_BAND = {
     "band_b": "band_B",
     "b": "band_B",
     "band_c": "drop",
+    "band_d": "drop",
     "c": "drop",
+    "d": "drop",
     "drop": "drop",
     "dropped": "drop",
     "band_f": "band_f",
@@ -116,15 +118,6 @@ def get_openai_api_key():
     if not api_key:
         raise ValueError(
             "OpenAI API key not found. Add OPENAI_API_KEY=your_key to config.env."
-        )
-    return api_key
-
-
-def get_voyage_api_key():
-    api_key = get_config_value("VOYAGE_API_KEY", aliases=("Voyage_API_KEY",))
-    if not api_key:
-        raise ValueError(
-            "Voyage API key not found. Add Voyage_API_KEY=your_key to config.env."
         )
     return api_key
 
@@ -200,12 +193,20 @@ def normalize_anchor_text(text):
     return re.sub(r"\s+", " ", str(text or "")).strip()
 
 
-class VoyageEmbeddingClient:
+class SentenceTransformerEmbeddingClient:
     def __init__(self, model=DEFAULT_FAST_FILTER_EMBED_MODEL, batch_size=64):
         self.model = model
         self.batch_size = batch_size
-        self.api_key = get_voyage_api_key()
-        log_step(f"Fast filter will use Voyage embedding model: {self.model}")
+        log_step(f"Loading fast-filter SentenceTransformer embedding model: {self.model}")
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError as exc:
+            raise ImportError(
+                "sentence-transformers is required for the fast filter. "
+                "Install it with: pip install sentence-transformers"
+            ) from exc
+        self.encoder = SentenceTransformer(self.model)
+        log_step(f"Fast filter will use local embedding model: {self.model}")
 
     def embed_texts(self, texts):
         texts = [str(text or " ") for text in texts]
@@ -217,33 +218,17 @@ class VoyageEmbeddingClient:
         for batch_number, offset in enumerate(range(0, len(texts), self.batch_size), start=1):
             batch = texts[offset : offset + self.batch_size]
             log_step(
-                f"Embedding text batch {batch_number}/{total_batches} "
+                f"Encoding fast-filter embeddings batch {batch_number}/{total_batches} "
                 f"({len(batch)} item(s)) for fast filter..."
             )
-            request_body = {
-                "model": self.model,
-                "input": batch,
-            }
-            request = Request(
-                VOYAGE_EMBEDDINGS_URL,
-                data=json.dumps(request_body).encode("utf-8"),
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
-                },
+            batch_embeddings = self.encoder.encode(
+                batch,
+                batch_size=len(batch),
+                convert_to_numpy=True,
+                normalize_embeddings=True,
+                show_progress_bar=False,
             )
-            try:
-                with urlopen(request, timeout=90) as response:
-                    payload = json.loads(response.read().decode("utf-8"))
-            except HTTPError as exc:
-                error_payload = exc.read().decode("utf-8", errors="replace")
-                raise RuntimeError(f"Voyage fast-filter embedding request failed: {error_payload}") from exc
-
-            data = payload.get("data") or []
-            if len(data) != len(batch):
-                raise RuntimeError(f"Unexpected Voyage embedding response: {payload}")
-            data = sorted(data, key=lambda item: item.get("index", 0))
-            embeddings.extend(item["embedding"] for item in data)
+            embeddings.extend(vector.tolist() for vector in batch_embeddings)
 
         return embeddings
 
@@ -364,14 +349,16 @@ class LlamaIndexLLMClient:
 
 
 class ProgressLLMClient:
-    def __init__(self, llm_client, total_batches):
+    def __init__(self, llm_client, total_batches, task_name="Prompt A", action="Scoring"):
         self.llm_client = llm_client
         self.total_batches = total_batches
         self.completed_batches = 0
+        self.task_name = task_name
+        self.action = action
 
     def complete(self, prompt):
         batch_number = self.completed_batches + 1
-        log_step(f"Scoring batch {batch_number}/{self.total_batches} with Prompt A...")
+        log_step(f"{self.action} batch {batch_number}/{self.total_batches} with {self.task_name}...")
         response = self.llm_client.complete(prompt)
         self.completed_batches += 1
         log_step(f"Finished batch {self.completed_batches}/{self.total_batches}.")
@@ -446,7 +433,7 @@ def run_fast_negative_filter(
     log_step(
         f"Building fast negative-anchor filter with threshold {threshold:.2f}..."
     )
-    embedding_client = VoyageEmbeddingClient(model=embed_model)
+    embedding_client = SentenceTransformerEmbeddingClient(model=embed_model)
     negative_texts = [
         normalize_anchor_text(text)
         for text in ingest_news.NEGATIVE_TEXTS
@@ -457,7 +444,7 @@ def run_fast_negative_filter(
     negative_anchor_vectors = embedding_client.embed_texts(negative_texts)
 
     article_texts = [
-        normalize_anchor_text(article.description or article.title)
+        normalize_anchor_text(article.fast_filter_text())
         for article in raw_articles
     ]
     non_empty_positions = [
@@ -465,7 +452,9 @@ def run_fast_negative_filter(
     ]
     non_empty_texts = [article_texts[index] for index in non_empty_positions]
 
-    log_step(f"Embedding {len(non_empty_texts)} article description/title text(s)...")
+    log_step(
+        f"Embedding {len(non_empty_texts)} article title + first-description-sentence text(s)..."
+    )
     non_empty_vectors = embedding_client.embed_texts(non_empty_texts)
     vector_by_position = dict(zip(non_empty_positions, non_empty_vectors))
 
@@ -581,10 +570,79 @@ def print_distribution_summary(grouped, fast_filtered_items):
     print(flush=True)
 
 
+def run_read_only_scoring_pipeline(
+    limit=100,
+    search_query=DEFAULT_RECENT_NEWS_QUERY,
+    prompt_a_model=DEFAULT_PROMPT_A_MODEL,
+    prompt_a_batch_size=DEFAULT_PROMPT_A_BATCH_SIZE,
+    prompt_a_timeout_seconds=DEFAULT_PROMPT_A_TIMEOUT_SECONDS,
+    prompt_a_retries=DEFAULT_PROMPT_A_RETRIES,
+    fast_filter_embed_model=DEFAULT_FAST_FILTER_EMBED_MODEL,
+    negative_similarity_threshold=DEFAULT_NEGATIVE_SIMILARITY_THRESHOLD,
+):
+    log_step("Starting read-only news scoring check. No ingestion will be performed.")
+    world_news_articles = fetch_recent_world_news_articles(limit=limit, search_query=search_query)
+    log_step("Converting World News API payloads into ingest_news.RawArticle objects...")
+    raw_articles = [to_raw_article(article) for article in world_news_articles]
+    log_step(f"Prepared {len(raw_articles)} RawArticle objects.")
+
+    original_indexes = {
+        article.article_id: index for index, article in enumerate(raw_articles, start=1)
+    }
+    passed_articles, filter_decisions = run_fast_negative_filter(
+        raw_articles,
+        threshold=negative_similarity_threshold,
+        embed_model=fast_filter_embed_model,
+    )
+    fast_filtered_items = build_fast_filtered_items(raw_articles, filter_decisions)
+
+    prompt_a_batch_size = max(1, int(prompt_a_batch_size))
+    total_batches = (len(passed_articles) + prompt_a_batch_size - 1) // prompt_a_batch_size
+    if passed_articles:
+        llm_client = ProgressLLMClient(
+            LlamaIndexLLMClient(
+                prompt_a_model,
+                timeout_seconds=prompt_a_timeout_seconds,
+                max_retries=prompt_a_retries,
+            ),
+            total_batches=total_batches,
+        )
+        log_step(
+            f"Running Prompt A scoring for {len(passed_articles)} fast-filter-passed articles "
+            f"in {total_batches} batch(es) of up to {prompt_a_batch_size}..."
+        )
+        score_results = ingest_news.run_prompt_a_scoring(
+            passed_articles,
+            llm_client,
+            batch_size=prompt_a_batch_size,
+        )
+    else:
+        log_step("No articles passed the fast filter; skipping Prompt A scoring.")
+        score_results = {}
+    log_step(f"Prompt A returned scores for {len(score_results)} articles.")
+
+    log_step("Grouping scored articles into band_A, band_B, band_C/drop, and band_f...")
+    grouped = group_scored_articles_with_original_indexes(
+        passed_articles,
+        score_results,
+        original_indexes,
+    )
+    return {
+        "world_news_articles": world_news_articles,
+        "raw_articles": raw_articles,
+        "passed_articles": passed_articles,
+        "filter_decisions": filter_decisions,
+        "fast_filtered_items": fast_filtered_items,
+        "score_results": score_results,
+        "grouped": grouped,
+        "original_indexes": original_indexes,
+    }
+
+
 def format_article_report(index, article, score_result):
     score = "missing" if score_result is None else score_result.score
     score_band = "missing" if score_result is None else score_result.score_band
-    report_band = "band_C" if score_band in {"drop", "missing"} else score_band
+    report_band = "band_C" if score_band in {"band_C", "band_D", "drop", "missing"} else score_band
     reason = None
     negative_text = None
     if score_result is not None:
@@ -603,6 +661,7 @@ def format_article_report(index, article, score_result):
         lines.append(wrap_text("Extracted negative text", negative_text))
     else:
         lines.append(wrap_text("Market relevance reason", reason))
+    lines.extend(format_policy_lines(score_result))
     lines.extend(
         [
             "",
@@ -615,6 +674,41 @@ def format_article_report(index, article, score_result):
         ]
     )
     return "\n".join(lines)
+
+
+def format_policy_lines(score_result):
+    if score_result is None:
+        return ["Policy article: missing", "Policy: missing"]
+
+    is_policy_article = bool(getattr(score_result, "is_policy_article", False))
+    lines = [f"Policy article: {is_policy_article}"]
+    policy = getattr(score_result, "policy", None)
+    if policy is None:
+        lines.append("Policy: None")
+        return lines
+
+    def policy_value(name, default=None):
+        if isinstance(policy, dict):
+            return policy.get(name, default)
+        return getattr(policy, name, default)
+
+    try:
+        status_confidence = float(policy_value("status_confidence", 0.0) or 0.0)
+    except (TypeError, ValueError):
+        status_confidence = 0.0
+
+    lines.extend(
+        [
+            f"Policy category: {policy_value('category', 'other_policy')}",
+            f"Policy status: {policy_value('status', 'unclear')}",
+            f"Policy status confidence: {status_confidence:.2f}",
+            wrap_text("Policy status reason", policy_value("status_reason")),
+            f"Policy actor: {policy_value('actor') or 'None'}",
+            f"Policy target: {policy_value('target') or 'None'}",
+            f"Policy effective date: {policy_value('effective_date') or 'None'}",
+        ]
+    )
+    return lines
 
 
 def format_fast_filtered_report(
@@ -635,6 +729,7 @@ def format_fast_filtered_report(
         f"Published: {article.published_at or 'Unknown'}",
         f"URL: {article.url or 'None'}",
         wrap_text("Title", article.title),
+        wrap_text("Fast filter text", article.fast_filter_text()),
         "",
         "DESCRIPTION:",
         str(article.description or "None").strip() or "None",
@@ -661,6 +756,7 @@ def print_band_report(
     print("=" * 120)
     print("WORLD NEWS API FAST FILTER + PROMPT A SCORE DEBUG REPORT")
     print("Read-only check: World News API fetch + fast filter + Prompt A scoring only. No ingestion is performed.")
+    print("Fast filter embeds title + first sentence of description. Prompt A scores title + description only.")
     print("band_C is the report label for program score_band='drop'.")
     print(f"Fast-filtered articles: {len(fast_filtered_items)}")
     print(f"Prompt A scored articles: {total}")
@@ -711,6 +807,7 @@ def build_band_file_text(report_band, grouped, generated_at, fast_filtered_count
         "WORLD NEWS API FAST FILTER + PROMPT A SCORE DEBUG REPORT",
         f"Generated at: {generated_at}",
         "Read-only check: World News API fetch + fast filter + Prompt A scoring only. No ingestion was performed.",
+        "Fast filter embeds title + first sentence of description. Prompt A scores title + description only.",
         "band_C is the report label for program score_band='drop'.",
         f"Current file: {report_band}",
         f"Articles in this file: {len(grouped[report_band])}",
@@ -747,6 +844,7 @@ def build_fast_filter_file_text(
         "WORLD NEWS API FAST FILTER DEBUG REPORT",
         f"Generated at: {generated_at}",
         "Read-only check: World News API fetch + fast filter + Prompt A scoring only. No ingestion was performed.",
+        "Fast filter embeds title + first sentence of description. Prompt A scores title + description only.",
         f"Current file: {FAST_FILTER_REPORT}",
         f"Fast-filter threshold: {threshold:.2f}",
         f"Articles in this file: {len(fast_filtered_items)}",
@@ -818,53 +916,18 @@ def generate_band_report_files(
     fast_filter_embed_model=DEFAULT_FAST_FILTER_EMBED_MODEL,
     negative_similarity_threshold=DEFAULT_NEGATIVE_SIMILARITY_THRESHOLD,
 ):
-    log_step("Starting read-only news scoring check. No ingestion will be performed.")
-    world_news_articles = fetch_recent_world_news_articles(limit=limit, search_query=search_query)
-    log_step("Converting World News API payloads into ingest_news.RawArticle objects...")
-    raw_articles = [to_raw_article(article) for article in world_news_articles]
-    log_step(f"Prepared {len(raw_articles)} RawArticle objects.")
-
-    original_indexes = {
-        article.article_id: index for index, article in enumerate(raw_articles, start=1)
-    }
-    passed_articles, filter_decisions = run_fast_negative_filter(
-        raw_articles,
-        threshold=negative_similarity_threshold,
-        embed_model=fast_filter_embed_model,
+    pipeline = run_read_only_scoring_pipeline(
+        limit=limit,
+        search_query=search_query,
+        prompt_a_model=prompt_a_model,
+        prompt_a_batch_size=prompt_a_batch_size,
+        prompt_a_timeout_seconds=prompt_a_timeout_seconds,
+        prompt_a_retries=prompt_a_retries,
+        fast_filter_embed_model=fast_filter_embed_model,
+        negative_similarity_threshold=negative_similarity_threshold,
     )
-    fast_filtered_items = build_fast_filtered_items(raw_articles, filter_decisions)
-
-    prompt_a_batch_size = max(1, int(prompt_a_batch_size))
-    total_batches = (len(passed_articles) + prompt_a_batch_size - 1) // prompt_a_batch_size
-    if passed_articles:
-        llm_client = ProgressLLMClient(
-            LlamaIndexLLMClient(
-                prompt_a_model,
-                timeout_seconds=prompt_a_timeout_seconds,
-                max_retries=prompt_a_retries,
-            ),
-            total_batches=total_batches,
-        )
-        log_step(
-            f"Running Prompt A scoring for {len(passed_articles)} fast-filter-passed articles "
-            f"in {total_batches} batch(es) of up to {prompt_a_batch_size}..."
-        )
-        score_results = ingest_news.run_prompt_a_scoring(
-            passed_articles,
-            llm_client,
-            batch_size=prompt_a_batch_size,
-        )
-    else:
-        log_step("No articles passed the fast filter; skipping Prompt A scoring.")
-        score_results = {}
-    log_step(f"Prompt A returned scores for {len(score_results)} articles.")
-
-    log_step("Grouping scored articles into band_A, band_B, band_C/drop, and band_f...")
-    grouped = group_scored_articles_with_original_indexes(
-        passed_articles,
-        score_results,
-        original_indexes,
-    )
+    grouped = pipeline["grouped"]
+    fast_filtered_items = pipeline["fast_filtered_items"]
     print_distribution_summary(grouped, fast_filtered_items)
     log_step(f"Writing band files into {output_dir}...")
     written_paths = write_band_report_files(
@@ -888,53 +951,18 @@ def score_recent_news(
     fast_filter_embed_model=DEFAULT_FAST_FILTER_EMBED_MODEL,
     negative_similarity_threshold=DEFAULT_NEGATIVE_SIMILARITY_THRESHOLD,
 ):
-    log_step("Starting read-only news scoring check. No ingestion will be performed.")
-    world_news_articles = fetch_recent_world_news_articles(limit=limit, search_query=search_query)
-    log_step("Converting World News API payloads into ingest_news.RawArticle objects...")
-    raw_articles = [to_raw_article(article) for article in world_news_articles]
-    log_step(f"Prepared {len(raw_articles)} RawArticle objects.")
-
-    original_indexes = {
-        article.article_id: index for index, article in enumerate(raw_articles, start=1)
-    }
-    passed_articles, filter_decisions = run_fast_negative_filter(
-        raw_articles,
-        threshold=negative_similarity_threshold,
-        embed_model=fast_filter_embed_model,
+    pipeline = run_read_only_scoring_pipeline(
+        limit=limit,
+        search_query=search_query,
+        prompt_a_model=prompt_a_model,
+        prompt_a_batch_size=prompt_a_batch_size,
+        prompt_a_timeout_seconds=prompt_a_timeout_seconds,
+        prompt_a_retries=prompt_a_retries,
+        fast_filter_embed_model=fast_filter_embed_model,
+        negative_similarity_threshold=negative_similarity_threshold,
     )
-    fast_filtered_items = build_fast_filtered_items(raw_articles, filter_decisions)
-
-    prompt_a_batch_size = max(1, int(prompt_a_batch_size))
-    total_batches = (len(passed_articles) + prompt_a_batch_size - 1) // prompt_a_batch_size
-    if passed_articles:
-        llm_client = ProgressLLMClient(
-            LlamaIndexLLMClient(
-                prompt_a_model,
-                timeout_seconds=prompt_a_timeout_seconds,
-                max_retries=prompt_a_retries,
-            ),
-            total_batches=total_batches,
-        )
-        log_step(
-            f"Running Prompt A scoring for {len(passed_articles)} fast-filter-passed articles "
-            f"in {total_batches} batch(es) of up to {prompt_a_batch_size}..."
-        )
-        score_results = ingest_news.run_prompt_a_scoring(
-            passed_articles,
-            llm_client,
-            batch_size=prompt_a_batch_size,
-        )
-    else:
-        log_step("No articles passed the fast filter; skipping Prompt A scoring.")
-        score_results = {}
-    log_step(f"Prompt A returned scores for {len(score_results)} articles.")
-
-    log_step("Grouping scored articles into band_A, band_B, band_C/drop, and band_f...")
-    grouped = group_scored_articles_with_original_indexes(
-        passed_articles,
-        score_results,
-        original_indexes,
-    )
+    grouped = pipeline["grouped"]
+    fast_filtered_items = pipeline["fast_filtered_items"]
     log_step("Printing readable band report...")
     print_band_report(
         grouped,
@@ -943,6 +971,165 @@ def score_recent_news(
         threshold=negative_similarity_threshold,
     )
     log_step("Done.")
+
+
+def build_prompt_b_payload(article, score_result):
+    policy = getattr(score_result, "policy", None)
+    if hasattr(policy, "model_dump"):
+        policy = policy.model_dump(mode="json")
+
+    payload = article.scoring_payload()
+    payload.update(
+        {
+            "score": score_result.score,
+            "score_band": score_result.score_band,
+            "market_relevance_reason": score_result.market_relevance_reason,
+            "is_policy_article": getattr(score_result, "is_policy_article", False),
+            "policy": policy,
+        }
+    )
+    return payload
+
+
+def run_prompt_b_extraction_batches(
+    scored_article_payloads,
+    llm_client,
+    batch_size=DEFAULT_PROMPT_B_BATCH_SIZE,
+):
+    extracted_by_id = {}
+    batch_size = max(1, int(batch_size))
+    for batch_start in range(0, len(scored_article_payloads), batch_size):
+        batch = scored_article_payloads[batch_start: batch_start + batch_size]
+        extracted_by_id.update(ingest_news.run_prompt_b_extraction(batch, llm_client))
+    return extracted_by_id
+
+
+def format_band_a_metadata_report(index, article, score_result, extracted_article):
+    graph_fact_count = 0
+    if extracted_article is not None:
+        graph_fact_count = len(extracted_article.metadata.graph_facts)
+
+    lines = [
+        "-" * 120,
+        (
+            f"#{index:03d} | score={score_result.score} | "
+            f"program_band={score_result.score_band} | graph_facts={graph_fact_count}"
+        ),
+        f"Source: {article.source_name or 'Unknown'}",
+        f"Published: {article.published_at or 'Unknown'}",
+        f"URL: {article.url or 'None'}",
+        wrap_text("Title", article.title),
+        wrap_text("Market relevance reason", score_result.market_relevance_reason),
+        "",
+    ]
+
+    if extracted_article is None:
+        lines.extend(
+            [
+                "PROMPT B METADATA:",
+                "Missing. Prompt B did not return an Article for this band_A item.",
+                "",
+            ]
+        )
+        return "\n".join(lines)
+
+    lines.extend(
+        [
+            "PROMPT B METADATA JSON:",
+            json.dumps(
+                extracted_article.metadata.model_dump(mode="json"),
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
+            ),
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def print_band_a_metadata_report(band_a_items, extracted_by_id):
+    print("=" * 120)
+    print("BAND_A PROMPT B METADATA EXTRACTION DEBUG REPORT")
+    print("Read-only check: Prompt B metadata extraction only. No vector or graph ingestion is performed.")
+    print(f"band_A articles: {len(band_a_items)}")
+    print(f"Prompt B extracted articles: {len(extracted_by_id)}")
+    print("=" * 120)
+    print()
+
+    if not band_a_items:
+        print("No band_A articles to extract metadata from.")
+        return
+
+    for index, article, score_result in band_a_items:
+        extracted_article = extracted_by_id.get(article.article_id)
+        print(format_band_a_metadata_report(index, article, score_result, extracted_article))
+
+
+def print_band_a_extracted_metadata(
+    limit=100,
+    search_query=DEFAULT_RECENT_NEWS_QUERY,
+    prompt_a_model=DEFAULT_PROMPT_A_MODEL,
+    prompt_a_batch_size=DEFAULT_PROMPT_A_BATCH_SIZE,
+    prompt_a_timeout_seconds=DEFAULT_PROMPT_A_TIMEOUT_SECONDS,
+    prompt_a_retries=DEFAULT_PROMPT_A_RETRIES,
+    fast_filter_embed_model=DEFAULT_FAST_FILTER_EMBED_MODEL,
+    negative_similarity_threshold=DEFAULT_NEGATIVE_SIMILARITY_THRESHOLD,
+    prompt_b_model=None,
+    prompt_b_batch_size=DEFAULT_PROMPT_B_BATCH_SIZE,
+    prompt_b_timeout_seconds=DEFAULT_PROMPT_A_TIMEOUT_SECONDS,
+    prompt_b_retries=DEFAULT_PROMPT_A_RETRIES,
+):
+    pipeline = run_read_only_scoring_pipeline(
+        limit=limit,
+        search_query=search_query,
+        prompt_a_model=prompt_a_model,
+        prompt_a_batch_size=prompt_a_batch_size,
+        prompt_a_timeout_seconds=prompt_a_timeout_seconds,
+        prompt_a_retries=prompt_a_retries,
+        fast_filter_embed_model=fast_filter_embed_model,
+        negative_similarity_threshold=negative_similarity_threshold,
+    )
+    grouped = pipeline["grouped"]
+    fast_filtered_items = pipeline["fast_filtered_items"]
+    print_distribution_summary(grouped, fast_filtered_items)
+
+    band_a_items = grouped["band_A"]
+    if not band_a_items:
+        print_band_a_metadata_report(band_a_items, {})
+        log_step("Done.")
+        return {}
+
+    scored_payloads = [
+        build_prompt_b_payload(article, score_result)
+        for _, article, score_result in band_a_items
+    ]
+    prompt_b_model = prompt_b_model or prompt_a_model
+    prompt_b_batch_size = max(1, int(prompt_b_batch_size))
+    total_batches = (len(scored_payloads) + prompt_b_batch_size - 1) // prompt_b_batch_size
+    log_step(
+        f"Running Prompt B metadata extraction for {len(scored_payloads)} band_A article(s) "
+        f"in {total_batches} batch(es) of up to {prompt_b_batch_size}..."
+    )
+    llm_client = ProgressLLMClient(
+        LlamaIndexLLMClient(
+            prompt_b_model,
+            timeout_seconds=prompt_b_timeout_seconds,
+            max_retries=prompt_b_retries,
+        ),
+        total_batches=total_batches,
+        task_name="Prompt B",
+        action="Extracting metadata",
+    )
+    extracted_by_id = run_prompt_b_extraction_batches(
+        scored_payloads,
+        llm_client,
+        batch_size=prompt_b_batch_size,
+    )
+    log_step(f"Prompt B returned extracted metadata for {len(extracted_by_id)} article(s).")
+    print_band_a_metadata_report(band_a_items, extracted_by_id)
+    log_step("Done.")
+    return extracted_by_id
 
 
 def main():
@@ -998,7 +1185,7 @@ def main():
     parser.add_argument(
         "--fast-filter-embed-model",
         default=DEFAULT_FAST_FILTER_EMBED_MODEL,
-        help="Voyage embedding model used by the fast negative-anchor filter.",
+        help="SentenceTransformer embedding model used by the fast negative-anchor filter.",
     )
     parser.add_argument(
         "--negative-threshold",
@@ -1006,7 +1193,43 @@ def main():
         default=DEFAULT_NEGATIVE_SIMILARITY_THRESHOLD,
         help="Max cosine similarity threshold for fast filtering. Default: 0.85.",
     )
+    parser.add_argument(
+        "--band-a-metadata",
+        action="store_true",
+        help=(
+            "Run the same read-only scoring flow, then run Prompt B only for band_A "
+            "articles and print extracted metadata instead of writing band files."
+        ),
+    )
+    parser.add_argument(
+        "--prompt-b-model",
+        default=None,
+        help="Model used for Prompt B metadata extraction. Defaults to --prompt-a-model.",
+    )
+    parser.add_argument(
+        "--prompt-b-batch-size",
+        type=int,
+        default=DEFAULT_PROMPT_B_BATCH_SIZE,
+        help="Articles per Prompt B metadata extraction call. Default: 3.",
+    )
     args = parser.parse_args()
+
+    if args.band_a_metadata:
+        print_band_a_extracted_metadata(
+            limit=args.limit,
+            search_query=args.query,
+            prompt_a_model=args.prompt_a_model,
+            prompt_a_batch_size=args.prompt_a_batch_size,
+            prompt_a_timeout_seconds=args.prompt_a_timeout,
+            prompt_a_retries=args.prompt_a_retries,
+            fast_filter_embed_model=args.fast_filter_embed_model,
+            negative_similarity_threshold=args.negative_threshold,
+            prompt_b_model=args.prompt_b_model,
+            prompt_b_batch_size=args.prompt_b_batch_size,
+            prompt_b_timeout_seconds=args.prompt_a_timeout,
+            prompt_b_retries=args.prompt_a_retries,
+        )
+        return
 
     written_paths = generate_band_report_files(
         limit=args.limit,
